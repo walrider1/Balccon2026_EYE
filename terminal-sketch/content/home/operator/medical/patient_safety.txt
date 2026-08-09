@@ -1,0 +1,9 @@
+PATIENT-SAFETY FIRMWARE // NOTICE
+
+When a conscious patient challenges a reinduction order, the pod must offer an independent Cortex Echo test.
+
+The test verifies purposeful motor response through physical neural sensors.
+CENTRAL may request sedation, but cannot forge a passing response.
+
+During an active sedation order, open the Medical app directory and run:
+run cortex_echo.app

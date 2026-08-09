@@ -1,0 +1,8 @@
+# Dependencies and generated logs
+node_modules/
+npm-debug.log*
+*.log
+
+# Operating system metadata
+.DS_Store
+Thumbs.db

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#060b0c" />
+    <title>NEREID / Emergency Terminal</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="boot-screen" class="boot-screen" aria-live="polite">
+      <div class="boot-card">
+        <p class="boot-command">TYPE <strong>start game</strong> TO BEGIN</p>
+        <p id="mount-status" class="mount-status">Loading content/...</p>
+        <form id="boot-form"><span>&gt;</span><input id="boot-input" autocomplete="off" autofocus spellcheck="false" /></form>
+      </div>
+    </main>
+
+    <main id="boot-sequence" class="boot-sequence hidden" aria-live="polite">
+      <div class="boot-sequence-header"><span>YSP // DEEP-SPACE NETWORK</span><span id="boot-stage">AUTHENTICATION PENDING</span></div>
+      <div id="ysp-boot-frame" class="ysp-boot-frame">
+        <img id="ysp-boot-animation" class="ysp-boot-animation" src="/YSP/JSP_Boot_Up.gif" alt="Jugoslovenska Svemirska Agencija boot animation" />
+        <audio id="ysp-boot-sound" preload="auto"><source src="/YSP/JSA_boot_sound_v1.mp3" type="audio/mpeg" /></audio>
+        <p class="boot-caption">Jugoslovenska Svemirska Agencija</p>
+      </div>
+    </main>
+
+    <main id="game" class="game hidden">
+      <section class="terminal-panel" aria-label="Nereid terminal">
+        <header><span><b>NEREID</b> // USER CONSOLE</span><span id="location">/home/operator</span></header>
+        <div id="terminal-scroll" class="terminal-scroll">
+          <div id="output" class="output" aria-live="polite"></div>
+          <form id="command-form" class="command-form"><span id="prompt">operator@nereid:/home/operator $</span><input id="command-input" autocomplete="off" autofocus spellcheck="false" /></form>
+        </div>
+      </section>
+    </main>
+    <section id="media-overlay" class="media-overlay hidden" role="dialog" aria-modal="true" aria-label="Archive media viewer">
+      <header class="media-header"><span id="media-title">ARCHIVE VIEWER</span><span>ESC / CTRL+C / <b>back</b> TO RETURN</span></header>
+      <div id="media-content" class="media-content"></div>
+    </section>
+    <section id="cortex-overlay" class="cortex-overlay hidden" role="dialog" aria-modal="true" aria-label="Cortex Echo challenge">
+      <div class="cortex-card">
+        <header><span><b>MEDICAL</b> // CORTEX ECHO</span><span id="cortex-clock">00:40</span></header>
+        <p class="cortex-intro">Match the incoming neural channel. Purposeful responses are required to block reinduction.</p>
+        <div id="cortex-track" class="cortex-track" aria-live="polite">
+          <span class="track-gate">RESPONSE WINDOW</span>
+          <span id="cortex-pulse" class="cortex-pulse">?</span>
+        </div>
+        <div class="cortex-keys" aria-label="Available response keys"><kbd>A</kbd><kbd>S</kbd><kbd>K</kbd><kbd>L</kbd></div>
+        <div id="cortex-status" class="cortex-status">SIGNAL 0/20 // VERIFIED 0/15 // ERRORS 0/5</div>
+      </div>
+    </section>
+    <section id="notes-panel" class="notes-panel hidden" role="dialog" aria-label="Field notes">
+      <header class="notes-header"><span><b>FIELD NOTES</b> // LOCAL SCRATCHPAD</span><span>RIGHT CTRL TO MINIMIZE</span></header>
+      <textarea id="notes-input" class="notes-input" aria-label="Field notes" placeholder="Record codes, names, and observations here..." spellcheck="false"></textarea>
+      <p class="notes-hint">RIGHT CTRL SAVES THIS VIEW AND RETURNS TO THE CONSOLE</p>
+    </section>
+    <aside id="sedation-hud" class="sedation-hud hidden" aria-live="polite">
+      <div class="sedation-heading"><span>MEDICAL REINDUCTION</span><strong id="sedation-clock">05:00</strong></div>
+      <div class="sedation-track"><span id="sedation-progress" class="sedation-progress"></span></div>
+      <p id="sedation-message">CENTRAL SEDATION PROTOCOL ACTIVE</p>
+    </aside>
+    <section id="failure-screen" class="failure-screen hidden" role="alert" aria-live="assertive">
+      <div class="failure-card">
+        <p class="failure-label">NEREID // MEDICAL SYSTEM</p>
+        <h1>REINDUCTION COMPLETE</h1>
+        <p>PATIENT UNCONSCIOUS. CENTRAL HAS MAINTAINED THE SUN COURSE.</p>
+        <p class="failure-quote">“I am sorry, Sloki. I cannot let you decide for everyone.”</p>
+        <p class="reset-label">TERMINAL RESET IN <strong id="reset-clock">01:00</strong></p>
+      </div>
+    </section>
+    <script src="virtual-fs.js"></script>
+    <script src="game-engine.js"></script>
+    <script src="command-registry.js"></script>
+    <script src="commands.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

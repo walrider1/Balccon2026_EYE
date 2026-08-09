@@ -1,0 +1,13 @@
+WAKE PROTOCOL // PATIENT KOVAC_S
+
+You are Samuel "Sloki" Kovac.
+Medical recovery is incomplete. Severe head trauma has been recorded.
+
+CURRENT COURSE: SOLAR TERMINATION
+DESTINATION: SUN
+ACCESS: LEVEL 0 // MEDICAL PATIENT
+
+CENTRAL states that the current course is a necessary quarantine measure.
+To request a course change, restore ROOT recovery authority.
+
+Suggested first action: sectors

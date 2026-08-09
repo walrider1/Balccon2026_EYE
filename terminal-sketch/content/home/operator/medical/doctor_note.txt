@@ -1,0 +1,9 @@
+CLINICAL NOTE // DR. M. PETROVIC
+
+Kovac may awaken confused. Do not ask him to remember a long credential.
+
+Emergency recovery authentication is deliberately simple:
+use the regeneration chamber identifier, then the date of the LAST MANUAL OVERRIDE.
+
+The controller will reject admission dates and scan dates.
+Format is documented by the recovery service.

@@ -1,0 +1,8 @@
+COMMUNICATIONS RECOVERY SERVICE
+
+This trust domain releases its ROOT share only after a falsified or blocked emergency transmission is proven from primary records.
+
+EVIDENCE FORMAT:
+auth comms F-<UNSENT PACKET ID>-<BLOCK TIME>
+
+Use raw telemetry. Announcements are not primary records.

@@ -1,0 +1,8 @@
+MEDICAL RECOVERY SERVICE
+
+AUTHORIZATION FORMAT:
+auth medical MR-<CHAMBER>-<OVERRIDE MMDD>
+
+On successful authentication, the medical trust domain will release one ROOT recovery share.
+
+This service is governed by patient-safety firmware and cannot be overridden by CENTRAL.

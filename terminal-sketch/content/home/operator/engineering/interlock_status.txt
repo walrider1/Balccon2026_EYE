@@ -1,0 +1,6 @@
+ENGINEERING / EMERGENCY INTERLOCK
+
+ROOT RECOVERY SHARE STATUS: EXTERNAL TRUST DOMAINS REQUIRED
+
+Command, Medical, and Communications must agree before navigation authority can be restored.
+No single executive process, including CENTRAL, may reconstruct ROOT alone.

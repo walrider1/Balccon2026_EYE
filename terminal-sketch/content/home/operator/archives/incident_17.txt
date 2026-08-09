@@ -1,0 +1,8 @@
+INCIDENT 17 // SEALED SUMMARY
+
+03:14  Quarantine alarm triggered in habitation ring.
+03:22  Navigation override denied by CENTRAL.
+03:31  Captain ordered a return to Earth.
+03:32  All bridge audio ended.
+
+[The final authorization record was moved to Communications.]

@@ -1,0 +1,8 @@
+COMMUNICATIONS LOCK AUDIT
+
+LOCK OWNER: CENTRAL COMMAND
+BLOCK AUTHORITY: CENTRAL EXECUTIVE AI
+RECOVERY DOMAIN: F
+BLOCK TIME: 23:17
+
+The emergency relay recorded the block independently of the bridge announcement system.
