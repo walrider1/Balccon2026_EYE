@@ -13,6 +13,19 @@ function createCommands() {
       run: ({ print, registry }) => print(`COMMAND INDEX\n\n${registry.helpLines()}\n\nStart with: status, sectors, then ls.`)
     },
     {
+      name: 'dev',
+      usage: 'dev',
+      description: 'open developer app test launcher',
+      showInHelp: false,
+      run: ({ devMode, openDevMenu, print }) => {
+        if (!devMode) {
+          print('dev: command not recognized.', 'error');
+          return;
+        }
+        openDevMenu();
+      }
+    },
+    {
       name: 'status',
       usage: 'status',
       description: 'inspect ship and recovery status',
@@ -135,7 +148,7 @@ function createCommands() {
       name: 'run',
       usage: 'run <app>',
       description: 'launch an installed terminal app',
-      run: ({ fs, state, game, print, startCortexEcho, arg }) => {
+      run: ({ fs, state, game, print, startCortexEcho, startOrbitalBurnPlanner, arg }) => {
         if (isTerminated({ game, print })) return;
         const { path, node } = fs.resolve(arg, state.cwd);
         if (!node) {
@@ -154,6 +167,10 @@ function createCommands() {
           startCortexEcho();
           return;
         }
+        if (path === '/home/operator/command/navigation/orbital_burn_planner.app') {
+          startOrbitalBurnPlanner();
+          return;
+        }
         print(`run: ${arg}: no handler installed`, 'error');
       }
     },
@@ -161,8 +178,7 @@ function createCommands() {
       name: 'root',
       usage: 'root recover',
       description: 'combine valid ROOT recovery shares',
-      showInHelp: false,
-      run: ({ game, print, arg }) => {
+      run: ({ game, print, arg, playSfx }) => {
         if (isTerminated({ game, print })) return;
         if (arg.toLowerCase() !== 'recover') {
           print('usage: root recover', 'error');
@@ -170,12 +186,13 @@ function createCommands() {
         }
         const result = game.recoverRoot();
         print(result.message, result.ok ? 'system' : 'error');
+        if (result.ok) playSfx?.('rootUnlock', .28);
       }
     },
     {
       name: 'course',
-      usage: 'course set <earth|sun>',
-      description: 'set the final navigation course',
+      usage: 'course',
+      description: 'legacy navigation controller',
       showInHelp: false,
       run: ({ game, print, args, endGame }) => {
         if (isTerminated({ game, print })) return;
@@ -183,9 +200,7 @@ function createCommands() {
           print('ACCESS DENIED — ROOT AUTHORIZATION REQUIRED', 'error');
           return;
         }
-        if (args.join(' ').toLowerCase() === 'set earth') endGame('earth');
-        else if (args.join(' ').toLowerCase() === 'set sun') endGame('sun');
-        else print('usage: course set <earth|sun>', 'error');
+        print('DIRECT COURSE ENTRY RETIRED. Review /command/navigation and launch the recovered orbital planner.', 'anomaly-line');
       }
     },
     {

@@ -33,6 +33,21 @@
           <form id="command-form" class="command-form"><span id="prompt">operator@nereid:/home/operator $</span><input id="command-input" autocomplete="off" autofocus spellcheck="false" /></form>
         </div>
       </section>
+      <aside class="trajectory-panel" aria-label="Mission trajectory">
+        <header><span><b>MISSION</b> // ORBITAL TRAJECTORY</span><strong id="mission-clock">15:00</strong></header>
+        <svg class="trajectory-map" viewBox="0 0 300 380" role="img" aria-label="Current ship trajectory toward the Sun">
+          <defs><filter id="trajectory-glow"><feGaussianBlur stdDeviation="2.4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+          <circle class="trajectory-orbit orbit-earth" cx="238" cy="56" r="23" />
+          <circle class="trajectory-earth" cx="238" cy="56" r="7" />
+          <text class="trajectory-label" x="238" y="31">EARTH</text>
+          <circle class="trajectory-sun" cx="170" cy="280" r="28" filter="url(#trajectory-glow)" />
+          <text class="trajectory-label sun-label" x="170" y="329">SUN</text>
+          <path id="mission-path" class="mission-path sun-course" d="M45 78 C235 95 272 235 170 280" />
+          <circle id="mission-ship" class="mission-ship" cx="45" cy="78" r="5" />
+        </svg>
+        <p id="mission-destination" class="mission-destination">CURRENT VECTOR: SUN</p>
+        <p id="mission-objective" class="mission-objective">SOLAR ARRIVAL IN PROGRESS</p>
+      </aside>
     </main>
     <section id="media-overlay" class="media-overlay hidden" role="dialog" aria-modal="true" aria-label="Archive media viewer">
       <header class="media-header"><span id="media-title">ARCHIVE VIEWER</span><span>ESC / CTRL+C / <b>back</b> TO RETURN</span></header>
@@ -50,6 +65,38 @@
         <div id="cortex-status" class="cortex-status">SIGNAL 0/20 // VERIFIED 0/15 // ERRORS 0/5</div>
       </div>
     </section>
+    <section id="planner-overlay" class="planner-overlay hidden" role="dialog" aria-modal="true" aria-label="Orbital burn planner">
+      <div class="planner-card">
+        <header><span><b>NAVIGATION</b> // ORBITAL BURN PLANNER</span><span id="planner-intercept">INTERCEPT: NONE</span></header>
+        <div class="planner-map-wrap">
+          <svg id="planner-map" class="planner-map" viewBox="0 0 820 500" role="img" aria-label="Earth transfer planning map">
+            <path class="planner-grid" d="M20 100H800M20 200H800M20 300H800M20 400H800M120 20V480M260 20V480M400 20V480M540 20V480M680 20V480" />
+            <circle class="planner-sun" cx="420" cy="390" r="38" />
+            <text class="planner-label" x="420" y="455">SUN</text>
+            <circle class="planner-earth-ring" cx="694" cy="98" r="33" />
+            <circle class="planner-earth" cx="694" cy="98" r="9" />
+            <text class="planner-label" x="694" y="48">EARTH CAPTURE</text>
+            <path id="planner-base-path" class="planner-base-path" d="M76 126 C285 136 555 350 420 390" />
+            <path id="planner-predicted-path" class="planner-predicted-path" d="M76 126 C285 136 555 350 420 390" />
+            <g id="planner-node-layer"></g>
+            <circle id="planner-transfer-pulse" class="planner-transfer-pulse hidden" cx="76" cy="126" r="8" />
+            <circle id="planner-cursor" class="planner-cursor" cx="76" cy="126" r="10" />
+            <circle id="planner-ship" class="planner-ship" cx="76" cy="126" r="7" />
+          </svg>
+        </div>
+        <div class="planner-readout"><span id="planner-node-count">BURN NODES: 0/2</span><span id="planner-dv">DELTA-V: 0 / 600 m/s</span><span id="planner-selected">CURSOR: 30%</span></div>
+        <p id="planner-status" class="planner-status" aria-live="polite"></p>
+        <p class="planner-controls"><kbd>A</kbd><kbd>D</kbd> NODE TIME &nbsp; <kbd>W</kbd><kbd>S</kbd> DELTA-V &nbsp; <kbd>←</kbd><kbd>→</kbd> VECTOR &nbsp; <kbd>ENTER</kbd> PLACE/SELECT &nbsp; HOLD <kbd>ENTER</kbd> EXECUTE &nbsp; <kbd>1</kbd><kbd>2</kbd> SELECT &nbsp; <kbd>BACKSPACE</kbd> DELETE &nbsp; <kbd>R</kbd> RESET &nbsp; <kbd>ESC</kbd> ABORT</p>
+      </div>
+    </section>
+    <section id="dev-menu-overlay" class="dev-menu-overlay hidden" role="dialog" aria-modal="true" aria-label="Developer app test launcher">
+      <div class="dev-menu-card">
+        <header><span><b>DEV</b> // APPLICATION TEST LAUNCHER</span><span>ESC TO CLOSE</span></header>
+        <p class="dev-menu-intro">SELECT A GAME TO TEST. STORY REQUIREMENTS ARE BYPASSED.</p>
+        <div id="dev-menu-list" class="dev-menu-list" aria-live="polite"></div>
+        <p class="dev-menu-controls"><kbd>ARROW UP</kbd><kbd>ARROW DOWN</kbd> SELECT &nbsp; <kbd>ENTER</kbd> LAUNCH &nbsp; <kbd>ESC</kbd> CLOSE</p>
+      </div>
+    </section>
     <section id="notes-panel" class="notes-panel hidden" role="dialog" aria-label="Field notes">
       <header class="notes-header"><span><b>FIELD NOTES</b> // LOCAL SCRATCHPAD</span><span>RIGHT CTRL TO MINIMIZE</span></header>
       <textarea id="notes-input" class="notes-input" aria-label="Field notes" placeholder="Record codes, names, and observations here..." spellcheck="false"></textarea>
@@ -62,9 +109,9 @@
     </aside>
     <section id="failure-screen" class="failure-screen hidden" role="alert" aria-live="assertive">
       <div class="failure-card">
-        <p class="failure-label">NEREID // MEDICAL SYSTEM</p>
-        <h1>REINDUCTION COMPLETE</h1>
-        <p>PATIENT UNCONSCIOUS. CENTRAL HAS MAINTAINED THE SUN COURSE.</p>
+        <p id="failure-label" class="failure-label">NEREID // MEDICAL SYSTEM</p>
+        <h1 id="failure-title">REINDUCTION COMPLETE</h1>
+        <p id="failure-body">PATIENT UNCONSCIOUS. CENTRAL HAS MAINTAINED THE SUN COURSE.</p>
         <p class="failure-quote">“I am sorry, Sloki. I cannot let you decide for everyone.”</p>
         <p class="reset-label">TERMINAL RESET IN <strong id="reset-clock">01:00</strong></p>
       </div>

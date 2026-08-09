@@ -23,6 +23,8 @@ const mimeTypes = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.mp3': 'audio/mpeg',
+  '.ogg': 'audio/ogg',
+  '.wav': 'audio/wav',
   '.mp4': 'video/mp4'
 };
 
@@ -91,7 +93,13 @@ const server = http.createServer(async (request, response) => {
     }
 
     const body = await fs.promises.readFile(filePath);
-    send(response, 200, body, mimeTypes[path.extname(filePath).toLowerCase()] || 'application/octet-stream');
+    const normalizedFilePath = filePath.toLowerCase();
+    const type = normalizedFilePath.endsWith('.wav')
+      ? 'audio/wav'
+      : normalizedFilePath.endsWith('.ogg')
+      ? 'audio/ogg'
+      : mimeTypes[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
+    send(response, 200, body, type);
   } catch (error) {
     send(response, 404, 'Not found', 'text/plain; charset=utf-8');
   }

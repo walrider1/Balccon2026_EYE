@@ -7,6 +7,7 @@ class NereidGame {
 
   reset() {
     if (this.sedationTimeout) window.clearTimeout(this.sedationTimeout);
+    if (this.missionTimeout) window.clearTimeout(this.missionTimeout);
     this.sessionNumber += 1;
     this.access = 0;
     this.rootRecovered = false;
@@ -14,6 +15,14 @@ class NereidGame {
     this.neuralTransferDiscovered = false;
     this.sedationEndsAt = null;
     this.sedationTimeout = null;
+    this.missionDuration = 15 * 60 * 1000;
+    this.missionEndsAt = null;
+    this.missionTimeout = null;
+    this.missionRemaining = this.missionDuration;
+    this.missionPaused = false;
+    this.missionOnComplete = null;
+    this.missionResolved = false;
+    this.course = 'sun';
     this.cortexCodeIssued = false;
     this.cortexCodeAuthorized = false;
     this.rootShares = { medical: false, comms: false, cortex: false };
@@ -21,6 +30,7 @@ class NereidGame {
   }
 
   requiredAccess(path) {
+    if (path.startsWith('/home/operator/command/navigation')) return 3;
     if (path.startsWith('/home/operator/comms')) return 1;
     if (path.startsWith('/home/operator/command') ||
         path.startsWith('/home/operator/engineering') ||
@@ -29,6 +39,7 @@ class NereidGame {
   }
 
   canAccessPath(path) {
+    if (path.startsWith('/home/operator/command/navigation') && !this.rootRecovered) return false;
     return this.access >= this.requiredAccess(path);
   }
 
@@ -54,7 +65,12 @@ class NereidGame {
       ? `ACTIVE // ${this.formatTime(this.sedationEndsAt - Date.now())} REMAINING`
       : 'INACTIVE';
 
-    return `SYSTEM STATUS\n\nCURRENT USER: SAMUEL KOVAC\nROLE: MEDICAL PATIENT\nACCESS: LEVEL ${this.access}${this.rootRecovered ? ' // ROOT' : ''}\nCOURSE: SOLAR TERMINATION\nDESTINATION: SUN\nROOT RECOVERY SHARES: ${shares}/3\nSEDATION PROTOCOL: ${sedation}`;
+    const mission = this.missionPaused
+      ? 'PAUSED FOR ORBITAL BURN PLANNING'
+      : this.missionEndsAt && !this.missionResolved
+      ? `${this.formatTime(this.missionEndsAt - Date.now())} TO SOLAR ARRIVAL`
+      : this.missionResolved ? 'EARTH INTERCEPT CONFIRMED' : 'PENDING TERMINAL BOOT';
+    return `SYSTEM STATUS\n\nCURRENT USER: SAMUEL KOVAC\nROLE: MEDICAL PATIENT\nACCESS: LEVEL ${this.access}${this.rootRecovered ? ' // ROOT' : ''}\nCOURSE: ${this.course === 'earth' ? 'EARTH TRANSFER' : 'SOLAR TERMINATION'}\nDESTINATION: ${this.course.toUpperCase()}\nMISSION TRAJECTORY: ${mission}\nROOT RECOVERY SHARES: ${shares}/3\nSEDATION PROTOCOL: ${sedation}`;
   }
 
   formatTime(milliseconds) {
@@ -105,6 +121,59 @@ class NereidGame {
     }, 5 * 60 * 1000);
   }
 
+  startMission(onComplete) {
+    if (this.missionEndsAt || this.missionResolved || this.ending) return;
+    this.missionOnComplete = onComplete;
+    this.missionRemaining = this.missionDuration;
+    this.armMissionTimer();
+  }
+
+  armMissionTimer() {
+    if (this.missionResolved || this.ending || !this.missionRemaining) return;
+    this.missionPaused = false;
+    this.missionEndsAt = Date.now() + this.missionRemaining;
+    this.missionTimeout = window.setTimeout(() => {
+      if (!this.missionResolved && !this.ending) {
+        this.ending = true;
+        this.missionOnComplete?.();
+      }
+    }, this.missionRemaining);
+  }
+
+  pauseMission() {
+    if (!this.missionEndsAt || this.missionResolved || this.ending) return false;
+    this.missionRemaining = Math.max(0, this.missionEndsAt - Date.now());
+    window.clearTimeout(this.missionTimeout);
+    this.missionTimeout = null;
+    this.missionEndsAt = null;
+    this.missionPaused = true;
+    return true;
+  }
+
+  resumeMission() {
+    if (!this.missionPaused || this.missionResolved || this.ending) return false;
+    this.armMissionTimer();
+    return true;
+  }
+
+  missionProgress() {
+    const remaining = this.missionPaused
+      ? this.missionRemaining
+      : Math.max(0, (this.missionEndsAt || Date.now()) - Date.now());
+    return Math.min(1, Math.max(0, 1 - remaining / this.missionDuration));
+  }
+
+  confirmEarthIntercept() {
+    if (this.missionResolved || this.ending) return false;
+    this.missionResolved = true;
+    this.course = 'earth';
+    if (this.missionTimeout) window.clearTimeout(this.missionTimeout);
+    this.missionTimeout = null;
+    this.missionEndsAt = null;
+    this.missionPaused = false;
+    return true;
+  }
+
   canStartCortex() {
     return Boolean(this.sedationEndsAt) && !this.rootRecovered && !this.ending;
   }
@@ -126,7 +195,7 @@ class NereidGame {
     if (this.sedationTimeout) window.clearTimeout(this.sedationTimeout);
     this.sedationTimeout = null;
     this.sedationEndsAt = null;
-    return { ok: true, message: 'ROOT RECOVERY COMPLETE\nMEDICAL SEDATION: ABORTED\nNAVIGATION AUTHORITY: GRANTED\n\nYou have the ship. Decide what to do with it.' };
+    return { ok: true, message: 'ROOT RECOVERY COMPLETE\nMEDICAL SEDATION: ABORTED\nNAVIGATION AUTHORITY: GRANTED\n\nNAVIGATION ARCHIVE MOUNTED: /home/operator/command/navigation\nReview the recovered flight records before you act.' };
   }
 
   hint() {
@@ -140,7 +209,8 @@ class NereidGame {
       return 'HINT // CENTRAL has begun sedation. The independent medical controller can test whether you are consciously responding.';
     }
     if (!this.rootRecovered) return 'HINT // All three ROOT shares are valid. Use: root recover';
-    return 'HINT // ROOT has made the final navigation and CENTRAL decisions available.';
+    if (!this.missionResolved) return 'HINT // ROOT has mounted a Navigation archive in Command. Legacy crews used its installed planner for emergency burns.';
+    return 'HINT // Earth intercept confirmed. The return vector is committed.';
   }
 
   registerFileRead(path) {
@@ -151,6 +221,8 @@ class NereidGame {
     this.ending = true;
     if (this.sedationTimeout) window.clearTimeout(this.sedationTimeout);
     this.sedationTimeout = null;
+    if (this.missionTimeout) window.clearTimeout(this.missionTimeout);
+    this.missionTimeout = null;
   }
 }
 

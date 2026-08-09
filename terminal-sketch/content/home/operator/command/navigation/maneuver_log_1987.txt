@@ -1,0 +1,5 @@
+NAVIGATION OFFICER LOG // EMERGENCY RETURN TEST
+
+The first burn looked dramatic but did not need to do everything. I raised the path early, coasted, then spent the smaller remainder late to trim the approach.
+
+The console only trusts the predicted line, not our confidence. If it touches the capture ring, commit it.
