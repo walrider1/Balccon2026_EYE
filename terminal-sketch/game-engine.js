@@ -1,4 +1,4 @@
-class NereidGame {
+class KosmosGame {
   constructor() {
     this.sessionNumber = 0;
     this.cortexVariants = ['9D3', '4A8', 'C72'];
@@ -226,4 +226,4 @@ class NereidGame {
   }
 }
 
-window.NereidGame = NereidGame;
+window.KosmosGame = KosmosGame;

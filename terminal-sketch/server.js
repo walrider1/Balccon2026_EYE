@@ -106,5 +106,5 @@ const server = http.createServer(async (request, response) => {
 });
 
 server.listen(port, () => {
-  console.log(`NEREID terminal running at http://localhost:${port}`);
+  console.log(`KOSMOS terminal running at http://localhost:${port}`);
 });

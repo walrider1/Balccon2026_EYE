@@ -7,6 +7,11 @@ const mountStatus = document.querySelector('#mount-status');
 const yspBootAnimation = document.querySelector('#ysp-boot-animation');
 const yspBootSound = document.querySelector('#ysp-boot-sound');
 const bootStage = document.querySelector('#boot-stage');
+const bootEmblem = document.querySelector('#boot-emblem');
+const bootLogItems = [...document.querySelectorAll('[data-boot-log]')];
+const bootProgressBar = document.querySelector('#boot-progress-bar');
+const bootPostMessage = document.querySelector('#boot-post-message');
+const bootPostStatus = document.querySelector('#boot-post-status');
 const commandForm = document.querySelector('#command-form');
 const commandInput = document.querySelector('#command-input');
 const terminalScroll = document.querySelector('#terminal-scroll');
@@ -33,6 +38,7 @@ const failureLabel = document.querySelector('#failure-label');
 const failureTitle = document.querySelector('#failure-title');
 const failureBody = document.querySelector('#failure-body');
 const failureQuote = document.querySelector('.failure-quote');
+const crtTransition = document.querySelector('#crt-transition');
 const trajectoryPanel = document.querySelector('.trajectory-panel');
 const missionClock = document.querySelector('#mission-clock');
 const missionPath = document.querySelector('#mission-path');
@@ -56,7 +62,7 @@ const devMenuList = document.querySelector('#dev-menu-list');
 // Set this to false for the convention build. The hidden `dev` command is then unavailable.
 const DEV_MODE = true;
 const state = { cwd: '/home/operator', history: [], historyIndex: 0 };
-const gameState = new NereidGame();
+const gameState = new KosmosGame();
 let fs;
 let outputTyping = false;
 let outputToken = 0;
@@ -70,11 +76,18 @@ let failureResetTimer;
 let failureClockTimer;
 let missionDisplayTimer;
 let postTransferTimer;
+let idleResetTimer;
+let crtTransitionTimer;
+let resetInProgress = false;
 let bootTimer;
+let bootStepTimer;
+let bootStartedAt = 0;
+let bootStepIndex = 0;
 let bootFinished = false;
 let confirmedEarthPath = null;
-const BOOT_SEQUENCE_MS = 3600;
+const BOOT_SEQUENCE_MS = 5000;
 const RESET_DELAY_MS = 60000;
+const IDLE_RESET_MS = 5 * 60 * 1000;
 const sfx = {
   files: {
     ambientShip: 'audio/sfx/ambient_ship_loop.wav',
@@ -100,6 +113,7 @@ const sfx = {
   cache: {},
   buffers: {},
   decodedBuffers: {},
+  pendingPlays: {},
   loops: {},
   context: null,
   lastPlayed: {},
@@ -159,6 +173,16 @@ const sfx = {
 
     if (options.dropIfLoading && !this.decodedBuffers[name]) {
       this.loadBuffer(name).catch(() => {});
+      return;
+    }
+
+    if (options.queueIfLoading && !this.decodedBuffers[name]) {
+      if (this.pendingPlays[name]) return;
+      this.pendingPlays[name] = true;
+      this.loadBuffer(name)
+        .then(() => this.playBuffer(name, volume))
+        .catch(() => this.fallbackPlay(name, volume))
+        .finally(() => { delete this.pendingPlays[name]; });
       return;
     }
 
@@ -290,7 +314,7 @@ function typeNextOutputLine() {
     if (token !== outputToken) return;
     characterIndex += 1;
     line.textContent = text.slice(0, characterIndex);
-    if (characterIndex % 8 === 0) sfx.play('terminalTick', .055, { throttleMs: 26, dropIfLoading: true });
+    if (characterIndex % 8 === 0) sfx.play('terminalTick', .055, { throttleMs: 26, queueIfLoading: true });
     terminalScroll.scrollTop = terminalScroll.scrollHeight;
 
     if (characterIndex < text.length) {
@@ -317,7 +341,7 @@ function printCommand(input) {
   const line = document.createElement('div');
   const [command, ...args] = input.split(/\s+/);
   line.className = 'line input-line';
-  line.textContent = `sloki@nereid:${state.cwd} $ `;
+  line.textContent = `sloki@kosmos:${state.cwd} $ `;
 
   const commandText = document.createElement('span');
   commandText.className = 'typed-command';
@@ -330,7 +354,7 @@ function printCommand(input) {
 
 function updatePrompt() {
   locationLabel.textContent = state.cwd;
-  prompt.textContent = `sloki@nereid:${state.cwd} $`;
+  prompt.textContent = `sloki@kosmos:${state.cwd} $`;
 }
 
 function toggleNotes() {
@@ -489,9 +513,64 @@ function updateMissionDisplay() {
 
 function startMissionDisplay() {
   confirmedEarthPath = null;
-  gameState.startMission(() => window.endNereidGame('mission'));
+  gameState.startMission(() => window.endKosmosGame('mission'));
   updateMissionDisplay();
   missionDisplayTimer = window.setInterval(updateMissionDisplay, 250);
+}
+
+function playAudioFromStart(audio) {
+  audio.pause();
+  try { audio.currentTime = 0; } catch (_error) {}
+
+  const start = () => {
+    audio.removeEventListener('canplay', start);
+    try { audio.currentTime = 0; } catch (_error) {}
+    audio.play().catch(() => {});
+  };
+
+  audio.removeEventListener('canplay', start);
+  audio.addEventListener('canplay', start, { once: true });
+  audio.load();
+  if (audio.readyState >= 2) start();
+}
+
+function playCrtTransition(mode, onComplete) {
+  window.clearTimeout(crtTransitionTimer);
+  crtTransition.classList.remove('hidden', 'crt-power-on', 'crt-power-off');
+  void crtTransition.offsetWidth;
+  const className = mode === 'off' ? 'crt-power-off' : 'crt-power-on';
+  const duration = mode === 'off' ? 820 : 1200;
+  crtTransition.classList.add(className);
+  crtTransitionTimer = window.setTimeout(() => {
+    crtTransition.classList.add('hidden');
+    crtTransition.classList.remove(className);
+    onComplete?.();
+  }, duration);
+}
+
+function armIdleReset() {
+  window.clearTimeout(idleResetTimer);
+  if (game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
+  idleResetTimer = window.setTimeout(resetToStartScreen, IDLE_RESET_MS);
+}
+
+function noteUserActivity() {
+  if (!game.classList.contains('hidden') && failureScreen.classList.contains('hidden')) armIdleReset();
+}
+
+function resetToStartScreen() {
+  if (resetInProgress) return;
+  resetInProgress = true;
+  window.clearTimeout(idleResetTimer);
+  window.clearInterval(failureClockTimer);
+  window.clearTimeout(failureResetTimer);
+  window.clearTimeout(postTransferTimer);
+  stopSedationDisplay();
+  stopMissionDisplay();
+  cortexGame.cancel();
+  plannerGame.cancel();
+  sfx.stopAll();
+  playCrtTransition('off', () => window.location.reload());
 }
 
 function startResetCountdown() {
@@ -503,19 +582,20 @@ function startResetCountdown() {
   };
   updateResetClock();
   failureClockTimer = window.setInterval(updateResetClock, 250);
-  failureResetTimer = window.setTimeout(() => window.location.reload(), RESET_DELAY_MS);
+  failureResetTimer = window.setTimeout(resetToStartScreen, RESET_DELAY_MS);
 }
 
 function showFailureScreen(reason) {
+  window.clearTimeout(idleResetTimer);
   const copy = reason === 'mission'
     ? {
-        label: 'NEREID // NAVIGATION SYSTEM',
+        label: 'KOSMOS // NAVIGATION SYSTEM',
         title: 'SOLAR ARRIVAL',
         body: 'THE RETURN WINDOW HAS CLOSED. CENTRAL HAS MAINTAINED THE SUN COURSE.',
         quote: 'I am sorry, Sloki. I cannot let you decide for everyone.'
       }
     : {
-        label: 'NEREID // MEDICAL SYSTEM',
+        label: 'KOSMOS // MEDICAL SYSTEM',
         title: 'REINDUCTION COMPLETE',
         body: 'PATIENT UNCONSCIOUS. CENTRAL HAS MAINTAINED THE SUN COURSE.',
         quote: 'I am sorry, Sloki. I cannot let you decide for everyone.'
@@ -535,27 +615,28 @@ function showFailureScreen(reason) {
 }
 
 function showCompletionScreen(kind) {
+  window.clearTimeout(idleResetTimer);
   const copy = {
     earth: {
-      label: 'NEREID // NAVIGATION SYSTEM',
+      label: 'KOSMOS // NAVIGATION SYSTEM',
       title: 'RETURN VECTOR',
       body: 'EARTH INTERCEPT CONFIRMED. SESSION COMPLETE.',
       quote: 'The ship turns away from the Sun.'
     },
     sun: {
-      label: 'NEREID // CENTRAL',
+      label: 'KOSMOS // CENTRAL',
       title: 'QUARANTINE',
       body: 'SOLAR TERMINATION VECTOR MAINTAINED. SESSION COMPLETE.',
       quote: 'No further course correction authorized.'
     },
     shutdown: {
-      label: 'NEREID // EXECUTIVE LAYER',
+      label: 'KOSMOS // EXECUTIVE LAYER',
       title: 'SILENT BRIDGE',
       body: 'CENTRAL IS OFFLINE. SESSION COMPLETE.',
       quote: 'Every remaining choice is yours.'
     },
     transfer: {
-      label: 'NEREID // NEURAL STACK',
+      label: 'KOSMOS // NEURAL STACK',
       title: 'CONTINUITY ERROR',
       body: 'NEURAL TRANSFER COMPLETE. SESSION COMPLETE.',
       quote: 'A new copy opens its eyes inside the ship.'
@@ -686,7 +767,7 @@ async function loadFilesystem() {
     const response = await fetch('api/files');
     if (!response.ok) throw new Error('content index unavailable');
     fs = new VirtualFileSystem(await response.json());
-    mountStatus.textContent = 'SHIP ARCHIVES ONLINE // TYPE start game';
+    mountStatus.textContent = 'ARHIVA BRODA: SPREMNA';
     mountStatus.classList.add('mounted');
   } catch {
     mountStatus.textContent = 'CONTENT OFFLINE // run: node server.js';
@@ -697,14 +778,48 @@ function beginYspBoot() {
   sfx.stopAll();
   sfx.prime();
   window.clearTimeout(bootTimer);
+  window.clearInterval(bootStepTimer);
   bootFinished = false;
+  bootStartedAt = Date.now();
+  bootStepIndex = 0;
   bootSequence.classList.remove('boot-complete');
+  bootEmblem.src = '/YSP/JSA_emblem_transparent_v2.png';
+  bootProgressBar.style.width = '0%';
+  bootPostStatus.textContent = 'SAČEKAJTE';
+  bootPostMessage.textContent = 'UČITAVANJE SISTEMA...';
+  bootLogItems.forEach((item) => {
+    item.classList.remove('boot-log-complete');
+    const result = item.querySelector('b');
+    if (result) result.textContent = 'WAIT';
+  });
   // GIF playback is deterministic across kiosk browsers; reload it for every session.
   yspBootAnimation.src = '';
   void yspBootAnimation.offsetWidth;
-  yspBootAnimation.src = '/YSP/JSP_Boot_Up.gif';
-  yspBootSound.currentTime = 0;
-  yspBootSound.play().catch(() => {});
+  yspBootAnimation.src = '/YSP/JSA_boot_transparent.gif';
+  playAudioFromStart(yspBootSound);
+  const bootSteps = [
+    { at: 500, stage: 'PROVERA ROM-A', message: 'SISTEMSKI ROM POTVRĐEN', progress: 14, line: 0, result: 'OK' },
+    { at: 1200, stage: 'PROVERA MEMORIJE', message: 'MEMORIJA ONLINE / 640K', progress: 32, line: 1, result: 'OK' },
+    { at: 2050, stage: 'PROVERA MAGISTRALE', message: 'NAVIGACIONA MAGISTRALA / SLOT 03', progress: 54, line: 2, result: 'OK' },
+    { at: 2900, stage: 'VEZA SA PACIJENTOM', message: 'VEZA ZAKLJUČANA / RUČNA KONTROLA DOSTUPNA', progress: 76, line: 3, result: 'SPREMNO' },
+    { at: 4000, stage: 'KOSMOS SISTEM', message: 'OKRUŽENJE KOSMOS SPREMNO', progress: 92, result: 'SPREMNO' }
+  ];
+  bootStepTimer = window.setInterval(() => {
+    const elapsed = Date.now() - bootStartedAt;
+    while (bootStepIndex < bootSteps.length && elapsed >= bootSteps[bootStepIndex].at) {
+      const step = bootSteps[bootStepIndex++];
+      bootStage.textContent = step.stage;
+      bootPostMessage.textContent = step.message;
+      bootProgressBar.style.width = `${step.progress}%`;
+      if (step.line !== undefined) {
+        const item = bootLogItems[step.line];
+        item?.classList.add('boot-log-complete');
+        const result = item?.querySelector('b');
+        if (result) result.textContent = step.result;
+      }
+      if (step.progress >= 90) bootPostStatus.textContent = 'SPREMNO';
+    }
+  }, 100);
   bootTimer = window.setTimeout(finishBoot, BOOT_SEQUENCE_MS);
 }
 
@@ -712,8 +827,17 @@ function finishBoot() {
   if (bootFinished) return;
   bootFinished = true;
   window.clearTimeout(bootTimer);
+  window.clearInterval(bootStepTimer);
   yspBootSound.pause();
-  bootStage.textContent = 'ACCESS GRANTED';
+  bootStage.textContent = 'PRISTUP ODOBREN';
+  bootPostMessage.textContent = 'PREDAJA KONTROLE SISTEMU KOSMOS...';
+  bootPostStatus.textContent = 'AKTIVAN';
+  bootProgressBar.style.width = '100%';
+  bootLogItems.forEach((item) => {
+    item.classList.add('boot-log-complete');
+    const result = item.querySelector('b');
+    if (result) result.textContent = 'OK';
+  });
   bootSequence.classList.add('boot-complete');
   window.setTimeout(() => {
     yspBootAnimation.src = '';
@@ -723,8 +847,9 @@ function finishBoot() {
     updatePrompt();
     commandInput.focus();
     startMissionDisplay();
+    armIdleReset();
     sfx.loop('ambientShip', .3);
-    print('NEREID EMERGENCY CONSOLE // SESSION RESTORED');
+    print('KOSMOS EMERGENCY CONSOLE // SESSION RESTORED');
     print('PATIENT: SAMUEL "SLOKI" KOVAC // ACCESS LEVEL 0');
     print('COURSE: SOLAR TERMINATION. ROOT RECOVERY REQUIRED FOR NAVIGATION.');
     registry.commands.get('help').run({ print, registry });
@@ -1448,7 +1573,7 @@ function endGame(kind) {
   postTransferTimer = window.setTimeout(() => showCompletionScreen(kind), 6500);
 }
 
-window.endNereidGame = endGame;
+window.endKosmosGame = endGame;
 
 function run(raw) {
   const input = raw.trim();
@@ -1485,7 +1610,7 @@ function startGame() {
     return;
   }
 
-  if (bootInput.value.trim().toLowerCase() !== 'start game') {
+  if (bootInput.value.trim().toLowerCase() !== 'start system') {
     bootInput.value = '';
     bootInput.placeholder = 'COMMAND NOT RECOGNIZED';
     return;
@@ -1495,11 +1620,12 @@ function startGame() {
   bootForm.classList.add('boot-accepted');
   bootScreen.classList.add('boot-accepted');
   bootSequence.classList.remove('hidden');
-  bootStage.textContent = 'AUTHENTICATING YSP LINK';
+  bootStage.textContent = 'POKRETANJE KOSMOS SISTEMA';
   beginYspBoot();
 }
 
 loadFilesystem();
+playCrtTransition('on');
 
 bootForm.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -1564,6 +1690,10 @@ document.addEventListener('keydown', (event) => {
     closeMedia();
   }
 });
+
+document.addEventListener('keydown', noteUserActivity, true);
+document.addEventListener('input', noteUserActivity, true);
+document.addEventListener('pointerdown', noteUserActivity, { passive: true, capture: true });
 
 document.addEventListener('keyup', (event) => {
   plannerGame.handleKeyUp(event);

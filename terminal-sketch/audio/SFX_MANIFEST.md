@@ -1,4 +1,4 @@
-# NEREID generated SFX pack
+# KOSMOS generated SFX pack
 
 These files were procedurally generated for the game and are safe to use as original project assets.
 

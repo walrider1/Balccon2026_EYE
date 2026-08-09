@@ -138,7 +138,7 @@ function createCommands() {
         const result = game.authorize(args[0] || '', args.slice(1).join(' '));
         print(result.message, result.ok ? 'system' : 'error');
         if (result.ok && args[0]?.toLowerCase() === 'comms') {
-          game.startSedation(() => window.endNereidGame('sedation'));
+          game.startSedation(() => window.endKosmosGame('sedation'));
           startSedationDisplay();
           print('MEDICAL REINDUCTION ORDER RECEIVED\nSOURCE: CENTRAL EXECUTIVE AI\nSEDATION PROTOCOL ACTIVE\nTIME TO UNCONSCIOUSNESS: 05:00\n\nIndependent patient-safety firmware may still accept a response challenge. Check Medical.', 'anomaly-line');
         }

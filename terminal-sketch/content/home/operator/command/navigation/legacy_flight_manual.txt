@@ -1,4 +1,4 @@
-NEREID FLIGHT HANDBOOK // MANUAL TRANSFER PROCEDURE
+KOSMOS FLIGHT HANDBOOK // MANUAL TRANSFER PROCEDURE
 
 When executive course control is unavailable, Navigation officers use the local orbital burn planner.
 Launch installed planners from their directory with the RUN command.
