@@ -1,6 +1,29 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+
+function loadLocalEnv() {
+  const candidates = [
+    path.resolve(__dirname, '..', '.env'),
+    path.resolve(__dirname, '.env')
+  ];
+
+  for (const envPath of candidates) {
+    if (!fs.existsSync(envPath)) continue;
+    const lines = fs.readFileSync(envPath, 'utf8').split(/\r?\n/);
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue;
+      const index = trimmed.indexOf('=');
+      const key = trimmed.slice(0, index).trim();
+      const value = trimmed.slice(index + 1).trim().replace(/^["']|["']$/g, '');
+      if (key && process.env[key] === undefined) process.env[key] = value;
+    }
+  }
+}
+
+loadLocalEnv();
+
 const { centralReply } = require('./central-ai');
 
 const port = Number(process.env.PORT) || 5173;
