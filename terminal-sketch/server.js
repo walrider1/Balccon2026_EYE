@@ -1,6 +1,7 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const { centralReply } = require('./central-ai');
 
 const port = Number(process.env.PORT) || 5173;
 const root = path.resolve(__dirname);
@@ -70,6 +71,31 @@ function send(response, status, body, type) {
   response.end(body);
 }
 
+function readJsonBody(request) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    request.on('data', (chunk) => {
+      body += chunk;
+      if (body.length > 12000) {
+        request.destroy();
+        reject(new Error('Request body too large'));
+      }
+    });
+    request.on('end', () => {
+      if (!body) {
+        resolve({});
+        return;
+      }
+      try {
+        resolve(JSON.parse(body));
+      } catch (error) {
+        reject(error);
+      }
+    });
+    request.on('error', reject);
+  });
+}
+
 const server = http.createServer(async (request, response) => {
   try {
     const requestUrl = new URL(request.url, `http://localhost:${port}`);
@@ -77,6 +103,17 @@ const server = http.createServer(async (request, response) => {
     if (requestUrl.pathname === '/api/files') {
       const index = await buildContentIndex();
       send(response, 200, JSON.stringify(index), 'application/json; charset=utf-8');
+      return;
+    }
+
+    if (requestUrl.pathname === '/api/central') {
+      if (request.method !== 'POST') {
+        send(response, 405, JSON.stringify({ error: 'Method not allowed' }), 'application/json; charset=utf-8');
+        return;
+      }
+      const payload = await readJsonBody(request);
+      const reply = await centralReply(payload);
+      send(response, 200, JSON.stringify(reply), 'application/json; charset=utf-8');
       return;
     }
 

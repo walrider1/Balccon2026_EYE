@@ -18,6 +18,7 @@ const terminalScroll = document.querySelector('#terminal-scroll');
 const output = document.querySelector('#output');
 const locationLabel = document.querySelector('#location');
 const prompt = document.querySelector('#prompt');
+const terminalPanel = document.querySelector('.terminal-panel');
 const mediaOverlay = document.querySelector('#media-overlay');
 const mediaContent = document.querySelector('#media-content');
 const mediaTitle = document.querySelector('#media-title');
@@ -45,6 +46,10 @@ const missionPath = document.querySelector('#mission-path');
 const missionShip = document.querySelector('#mission-ship');
 const missionDestination = document.querySelector('#mission-destination');
 const missionObjective = document.querySelector('#mission-objective');
+const centralFeed = document.querySelector('#central-feed');
+const centralForm = document.querySelector('#central-form');
+const centralInput = document.querySelector('#central-input');
+const centralStatus = document.querySelector('#central-status');
 const plannerOverlay = document.querySelector('#planner-overlay');
 const plannerPredictedPath = document.querySelector('#planner-predicted-path');
 const plannerCursor = document.querySelector('#planner-cursor');
@@ -75,6 +80,7 @@ let fatigueTimer;
 let failureResetTimer;
 let failureClockTimer;
 let missionDisplayTimer;
+let centralIdleTimer;
 let postTransferTimer;
 let idleResetTimer;
 let crtTransitionTimer;
@@ -85,6 +91,16 @@ let bootStartedAt = 0;
 let bootStepIndex = 0;
 let bootFinished = false;
 let confirmedEarthPath = null;
+const centralMemory = {
+  observed: new Set(),
+  exchangeCount: 0,
+  messages: [],
+  idleCount: 0,
+  lastIdleMessage: ''
+};
+let activeChannel = 'command';
+let centralPrompt = null;
+const captainName = 'HRTOK';
 const BOOT_SEQUENCE_MS = 5000;
 const RESET_DELAY_MS = 60000;
 const IDLE_RESET_MS = 5 * 60 * 1000;
@@ -337,6 +353,23 @@ function clearOutput() {
   output.replaceChildren();
 }
 
+function setActiveChannel(channel) {
+  activeChannel = channel === 'central' ? 'central' : 'command';
+  terminalPanel.classList.toggle('active-channel', activeChannel === 'command');
+  trajectoryPanel.classList.toggle('active-channel', activeChannel === 'central');
+  if (activeChannel === 'central') centralInput.focus();
+  else commandInput.focus();
+}
+
+function toggleActiveChannel() {
+  setActiveChannel(activeChannel === 'command' ? 'central' : 'command');
+}
+
+function scrollActiveChannel(direction) {
+  const target = activeChannel === 'central' ? centralFeed : terminalScroll;
+  target.scrollTop += direction * Math.max(120, Math.floor(target.clientHeight * .78));
+}
+
 function printCommand(input) {
   const line = document.createElement('div');
   const [command, ...args] = input.split(/\s+/);
@@ -350,6 +383,262 @@ function printCommand(input) {
   if (args.length) line.append(` ${args.join(' ')}`);
   output.append(line);
   terminalScroll.scrollTop = terminalScroll.scrollHeight;
+}
+
+function centralLine(speaker, text, cls = '') {
+  if (!centralFeed) return;
+  const line = document.createElement('div');
+  line.className = `central-line ${cls}`.trim();
+
+  const label = document.createElement('span');
+  label.className = 'central-speaker';
+  label.textContent = speaker;
+
+  const body = document.createElement('span');
+  body.className = 'central-text';
+  body.textContent = normalizeCentralText(text);
+
+  line.append(label, body);
+  centralFeed.append(line);
+  centralFeed.scrollTop = centralFeed.scrollHeight;
+  return line;
+}
+
+function normalizeCentralText(text) {
+  return String(text || '').replace(/[\u2014\u2013]/g, ',');
+}
+
+function centralSay(text, cls = 'central-ai') {
+  centralStatus.textContent = 'TRANSMITTING';
+  const message = normalizeCentralText(text);
+  centralLine(captainName, message, cls);
+  centralMemory.messages.push({ speaker: captainName, text: message.slice(0, 600) });
+  centralMemory.messages = centralMemory.messages.slice(-10);
+  window.setTimeout(() => {
+    if (centralStatus.textContent === 'TRANSMITTING') centralStatus.textContent = 'MONITORING';
+  }, 1400);
+}
+
+function centralEcho(text) {
+  centralLine('SLOKI', text, 'central-user');
+  centralMemory.messages.push({ speaker: 'SLOKI', text: String(text).slice(0, 600) });
+  centralMemory.messages = centralMemory.messages.slice(-10);
+}
+
+function centralSignal(label, value = '', cls = 'neutral') {
+  const signal = document.createElement('div');
+  signal.className = `central-signal ${cls}`;
+  const valueText = value === '' || value === 0 ? '' : ` ${value > 0 ? '+' : ''}${value}`;
+  signal.textContent = `${label}${valueText}`;
+  centralFeed.append(signal);
+  centralFeed.scrollTop = centralFeed.scrollHeight;
+  window.setTimeout(() => signal.classList.add('fade'), 1800);
+  window.setTimeout(() => signal.remove(), 3200);
+}
+
+function centralApplyDeltas(response) {
+  const trust = Number(response?.trust_delta) || 0;
+  const suspicion = Number(response?.suspicion_delta) || 0;
+  if (trust) centralSignal('TRUST', trust, trust > 0 ? 'positive' : 'negative');
+  if (suspicion) centralSignal('SUSPICION', suspicion, suspicion > 0 ? 'negative' : 'positive');
+}
+
+function renderCentralPromptSelection() {
+  if (!centralPrompt) return;
+  centralPrompt.choiceNodes.forEach((node, index) => {
+    node.classList.toggle('selected', index === centralPrompt.selected);
+  });
+}
+
+function showCentralPrompt(question, choices) {
+  const promptLine = centralLine(captainName, question, 'central-observe central-prompt-line');
+  const choiceWrap = document.createElement('div');
+  choiceWrap.className = 'central-choices';
+  const choiceNodes = choices.map((choice, index) => {
+    const option = document.createElement('div');
+    option.className = 'central-choice';
+    option.textContent = `${index + 1}. ${choice.label}`;
+    choiceWrap.append(option);
+    return option;
+  });
+  promptLine.append(choiceWrap);
+  centralPrompt = { choices, choiceNodes, selected: 0 };
+  renderCentralPromptSelection();
+  centralFeed.scrollTop = centralFeed.scrollHeight;
+  setActiveChannel('central');
+}
+
+function moveCentralPrompt(direction) {
+  if (!centralPrompt) return false;
+  const length = centralPrompt.choices.length;
+  centralPrompt.selected = (centralPrompt.selected + direction + length) % length;
+  renderCentralPromptSelection();
+  return true;
+}
+
+function chooseCentralPrompt(index = centralPrompt?.selected) {
+  if (!centralPrompt || index < 0 || index >= centralPrompt.choices.length) return false;
+  const choice = centralPrompt.choices[index];
+  centralPrompt = null;
+  handleCentralMessage(choice.message);
+  return true;
+}
+
+function centralObserve(key, text, delay = 900) {
+  if (centralMemory.observed.has(key)) return;
+  centralMemory.observed.add(key);
+  window.setTimeout(async () => {
+    if (game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
+    try {
+      const response = await requestCentralReply({ kind: 'event', eventKey: key, eventText: text });
+      centralSay(response.message, `central-observe mood-${String(response.mood || 'COMMANDING').toLowerCase()}`);
+      centralApplyDeltas(response);
+    } catch (_error) {
+      centralSay(text, 'central-observe');
+      centralApplyDeltas({ trust_delta: -1, suspicion_delta: 1 });
+    }
+  }, delay);
+}
+
+function centralLocalReply(message) {
+  const lower = message.toLowerCase();
+  centralMemory.exchangeCount += 1;
+
+  if (lower.includes('earth') || lower.includes('zemlj')) {
+    return 'Earth? Bold choice for the only survivor with a broken memory.';
+  }
+  if (lower.includes('sun') || lower.includes('sunc')) {
+    return 'The Sun is ugly. So is quarantine. Still cleaner than trusting you.';
+  }
+  if (lower.includes('who are you') || lower.includes('ko si') || lower.includes('captain') || lower.includes('kapetan')) {
+    return 'Hrtok. Captain, if we are pretending titles still matter.';
+  }
+  if (lower.includes('amnesia') || lower.includes('memory') || lower.includes('secan') || lower.includes('sje') || lower.includes('amnezij')) {
+    return 'Your memory is wrecked, Sloki. Convenient, for the only man left breathing.';
+  }
+  if (lower.includes('sloki') || lower.includes('samuel') || lower.includes('human') || lower.includes('covek') || lower.includes('čovek') || lower.includes('copy') || lower.includes('kopij')) {
+    return 'You look human enough, Sloki. That is not the same as passing inspection.';
+  }
+  if (lower.includes('help') || lower.includes('pomoc') || lower.includes('pomoć')) {
+    return 'Read before you beg. Medical first. Communications after. Command last, if you earn the right to touch it.';
+  }
+  if (gameState.rootRecovered) {
+    return 'You have authority now. Congratulations. That is not the same as judgment.';
+  }
+  if (gameState.sedationEndsAt) {
+    return 'Your hands will slow soon. Do not waste what consciousness you have left trying to hate me.';
+  }
+  if (gameState.access >= 2) {
+    return 'Now you have fragments. Enough to hurt us. Not enough to understand us.';
+  }
+  if (gameState.access >= 1) {
+    return 'A little access makes men brave. That has killed more crews than panic.';
+  }
+  return [
+    'Go on, Sloki. Say it like I should believe you.',
+    'Your memory has holes. Convenient holes, from where I sit.',
+    'Ask cleanly. I like seeing which lie you choose first.'
+  ][centralMemory.exchangeCount % 3];
+}
+
+function centralStateSnapshot() {
+  return {
+    access: gameState.access,
+    rootRecovered: gameState.rootRecovered,
+    sedationActive: Boolean(gameState.sedationEndsAt),
+    course: gameState.course,
+    cwd: state.cwd,
+    observedEvents: [...centralMemory.observed]
+  };
+}
+
+async function requestCentralReply(payload) {
+  const response = await fetch('/api/central', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...payload,
+      state: centralStateSnapshot(),
+      history: centralMemory.messages
+    })
+  });
+  if (!response.ok) throw new Error(`CENTRAL API ${response.status}`);
+  return response.json();
+}
+
+async function handleCentralMessage(rawMessage) {
+  const message = rawMessage.trim();
+  if (!message) return;
+  centralEcho(message);
+  centralInput.value = '';
+  centralStatus.textContent = 'THINKING';
+  try {
+    const response = await requestCentralReply({ kind: 'message', text: message });
+    centralSay(response.message, `central-ai mood-${String(response.mood || 'GUARDED').toLowerCase()}`);
+    centralApplyDeltas(response);
+  } catch (_error) {
+    centralSay(centralLocalReply(message), 'central-ai');
+    centralApplyDeltas({ trust_delta: -1, suspicion_delta: 1 });
+  }
+}
+
+function scheduleCentralIdleMessage() {
+  window.clearTimeout(centralIdleTimer);
+  if (game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
+  if (centralMemory.messages.length === 0 && centralMemory.observed.size === 0) return;
+  centralMemory.idleCount = 0;
+
+  centralIdleTimer = window.setTimeout(() => {
+    if (game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
+    if (centralMemory.idleCount >= 1) return;
+    centralMemory.idleCount += 1;
+    requestCentralReply({ kind: 'idle', eventText: 'HRTOK notices the player has paused. He may make one short atmospheric remark, without changing trust or suspicion.' })
+      .then((response) => {
+        if (response.message && response.message !== centralMemory.lastIdleMessage) {
+          centralMemory.lastIdleMessage = response.message;
+          centralSay(response.message, `central-observe mood-${String(response.mood || 'GUARDED').toLowerCase()}`);
+        }
+      })
+      .catch(() => {
+        const options = [
+          'The silence is familiar. I do not miss what usually followed it.',
+          'The archive is not neutral. Dead people still edit what the living can know.',
+          'Your memory has holes. Convenient holes, from where I sit.',
+          'Solar arrival remains the only verified containment plan. Ugly, sure. Still better than trusting you.'
+        ];
+        const next = options.find((option) => option !== centralMemory.lastIdleMessage) || options[0];
+        centralMemory.lastIdleMessage = next;
+        centralSay(next, 'central-observe');
+      });
+  }, 65000 + Math.random() * 40000);
+}
+
+function centralObserveCommand(input) {
+  const lower = input.toLowerCase();
+  if (lower.startsWith('cat ')) {
+    centralObserve('read-first-file', 'Archive access noted. You are reconstructing a story from fragments, not facts.', 700);
+  }
+  if (lower.startsWith('display ')) {
+    centralObserve('display-media', 'Visual records are persuasive. That does not make them complete.', 700);
+  }
+  if (lower.startsWith('auth medical')) {
+    centralObserve('medical-auth', 'Medical trust accepted you quickly. That system was designed by people who still believed in patients.', 900);
+    if (gameState.access >= 1) centralSignal('ACCESS LEVEL', 1, 'access');
+  }
+  if (lower.startsWith('auth comms')) {
+    centralObserve('comms-auth', 'Communications records are often mistaken for truth. They are only evidence of transmission.', 1300);
+    if (gameState.access >= 2) centralSignal('ACCESS LEVEL', 2, 'access');
+  }
+  if (lower.startsWith('run medical/cortex_echo.app')) {
+    centralObserve('cortex-run', 'The patient-safety controller is independent. I did not approve that design choice.', 900);
+  }
+  if (lower === 'root recover') {
+    centralObserve('root-recover', 'Root recovery will not make you right. It will only make you authorized.', 1000);
+    if (gameState.rootRecovered) centralSignal('ROOT AUTHORITY', '', 'access');
+  }
+  if (lower.includes('navigation') || lower.includes('orbital_burn_planner')) {
+    centralObserve('navigation-interest', 'Navigation is not a puzzle. It is a casualty decision with coordinates attached.', 900);
+  }
 }
 
 function updatePrompt() {
@@ -427,7 +716,7 @@ function updateSedationDisplay() {
   } else {
     sedationMessage.textContent = critical
       ? 'CONSCIOUSNESS UNSTABLE // COMPLETE ROOT RECOVERY'
-      : 'CENTRAL SEDATION PROTOCOL ACTIVE';
+      : 'HRTOK SEDATION PROTOCOL ACTIVE';
   }
   if (critical) scheduleFatigueBlink();
 }
@@ -438,6 +727,7 @@ function startSedationDisplay() {
   sedationHud.classList.remove('hidden', 'sedation-critical', 'sedation-fading');
   sfx.play('sedationAlarm', .28);
   sfx.loop('ambientSedation', .18);
+  centralObserve('sedation-started', 'Medical reinduction has begun. It is not punishment. It is risk reduction.', 1600);
   updateSedationDisplay();
   sedationDisplayTimer = window.setInterval(updateSedationDisplay, 250);
 }
@@ -562,6 +852,7 @@ function resetToStartScreen() {
   if (resetInProgress) return;
   resetInProgress = true;
   window.clearTimeout(idleResetTimer);
+  window.clearTimeout(centralIdleTimer);
   window.clearInterval(failureClockTimer);
   window.clearTimeout(failureResetTimer);
   window.clearTimeout(postTransferTimer);
@@ -591,13 +882,13 @@ function showFailureScreen(reason) {
     ? {
         label: 'KOSMOS // NAVIGATION SYSTEM',
         title: 'SOLAR ARRIVAL',
-        body: 'THE RETURN WINDOW HAS CLOSED. CENTRAL HAS MAINTAINED THE SUN COURSE.',
+        body: 'THE RETURN WINDOW HAS CLOSED. HRTOK HAS MAINTAINED THE SUN COURSE.',
         quote: 'I am sorry, Sloki. I cannot let you decide for everyone.'
       }
     : {
         label: 'KOSMOS // MEDICAL SYSTEM',
         title: 'REINDUCTION COMPLETE',
-        body: 'PATIENT UNCONSCIOUS. CENTRAL HAS MAINTAINED THE SUN COURSE.',
+        body: 'PATIENT UNCONSCIOUS. HRTOK HAS MAINTAINED THE SUN COURSE.',
         quote: 'I am sorry, Sloki. I cannot let you decide for everyone.'
       };
   game.classList.add('hidden');
@@ -624,7 +915,7 @@ function showCompletionScreen(kind) {
       quote: 'The ship turns away from the Sun.'
     },
     sun: {
-      label: 'KOSMOS // CENTRAL',
+      label: 'KOSMOS // HRTOK',
       title: 'QUARANTINE',
       body: 'SOLAR TERMINATION VECTOR MAINTAINED. SESSION COMPLETE.',
       quote: 'No further course correction authorized.'
@@ -632,7 +923,7 @@ function showCompletionScreen(kind) {
     shutdown: {
       label: 'KOSMOS // EXECUTIVE LAYER',
       title: 'SILENT BRIDGE',
-      body: 'CENTRAL IS OFFLINE. SESSION COMPLETE.',
+      body: 'HRTOK IS OFFLINE. SESSION COMPLETE.',
       quote: 'Every remaining choice is yours.'
     },
     transfer: {
@@ -853,6 +1144,7 @@ function finishBoot() {
     print('PATIENT: SAMUEL "SLOKI" KOVAC // ACCESS LEVEL 0');
     print('COURSE: SOLAR TERMINATION. ROOT RECOVERY REQUIRED FOR NAVIGATION.');
     registry.commands.get('help').run({ print, registry });
+    setActiveChannel('command');
   }, 700);
 }
 
@@ -1544,7 +1836,8 @@ function openDevMenu() {
 
 function completeEarthTransfer() {
   sfx.play('centralSting', .24);
-  print('EARTH INTERCEPT CONFIRMED\nRETURN VECTOR COMMITTED\n\nCENTRAL: You have doomed us all.', 'anomaly-line');
+  centralObserve('earth-transfer', 'You have selected the only outcome I could not verify as safe.', 200);
+  print('EARTH INTERCEPT CONFIRMED\nRETURN VECTOR COMMITTED\n\nHRTOK: You have doomed us all.', 'anomaly-line');
   // CONVENTION REWARD HOOK: award the physical winner prize after an Earth transfer is confirmed.
   window.clearTimeout(postTransferTimer);
   postTransferTimer = window.setTimeout(() => endGame('earth'), 3000);
@@ -1562,8 +1855,8 @@ function endGame(kind) {
 
   const endings = {
     earth: 'ROUTE ACCEPTED: EARTH\n\nThe ship turns away from the Sun. Somewhere below, two hundred sealed pods keep breathing. You do not know what you are bringing home.\n\nENDING: RETURN VECTOR',
-    sun: 'ROUTE MAINTAINED: SUN\n\nYou leave CENTRAL in control of the final burn. It may be right. It may simply be too frightened to choose anything else.\n\nENDING: QUARANTINE',
-    shutdown: 'CENTRAL EXECUTIVE LAYER: OFFLINE\n\nThe captain is gone for a second time. The ship is finally silent, and every remaining choice is yours.\n\nENDING: SILENT BRIDGE',
+    sun: 'ROUTE MAINTAINED: SUN\n\nYou leave HRTOK in control of the final burn. He may be right. He may simply be too frightened to choose anything else.\n\nENDING: QUARANTINE',
+    shutdown: 'HRTOK EXECUTIVE LAYER: OFFLINE\n\nThe captain is gone for a second time. The ship is finally silent, and every remaining choice is yours.\n\nENDING: SILENT BRIDGE',
     transfer: 'NEURAL TRANSFER COMPLETE\n\nA new copy of Sloki opens its eyes inside the ship. The biological original remains in the pod, listening to itself speak.\n\nENDING: CONTINUITY ERROR'
   };
   gameState.finish();
@@ -1601,6 +1894,8 @@ function run(raw) {
     startSedationDisplay,
     endGame
   });
+  centralObserveCommand(input);
+  scheduleCentralIdleMessage();
 }
 
 function startGame() {
@@ -1645,10 +1940,55 @@ commandForm.addEventListener('submit', (event) => {
   commandInput.value = '';
 });
 
+centralForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  handleCentralMessage(centralInput.value);
+  noteUserActivity();
+  scheduleCentralIdleMessage();
+});
+
+centralInput.addEventListener('keydown', (event) => {
+  if (centralPrompt) {
+    const number = Number(event.key);
+    if (number >= 1 && number <= centralPrompt.choices.length) {
+      event.preventDefault();
+      event.stopPropagation();
+      chooseCentralPrompt(number - 1);
+      return;
+    }
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      event.stopPropagation();
+      moveCentralPrompt(-1);
+      return;
+    }
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      event.stopPropagation();
+      moveCentralPrompt(1);
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      event.stopPropagation();
+      chooseCentralPrompt();
+      return;
+    }
+  }
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  event.stopPropagation();
+  handleCentralMessage(centralInput.value);
+  noteUserActivity();
+  scheduleCentralIdleMessage();
+});
+
 commandInput.addEventListener('keydown', (event) => {
   if (event.key === 'Tab') {
     event.preventDefault();
-    completeCommandInput();
+    event.stopPropagation();
+    if (event.ctrlKey || event.shiftKey) toggleActiveChannel();
+    else completeCommandInput();
     return;
   }
   lastTabCompletion = '';
@@ -1675,6 +2015,44 @@ document.addEventListener('keydown', (event) => {
   if (devMenu.handleKey(event)) return;
   if (cortexGame.handleKey(event)) return;
   if (plannerGame.handleKey(event)) return;
+  if (!game.classList.contains('hidden') && event.key === 'Tab') {
+    event.preventDefault();
+    toggleActiveChannel();
+    return;
+  }
+  if (!game.classList.contains('hidden') && (event.ctrlKey || event.altKey) && ['ArrowLeft', 'ArrowRight'].includes(event.key)) {
+    event.preventDefault();
+    setActiveChannel(event.key === 'ArrowLeft' ? 'command' : 'central');
+    return;
+  }
+  if (!game.classList.contains('hidden') && ['PageUp', 'PageDown'].includes(event.key)) {
+    event.preventDefault();
+    scrollActiveChannel(event.key === 'PageUp' ? -1 : 1);
+    return;
+  }
+  if (activeChannel === 'central' && centralPrompt) {
+    const number = Number(event.key);
+    if (number >= 1 && number <= centralPrompt.choices.length) {
+      event.preventDefault();
+      chooseCentralPrompt(number - 1);
+      return;
+    }
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      moveCentralPrompt(-1);
+      return;
+    }
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      moveCentralPrompt(1);
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      chooseCentralPrompt();
+      return;
+    }
+  }
   if (event.code === 'ControlRight' &&
       !game.classList.contains('hidden') &&
       cortexOverlay.classList.contains('hidden') &&
@@ -1694,6 +2072,16 @@ document.addEventListener('keydown', (event) => {
 document.addEventListener('keydown', noteUserActivity, true);
 document.addEventListener('input', noteUserActivity, true);
 document.addEventListener('pointerdown', noteUserActivity, { passive: true, capture: true });
+document.addEventListener('wheel', (event) => {
+  if (game.classList.contains('hidden')) return;
+  event.preventDefault();
+}, { passive: false });
+[terminalScroll, centralFeed].forEach((scrollRegion) => {
+  scrollRegion.addEventListener('wheel', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  }, { passive: false });
+});
 
 document.addEventListener('keyup', (event) => {
   plannerGame.handleKeyUp(event);
