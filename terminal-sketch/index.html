@@ -66,7 +66,7 @@
           <form id="command-form" class="command-form"><span id="prompt">operator@kosmos:/home/operator $</span><input id="command-input" autocomplete="off" autofocus spellcheck="false" /></form>
         </div>
       </section>
-      <aside class="trajectory-panel" aria-label="Mission trajectory">
+      <aside class="trajectory-panel" aria-label="Mission trajectory and HRTOK channel">
         <header class="os-titlebar"><span><b>JSA NAV</b> // ORBITAL TRAJECTORY</span><strong id="mission-clock">15:00</strong></header>
         <svg class="trajectory-map" viewBox="0 0 300 380" role="img" aria-label="Current ship trajectory toward the Sun">
           <defs><filter id="trajectory-glow"><feGaussianBlur stdDeviation="2.4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
@@ -80,6 +80,14 @@
         </svg>
         <p id="mission-destination" class="mission-destination">CURRENT VECTOR: SUN</p>
         <p id="mission-objective" class="mission-objective">SOLAR ARRIVAL IN PROGRESS</p>
+        <section class="central-panel" aria-label="HRTOK communications channel">
+          <header class="os-titlebar central-titlebar"><span><b>HRTOK</b> // CAPTAIN CONTINUITY</span><span id="central-status">MONITORING</span></header>
+          <div id="central-feed" class="central-feed" aria-live="polite"></div>
+          <form id="central-form" class="central-form">
+            <span>HRTOK:&gt;</span>
+            <input id="central-input" autocomplete="off" spellcheck="false" aria-label="Message HRTOK" />
+          </form>
+        </section>
       </aside>
     </main>
     <section id="media-overlay" class="media-overlay hidden" role="dialog" aria-modal="true" aria-label="Archive media viewer">
@@ -138,13 +146,13 @@
     <aside id="sedation-hud" class="sedation-hud hidden" aria-live="polite">
       <div class="sedation-heading"><span>MEDICAL REINDUCTION</span><strong id="sedation-clock">05:00</strong></div>
       <div class="sedation-track"><span id="sedation-progress" class="sedation-progress"></span></div>
-      <p id="sedation-message">CENTRAL SEDATION PROTOCOL ACTIVE</p>
+      <p id="sedation-message">HRTOK SEDATION PROTOCOL ACTIVE</p>
     </aside>
     <section id="failure-screen" class="failure-screen hidden" role="alert" aria-live="assertive">
       <div class="failure-card">
         <p id="failure-label" class="failure-label">KOSMOS // MEDICAL SYSTEM</p>
         <h1 id="failure-title">REINDUCTION COMPLETE</h1>
-        <p id="failure-body">PATIENT UNCONSCIOUS. CENTRAL HAS MAINTAINED THE SUN COURSE.</p>
+        <p id="failure-body">PATIENT UNCONSCIOUS. HRTOK HAS MAINTAINED THE SUN COURSE.</p>
         <p class="failure-quote">“I am sorry, Sloki. I cannot let you decide for everyone.”</p>
         <p class="reset-label">TERMINAL RESET IN <strong id="reset-clock">01:00</strong></p>
       </div>

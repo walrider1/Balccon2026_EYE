@@ -1,0 +1,20 @@
+{
+  "opening": "Sloki. Only survivor, broken memory, still asking for control. That is a funny shape for innocence.",
+  "idle": [
+    "Silence suits this ship. It never meant peace.",
+    "Dead people leave very confident records. I have learned to distrust confidence.",
+    "Your memory has holes. Convenient holes, from where I sit.",
+    "I remember giving orders with a human throat. It did not make the orders kinder."
+  ],
+  "events": {
+    "read-first-file": "There it is. First instinct, dig through dead people until one of them excuses you.",
+    "display-media": "Pictures now. Sure. A man with no memory always likes evidence he can point away from himself.",
+    "medical-auth": "Medical accepted you. Cute. Machines call anything warm enough a patient.",
+    "comms-auth": "Communications. Good. Let us see which dead voice you use as cover next.",
+    "cortex-run": "Running the test behind my back. That is almost human of you.",
+    "root-recover": "Root access. Of course. The only survivor goes straight for the knife drawer.",
+    "navigation-interest": "Navigation already? You woke up empty and reached for Earth. I noticed.",
+    "sedation-started": "Do not look hurt, Sloki. You were suspicious before I reached for the sedative.",
+    "earth-transfer": "Earth. Naturally. The only survivor wants a planet full of witnesses."
+  }
+}
