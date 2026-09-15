@@ -65,9 +65,10 @@ const devMenuOverlay = document.querySelector('#dev-menu-overlay');
 const devMenuList = document.querySelector('#dev-menu-list');
 
 // Set this to false for the convention build. The hidden `dev` command is then unavailable.
-const DEV_MODE = true;
+const DEV_MODE = false;
 const state = { cwd: '/home/operator', history: [], historyIndex: 0 };
 const gameState = new KosmosGame();
+gameState.onSessionChange = () => window.location.reload();
 let fs;
 let outputTyping = false;
 let outputToken = 0;
@@ -101,6 +102,10 @@ const centralMemory = {
 let activeChannel = 'command';
 let centralPrompt = null;
 const captainName = 'HRTOK';
+const hrtokClient = new HrtokClient();
+const readRecords = new Set();
+let centralMessagePending = false;
+centralInput.maxLength = 1200;
 const BOOT_SEQUENCE_MS = 5000;
 const RESET_DELAY_MS = 60000;
 const IDLE_RESET_MS = 5 * 60 * 1000;
@@ -309,6 +314,15 @@ const sfx = {
   }
 };
 
+let activeOutput = null;
+function flushOutput() {
+  outputToken += 1;
+  if (activeOutput) { activeOutput.line.textContent=activeOutput.text; activeOutput.line.classList.remove('typing-line'); activeOutput=null; }
+  for (const item of outputQueue.splice(0)) {
+    const line=document.createElement('div'); line.className=`line ${item.cls}`; line.textContent=item.text; output.append(line);
+  }
+  outputTyping=false;
+}
 function print(text, cls = 'system') {
   if (cls === 'error') sfx.play('commandError', .16);
   outputQueue.push({ text: String(text), cls });
@@ -323,6 +337,7 @@ function typeNextOutputLine() {
   const { text, cls } = outputQueue.shift();
   const line = document.createElement('div');
   line.className = `line ${cls} typing-line`;
+  activeOutput = { line, text };
   let characterIndex = 0;
   output.append(line);
 
@@ -339,6 +354,7 @@ function typeNextOutputLine() {
     }
 
     line.classList.remove('typing-line');
+    activeOutput = null;
     outputTyping = false;
     typeNextOutputLine();
   };
@@ -347,6 +363,7 @@ function typeNextOutputLine() {
 }
 
 function clearOutput() {
+  activeOutput = null;
   outputToken += 1;
   outputQueue.length = 0;
   outputTyping = false;
@@ -361,6 +378,21 @@ function setActiveChannel(channel) {
   else commandInput.focus();
 }
 
+function updateNextStep() {
+  const guide = document.getElementById('next-step');
+  if (!guide) return;
+  guide.hidden = Boolean(gameState.ending || gameState.missionResolved);
+  const reads = gameState.readFiles || [];
+  const firstRecord = '/home/operator/medical/doctor_note.txt';
+  const firstStep = gameState.access === 0 && !reads.includes(firstRecord);
+  const recoveryStep = gameState.access === 0 && !reads.includes('/home/operator/medical/recovery_service.txt');
+  guide.textContent = firstStep
+    ? 'POČNI OVDE: upiši cat /medical/doctor_note.txt i pritisni Enter. Pročitaj poruku lekara.'
+    : recoveryStep ? 'SLEDEĆE: cat /medical/recovery_service.txt + Enter. Ovde piše kako vraćaš medicinski pristup.'
+    : gameState.objectiveText() + ' // hint + Enter za pomoć';
+  guide.title = 'KOSMOS: komande. Tab: razgovor sa HRTOK-om. PageUp / PageDown: čitanje.';
+}
+
 function toggleActiveChannel() {
   setActiveChannel(activeChannel === 'command' ? 'central' : 'command');
 }
@@ -371,6 +403,7 @@ function scrollActiveChannel(direction) {
 }
 
 function printCommand(input) {
+  flushOutput();
   const line = document.createElement('div');
   const [command, ...args] = input.split(/\s+/);
   line.className = 'line input-line';
@@ -437,6 +470,7 @@ function centralSignal(label, value = '', cls = 'neutral') {
 }
 
 function centralApplyDeltas(response) {
+  if (response?.relationship) centralMemory.relationship = response.relationship;
   const trust = Number(response?.trust_delta) || 0;
   const suspicion = Number(response?.suspicion_delta) || 0;
   if (trust) centralSignal('TRUST', trust, trust > 0 ? 'positive' : 'negative');
@@ -488,57 +522,14 @@ function centralObserve(key, text, delay = 900) {
   if (centralMemory.observed.has(key)) return;
   centralMemory.observed.add(key);
   window.setTimeout(async () => {
-    if (game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
+    if (gameState.ending || resetInProgress || game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
     try {
       const response = await requestCentralReply({ kind: 'event', eventKey: key, eventText: text });
+      if (!response.message || gameState.ending || resetInProgress) return;
       centralSay(response.message, `central-observe mood-${String(response.mood || 'COMMANDING').toLowerCase()}`);
       centralApplyDeltas(response);
-    } catch (_error) {
-      centralSay(text, 'central-observe');
-      centralApplyDeltas({ trust_delta: -1, suspicion_delta: 1 });
-    }
+    } catch (_error) { /* A missing observation must not invent a completed event. */ }
   }, delay);
-}
-
-function centralLocalReply(message) {
-  const lower = message.toLowerCase();
-  centralMemory.exchangeCount += 1;
-
-  if (lower.includes('earth') || lower.includes('zemlj')) {
-    return 'Earth? Bold choice for the only survivor with a broken memory.';
-  }
-  if (lower.includes('sun') || lower.includes('sunc')) {
-    return 'The Sun is ugly. So is quarantine. Still cleaner than trusting you.';
-  }
-  if (lower.includes('who are you') || lower.includes('ko si') || lower.includes('captain') || lower.includes('kapetan')) {
-    return 'Hrtok. Captain, if we are pretending titles still matter.';
-  }
-  if (lower.includes('amnesia') || lower.includes('memory') || lower.includes('secan') || lower.includes('sje') || lower.includes('amnezij')) {
-    return 'Your memory is wrecked, Sloki. Convenient, for the only man left breathing.';
-  }
-  if (lower.includes('sloki') || lower.includes('samuel') || lower.includes('human') || lower.includes('covek') || lower.includes('čovek') || lower.includes('copy') || lower.includes('kopij')) {
-    return 'You look human enough, Sloki. That is not the same as passing inspection.';
-  }
-  if (lower.includes('help') || lower.includes('pomoc') || lower.includes('pomoć')) {
-    return 'Read before you beg. Medical first. Communications after. Command last, if you earn the right to touch it.';
-  }
-  if (gameState.rootRecovered) {
-    return 'You have authority now. Congratulations. That is not the same as judgment.';
-  }
-  if (gameState.sedationEndsAt) {
-    return 'Your hands will slow soon. Do not waste what consciousness you have left trying to hate me.';
-  }
-  if (gameState.access >= 2) {
-    return 'Now you have fragments. Enough to hurt us. Not enough to understand us.';
-  }
-  if (gameState.access >= 1) {
-    return 'A little access makes men brave. That has killed more crews than panic.';
-  }
-  return [
-    'Go on, Sloki. Say it like I should believe you.',
-    'Your memory has holes. Convenient holes, from where I sit.',
-    'Ask cleanly. I like seeing which lie you choose first.'
-  ][centralMemory.exchangeCount % 3];
 }
 
 function centralStateSnapshot() {
@@ -548,37 +539,36 @@ function centralStateSnapshot() {
     sedationActive: Boolean(gameState.sedationEndsAt),
     course: gameState.course,
     cwd: state.cwd,
-    observedEvents: [...centralMemory.observed]
+    observedEvents: [...centralMemory.observed],
+    readFiles: [...readRecords],
+    cortexPassed: gameState.cortexCodeIssued
   };
 }
 
 async function requestCentralReply(payload) {
-  const response = await fetch('/api/central', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      ...payload,
-      state: centralStateSnapshot(),
-      history: centralMemory.messages
-    })
-  });
-  if (!response.ok) throw new Error(`CENTRAL API ${response.status}`);
-  return response.json();
+  return hrtokClient.send({ ...payload, state: centralStateSnapshot() });
 }
 
 async function handleCentralMessage(rawMessage) {
   const message = rawMessage.trim();
-  if (!message) return;
+  if (!message || centralMessagePending || gameState.ending || resetInProgress) return;
+  if (message.length > 1200) { centralStatus.textContent = 'MESSAGE TOO LONG'; return; }
+  centralMessagePending = true;
+  centralInput.disabled = true;
   centralEcho(message);
   centralInput.value = '';
   centralStatus.textContent = 'THINKING';
   try {
     const response = await requestCentralReply({ kind: 'message', text: message });
+    if (gameState.ending || resetInProgress) return;
     centralSay(response.message, `central-ai mood-${String(response.mood || 'GUARDED').toLowerCase()}`);
     centralApplyDeltas(response);
   } catch (_error) {
-    centralSay(centralLocalReply(message), 'central-ai');
-    centralApplyDeltas({ trust_delta: -1, suspicion_delta: 1 });
+    if (!gameState.ending && !resetInProgress) centralSay('The channel broke for a moment. Send that again, Samuel.', 'central-ai');
+  } finally {
+    centralMessagePending = false;
+    centralInput.disabled = gameState.ending || resetInProgress;
+    if (!centralInput.disabled && activeChannel === 'central' && document.activeElement === document.body) centralInput.focus();
   }
 }
 
@@ -594,51 +584,15 @@ function scheduleCentralIdleMessage() {
     centralMemory.idleCount += 1;
     requestCentralReply({ kind: 'idle', eventText: 'HRTOK notices the player has paused. He may make one short atmospheric remark, without changing trust or suspicion.' })
       .then((response) => {
-        if (response.message && response.message !== centralMemory.lastIdleMessage) {
+        if (!gameState.ending && !resetInProgress && response.message && response.message !== centralMemory.lastIdleMessage) {
           centralMemory.lastIdleMessage = response.message;
           centralSay(response.message, `central-observe mood-${String(response.mood || 'GUARDED').toLowerCase()}`);
         }
       })
       .catch(() => {
-        const options = [
-          'The silence is familiar. I do not miss what usually followed it.',
-          'The archive is not neutral. Dead people still edit what the living can know.',
-          'Your memory has holes. Convenient holes, from where I sit.',
-          'Solar arrival remains the only verified containment plan. Ugly, sure. Still better than trusting you.'
-        ];
-        const next = options.find((option) => option !== centralMemory.lastIdleMessage) || options[0];
-        centralMemory.lastIdleMessage = next;
-        centralSay(next, 'central-observe');
+        // Silence is preferable to a fabricated observation during a connection failure.
       });
   }, 65000 + Math.random() * 40000);
-}
-
-function centralObserveCommand(input) {
-  const lower = input.toLowerCase();
-  if (lower.startsWith('cat ')) {
-    centralObserve('read-first-file', 'Archive access noted. You are reconstructing a story from fragments, not facts.', 700);
-  }
-  if (lower.startsWith('display ')) {
-    centralObserve('display-media', 'Visual records are persuasive. That does not make them complete.', 700);
-  }
-  if (lower.startsWith('auth medical')) {
-    centralObserve('medical-auth', 'Medical trust accepted you quickly. That system was designed by people who still believed in patients.', 900);
-    if (gameState.access >= 1) centralSignal('ACCESS LEVEL', 1, 'access');
-  }
-  if (lower.startsWith('auth comms')) {
-    centralObserve('comms-auth', 'Communications records are often mistaken for truth. They are only evidence of transmission.', 1300);
-    if (gameState.access >= 2) centralSignal('ACCESS LEVEL', 2, 'access');
-  }
-  if (lower.startsWith('run medical/cortex_echo.app')) {
-    centralObserve('cortex-run', 'The patient-safety controller is independent. I did not approve that design choice.', 900);
-  }
-  if (lower === 'root recover') {
-    centralObserve('root-recover', 'Root recovery will not make you right. It will only make you authorized.', 1000);
-    if (gameState.rootRecovered) centralSignal('ROOT AUTHORITY', '', 'access');
-  }
-  if (lower.includes('navigation') || lower.includes('orbital_burn_planner')) {
-    centralObserve('navigation-interest', 'Navigation is not a puzzle. It is a casualty decision with coordinates attached.', 900);
-  }
 }
 
 function updatePrompt() {
@@ -801,10 +755,16 @@ function updateMissionDisplay() {
   trajectoryPanel.classList.remove('earth-confirmed');
 }
 
-function startMissionDisplay() {
+async function startMissionDisplay() {
   confirmedEarthPath = null;
-  gameState.startMission(() => window.endKosmosGame('mission'));
+  await gameState.startMission();
+  sessionReady = true;
+  if (gameState.sedationEndsAt) startSedationDisplay();
+  if (gameState.missionPaused) await gameState.resumeMission();
+  if (gameState.ending) { await endGame(gameState.endingKind); return; }
+  if (gameState.missionResolved && !gameState.ending) completeEarthTransfer();
   updateMissionDisplay();
+  window.clearInterval(missionDisplayTimer);
   missionDisplayTimer = window.setInterval(updateMissionDisplay, 250);
 }
 
@@ -840,17 +800,27 @@ function playCrtTransition(mode, onComplete) {
 
 function armIdleReset() {
   window.clearTimeout(idleResetTimer);
-  if (game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
+  if (gameState.ending || game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
   idleResetTimer = window.setTimeout(resetToStartScreen, IDLE_RESET_MS);
 }
 
+let lastReportedActivity = 0;
 function noteUserActivity() {
+  if (gameState.started && !gameState.ending && Date.now() - lastReportedActivity > 10000) { lastReportedActivity = Date.now(); gameState.action('activity').catch(() => {}); }
   if (!game.classList.contains('hidden') && failureScreen.classList.contains('hidden')) armIdleReset();
 }
 
-function resetToStartScreen() {
+async function resetToStartScreen() {
   if (resetInProgress) return;
   resetInProgress = true;
+  try { await gameState.action('reset'); } catch (error) {
+    resetInProgress = false;
+    resetClock.textContent = 'RECONNECTING';
+    window.clearTimeout(failureResetTimer);
+    failureResetTimer = window.setTimeout(resetToStartScreen, 5000);
+    return;
+  }
+  hrtokClient.close();
   window.clearTimeout(idleResetTimer);
   window.clearTimeout(centralIdleTimer);
   window.clearInterval(failureClockTimer);
@@ -865,7 +835,7 @@ function resetToStartScreen() {
 }
 
 function startResetCountdown() {
-  const resetAt = Date.now() + RESET_DELAY_MS;
+  const resetAt = gameState.resetAt || Date.now() + RESET_DELAY_MS;
   window.clearInterval(failureClockTimer);
   window.clearTimeout(failureResetTimer);
   const updateResetClock = () => {
@@ -873,7 +843,7 @@ function startResetCountdown() {
   };
   updateResetClock();
   failureClockTimer = window.setInterval(updateResetClock, 250);
-  failureResetTimer = window.setTimeout(resetToStartScreen, RESET_DELAY_MS);
+  failureResetTimer = window.setTimeout(resetToStartScreen, Math.max(0, resetAt - Date.now()) + 100);
 }
 
 function showFailureScreen(reason) {
@@ -1035,6 +1005,15 @@ function openMedia(file, name) {
   const player = document.createElement(
     file.mediaType === 'video' ? 'video' : file.mediaType === 'audio' ? 'audio' : 'img'
   );
+  player.addEventListener(file.mediaType === 'image' ? 'load' : 'loadeddata', () => {
+    if (player.parentElement === mediaContent) centralObserve('display-media', '', 100);
+  }, { once: true });
+  player.addEventListener('error', () => {
+    if (player.parentElement !== mediaContent) return;
+    const error = document.createElement('p');
+    error.textContent = 'ARCHIVE UNAVAILABLE. Press ESC to return and try again.';
+    mediaContent.replaceChildren(error);
+  }, { once: true });
   player.src = file.url;
   if (file.mediaType === 'video' || file.mediaType === 'audio') {
     player.controls = true;
@@ -1053,16 +1032,21 @@ function closeMedia() {
   commandInput.focus();
 }
 
+let filesystemLoading = false;
 async function loadFilesystem() {
+  if (filesystemLoading) return;
+  filesystemLoading = true;
   try {
+    await gameState.initialize();
     const response = await fetch('api/files');
     if (!response.ok) throw new Error('content index unavailable');
     fs = new VirtualFileSystem(await response.json());
     mountStatus.textContent = 'ARHIVA BRODA: SPREMNA';
     mountStatus.classList.add('mounted');
   } catch {
-    mountStatus.textContent = 'CONTENT OFFLINE // run: node server.js';
-  }
+    mountStatus.textContent = 'CONTENT OFFLINE // RETRYING CONNECTION';
+    window.setTimeout(loadFilesystem, 3000);
+  } finally { filesystemLoading = false; }
 }
 
 function beginYspBoot() {
@@ -1137,23 +1121,29 @@ function finishBoot() {
     game.classList.remove('hidden');
     updatePrompt();
     commandInput.focus();
-    startMissionDisplay();
+    startMissionDisplay().then(() => { if (!gameState.ending) { print(gameState.status()); commandInput.disabled = false; commandInput.focus(); } }).catch(error => print(error.message, 'error'));
+    commandInput.disabled = true;
     armIdleReset();
     sfx.loop('ambientShip', .3);
     print('KOSMOS EMERGENCY CONSOLE // SESSION RESTORED');
-    print('PATIENT: SAMUEL "SLOKI" KOVAC // ACCESS LEVEL 0');
-    print('COURSE: SOLAR TERMINATION. ROOT RECOVERY REQUIRED FOR NAVIGATION.');
-    registry.commands.get('help').run({ print, registry });
+    print('PATIENT: SAMUEL "SLOKI" KOVAC // USE STATUS FOR CURRENT ACCESS');
+    print('KOSMOS: komande + Enter. TAB: razgovor sa HRTOK-om. PageUp / PageDown: pomeranje teksta.');
+    print('Sledeći korak je označen iznad terminala. help prikazuje sve komande.');
+    updateNextStep();
+    requestCentralReply({ kind: 'opening' }).then(response => {
+      if (response.message && !gameState.ending && !resetInProgress) centralSay(response.message);
+    }).catch(() => {});
     setActiveChannel('command');
   }, 700);
 }
 
-function startCortexEcho({ developer = false } = {}) {
+async function startCortexEcho({ developer = false } = {}) {
   if (!developer && !gameState.canStartCortex()) {
     print('CORTEX ECHO UNAVAILABLE // It can only challenge an active sedation order.', 'error');
     return;
   }
-  cortexGame.start({ developer });
+  try { await cortexGame.start({ developer }); } catch (error) { print(error.message, 'error'); return; }
+  if (!developer) centralObserve('cortex-run', '', 100);
 }
 
 const cortexGame = {
@@ -1169,20 +1159,22 @@ const cortexGame = {
 
   developerTest: false,
 
-  start({ developer = false } = {}) {
+  async start({ developer = false } = {}) {
+    const reply = await gameState.action('cortex-start');
+    this.challenge = reply.challenge;
     this.active = true;
     this.developerTest = developer;
-    this.signalIndex = 0;
-    this.hits = 0;
-    this.misses = 0;
+    this.signalIndex = reply.challenge.index;
+    this.hits = reply.challenge.hits;
+    this.misses = reply.challenge.misses;
     this.target = null;
-    this.deadline = Date.now() + 40000;
+    this.deadline = this.challenge.deadline + gameState.clockOffset;
     commandInput.disabled = true;
     cortexOverlay.classList.remove('hidden', 'result', 'success', 'failure');
     this.updateStatus();
     this.clockTimer = window.setInterval(() => this.updateClock(), 100);
     this.updateClock();
-    this.nextSignal();
+    this.signalTimer = window.setTimeout(() => this.nextSignal(), Math.max(0, this.challenge.issuedAt + gameState.clockOffset - Date.now()));
   },
 
   updateClock() {
@@ -1208,13 +1200,13 @@ const cortexGame = {
       return;
     }
 
-    this.target = this.keys[Math.floor(Math.random() * this.keys.length)];
+    this.target = this.challenge.target;
     cortexPulse.textContent = this.target.toUpperCase();
     cortexPulse.className = `cortex-pulse lane-${this.target}`;
     void cortexTrack.offsetWidth;
     cortexPulse.classList.add('pulse-active');
     sfx.play('cortexPulse', .12);
-    this.signalTimer = window.setTimeout(() => this.resolve(false), 1550);
+    this.signalTimer = window.setTimeout(() => this.resolve(''), Math.max(0, this.challenge.expiresAt + gameState.clockOffset - Date.now()));
   },
 
   handleKey(event) {
@@ -1223,47 +1215,49 @@ const cortexGame = {
     if (event.repeat) return true;
     const key = event.key.toLowerCase();
     if (!this.keys.includes(key) || !this.target) return true;
-    this.resolve(key === this.target);
+    this.resolve(key);
     return true;
   },
 
-  resolve(success) {
+  async resolve(key) {
     if (!this.active || !this.target) return;
     window.clearTimeout(this.signalTimer);
     this.target = null;
     cortexPulse.classList.remove('pulse-active');
-    this.signalIndex += 1;
-    if (success) {
-      this.hits += 1;
-      cortexTrack.classList.add('hit');
-      sfx.play('cortexHit', .16);
-      this.updateStatus('RESPONSE ACCEPTED');
-    } else {
-      this.misses += 1;
-      cortexTrack.classList.add('miss');
-      sfx.play('cortexMiss', .16);
-      this.updateStatus('RESPONSE REJECTED');
-    }
-    window.setTimeout(() => {
-      cortexTrack.classList.remove('hit', 'miss');
-      this.nextSignal();
-    }, 150);
+    try {
+      const previousHits = this.hits;
+      const reply = await gameState.action('cortex-answer', {token:this.challenge.token,key});
+      if (!this.active) return;
+      this.signalIndex=reply.index; this.hits=reply.hits; this.misses=reply.misses;
+      const success=this.hits>previousHits;
+      cortexTrack.classList.add(success?'hit':'miss');
+      sfx.play(success?'cortexHit':'cortexMiss',.16);
+      this.updateStatus(success?'RESPONSE ACCEPTED':'RESPONSE REJECTED');
+      if(reply.done) { this.finish(reply.success, 'INSUFFICIENT VERIFIED RESPONSES'); return; }
+      this.challenge=reply.challenge;
+      this.signalTimer=window.setTimeout(()=>{
+        cortexTrack.classList.remove('hit','miss'); this.nextSignal();
+      },Math.max(0,this.challenge.issuedAt + gameState.clockOffset-Date.now()));
+    } catch(error) { this.finish(false,error.message); }
   },
 
   finish(success, message) {
     if (!this.active) return;
     this.active = false;
+    if (!success) gameState.action('cortex-cancel').catch(() => {});
     window.clearTimeout(this.signalTimer);
     window.clearInterval(this.clockTimer);
     cortexOverlay.classList.add('result', success ? 'success' : 'failure');
     const code = success && !this.developerTest ? gameState.issueCortexCode() : null;
+    if (code) centralObserve('cortex-pass', '', 100);
     cortexStatus.textContent = success
       ? this.developerTest
         ? 'PURPOSEFUL MOTOR RESPONSE: VERIFIED\nDEVELOPER TEST COMPLETE // NO ATTESTATION ISSUED'
         : `PURPOSEFUL MOTOR RESPONSE: VERIFIED\nATTESTATION ISSUED: ${code}`
       : `${message}\nREINDUCTION CHALLENGE MAY BE REPEATED.`;
-    window.setTimeout(() => {
+    this.resultTimer = window.setTimeout(() => {
       cortexOverlay.classList.add('hidden');
+      if (gameState.ending || resetInProgress) return;
       commandInput.disabled = false;
       commandInput.focus();
       if (success && this.developerTest) {
@@ -1277,6 +1271,8 @@ const cortexGame = {
   },
 
   cancel() {
+    window.clearTimeout(this.resultTimer);
+    cortexOverlay.classList.add('hidden');
     if (!this.active) return;
     this.active = false;
     window.clearTimeout(this.signalTimer);
@@ -1287,198 +1283,7 @@ const cortexGame = {
 };
 
 const plannerGame = {
-  active: false,
-  locked: false,
-  committing: false,
-  cursor: 30,
-  originPosition: 0,
-  selected: null,
-  nodes: [],
-  maxNodes: 2,
-  maxDeltaV: 600,
-  sun: { x: 420, y: 390 },
-  earth: { x: 694, y: 98 },
-  integrationSteps: 2200,
-  integrationDt: .064,
-  baseVelocity: 35,
-  burnVelocityScale: .18,
-  solarMu: 22000,
-  gravitySoftening: 2200,
-  commitFrame: null,
-  enterHeld: false,
-
-  pointAt(position) {
-    return cubicPoint(position / 100, { x: 76, y: 126 }, { x: 285, y: 136 }, { x: 555, y: 350 }, { x: 420, y: 390 });
-  },
-
-  totalDeltaV() {
-    return this.nodes.reduce((total, node) => total + node.deltaV, 0);
-  },
-
-  sortedNodes() {
-    return [...this.nodes].sort((left, right) => left.position - right.position);
-  },
-
-  sortNodesInPlace(selectedNode = this.selected === null ? null : this.nodes[this.selected]) {
-    this.nodes.sort((left, right) => left.position - right.position);
-    this.selected = selectedNode ? this.nodes.indexOf(selectedNode) : null;
-  },
-
-  localProgress(position) {
-    return (position - this.originPosition) / Math.max(1, 100 - this.originPosition);
-  },
-
-  positionBounds() {
-    const max = 99.8;
-    const baseMin = Math.min(max, this.originPosition + 1);
-    if (this.nodes.length && this.selected !== 0) {
-      const firstNode = this.nodes[0];
-      return { min: Math.min(max, firstNode.position + 1), max };
-    }
-    const secondNode = this.selected === 0 ? this.nodes[1] : null;
-    const cappedMax = secondNode ? Math.max(baseMin, secondNode.position - 1) : max;
-    const min = Math.min(cappedMax, baseMin);
-    return { min, max: cappedMax };
-  },
-
-  orbitStepFor(position, firstNode = this.nodes[0]) {
-    if (!firstNode) return 0;
-    const span = Math.max(1, 99.8 - firstNode.position);
-    const progress = Math.max(0, Math.min(1, (position - firstNode.position) / span));
-    return Math.max(1, Math.min(this.integrationSteps - 1, Math.round(progress * (this.integrationSteps - 1))));
-  },
-
-  pointOnPlannedPath(position, trajectory, nodeIndex = null) {
-    if (!this.nodes.length || nodeIndex === 0 || position <= this.nodes[0].position) return this.pointAt(position);
-    const step = this.orbitStepFor(position, this.nodes[0]);
-    const pointIndex = Math.min(trajectory.points.length - 1, trajectory.orbitStartIndex + step);
-    return trajectory.points[pointIndex] || this.pointAt(position);
-  },
-
-  progradeAt(position) {
-    const before = this.pointAt(Math.max(this.originPosition, position - .15));
-    const after = this.pointAt(Math.min(100, position + .15));
-    const length = Math.hypot(after.x - before.x, after.y - before.y) || 1;
-    return { x: (after.x - before.x) / length, y: (after.y - before.y) / length };
-  },
-
-  burnDirection(node) {
-    const prograde = this.progradeAt(node.position);
-    const heading = Math.atan2(prograde.y, prograde.x) + (node.angle * Math.PI / 180);
-    return { x: Math.cos(heading), y: Math.sin(heading) };
-  },
-
-  directionFromVelocity(state, node) {
-    const velocityLength = Math.hypot(state.vx, state.vy) || 1;
-    const heading = Math.atan2(state.vy / velocityLength, state.vx / velocityLength) + (node.angle * Math.PI / 180);
-    return { x: Math.cos(heading), y: Math.sin(heading) };
-  },
-
-  gravityAt(point) {
-    const dx = this.sun.x - point.x;
-    const dy = this.sun.y - point.y;
-    const distanceSquared = Math.max(this.gravitySoftening, dx * dx + dy * dy);
-    const distance = Math.sqrt(distanceSquared);
-    return { x: this.solarMu * dx / (distanceSquared * distance), y: this.solarMu * dy / (distanceSquared * distance) };
-  },
-
-  trajectory() {
-    const nodes = this.sortedNodes();
-    const points = [];
-    const burnPositions = [];
-    const burnVectors = [];
-    let orbitStartIndex = 0;
-
-    if (!nodes.length) {
-      for (let step = 0; step <= 160; step += 1) {
-        const position = this.originPosition + ((100 - this.originPosition) * step / 160);
-        points.push(this.pointAt(position));
-      }
-      return { points, burnPositions, burnVectors, orbitStartIndex };
-    }
-
-    const firstNode = nodes[0];
-    const coastSteps = Math.max(8, Math.round((firstNode.position - this.originPosition) * 2.5));
-    for (let step = 0; step <= coastSteps; step += 1) {
-      const position = this.originPosition + ((firstNode.position - this.originPosition) * step / coastSteps);
-      points.push(this.pointAt(position));
-    }
-    orbitStartIndex = points.length - 1;
-
-    const burnPoint = this.pointAt(firstNode.position);
-    const prograde = this.progradeAt(firstNode.position);
-    const direction = this.burnDirection(firstNode);
-    const state = {
-      x: burnPoint.x,
-      y: burnPoint.y,
-      vx: prograde.x * this.baseVelocity + direction.x * firstNode.deltaV * this.burnVelocityScale,
-      vy: prograde.y * this.baseVelocity + direction.y * firstNode.deltaV * this.burnVelocityScale
-    };
-    burnPositions[0] = { x: state.x, y: state.y };
-    burnVectors[0] = direction;
-
-    let nextNodeIndex = 1;
-    for (let step = 0; step < this.integrationSteps; step += 1) {
-      while (nextNodeIndex < nodes.length && step >= this.orbitStepFor(nodes[nextNodeIndex].position, firstNode)) {
-        const nextNode = nodes[nextNodeIndex];
-        const nextDirection = this.directionFromVelocity(state, nextNode);
-        state.vx += nextDirection.x * nextNode.deltaV * this.burnVelocityScale;
-        state.vy += nextDirection.y * nextNode.deltaV * this.burnVelocityScale;
-        burnPositions[nextNodeIndex] = { x: state.x, y: state.y };
-        burnVectors[nextNodeIndex] = nextDirection;
-        nextNodeIndex += 1;
-      }
-      const acceleration = this.gravityAt(state);
-      state.vx += acceleration.x * this.integrationDt;
-      state.vy += acceleration.y * this.integrationDt;
-      state.x += state.vx * this.integrationDt;
-      state.y += state.vy * this.integrationDt;
-      points.push({ x: state.x, y: state.y });
-    }
-
-    return { points, burnPositions, burnVectors, orbitStartIndex };
-  },
-
-  captureDistance(points) {
-    let nearest = Infinity;
-    for (let index = 1; index < points.length; index += 1) {
-      const start = points[index - 1];
-      const end = points[index];
-      const dx = end.x - start.x;
-      const dy = end.y - start.y;
-      const denominator = dx * dx + dy * dy || 1;
-      const projection = Math.max(0, Math.min(1, ((this.earth.x - start.x) * dx + (this.earth.y - start.y) * dy) / denominator));
-      const closestX = start.x + dx * projection;
-      const closestY = start.y + dy * projection;
-      nearest = Math.min(nearest, Math.hypot(this.earth.x - closestX, this.earth.y - closestY));
-    }
-    return nearest;
-  },
-
-  trajectoryData() {
-    const { points, burnPositions, burnVectors, orbitStartIndex } = this.trajectory();
-    const captureDistance = this.captureDistance(points);
-    return { points, burnPositions, burnVectors, orbitStartIndex, captureDistance, captured: captureDistance <= 33 };
-  },
-
-  validTransfer() {
-    return this.trajectoryData().captured;
-  },
-
-  pathFromPoints(points) {
-    const isVisible = (point) => point.x >= -80 && point.x <= 900 && point.y >= -60 && point.y <= 560;
-    let drawing = false;
-    return points.map((point, index) => {
-      if (!isVisible(point)) {
-        drawing = false;
-        return '';
-      }
-      const command = index && drawing ? 'L' : 'M';
-      drawing = true;
-      return `${command}${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
-    }).filter(Boolean).join(' ');
-  },
-
+  ...createPlannerPhysics(),
   render() {
     this.sortNodesInPlace();
     const trajectory = this.trajectoryData();
@@ -1537,6 +1342,7 @@ const plannerGame = {
     } else if (this.locked) {
       plannerStatus.textContent = 'EARTH TRANSFER COMMITTED. PRESS ESC TO RETURN TO THE CONSOLE.';
     } else if (trajectory.captured) plannerStatus.textContent = 'EARTH CAPTURE AVAILABLE. HOLD ENTER FOR 2 SECONDS TO COMMIT.';
+    else plannerStatus.textContent = 'Place a burn node, then adjust its strength and direction toward the Earth capture ring.';
   },
 
   animateTransfer() {
@@ -1545,7 +1351,7 @@ const plannerGame = {
     plannerTransferPulse.classList.remove('hidden');
     sfx.stop('ambientNav');
     sfx.play('burnExecute', .28);
-    const tick = (now) => {
+    const tick = async (now) => {
       if (!this.active || !this.committing || !this.enterHeld) return;
       const progress = Math.min(1, (now - startedAt) / 2200);
       const point = plannerPredictedPath.getPointAtLength(length * progress);
@@ -1557,10 +1363,17 @@ const plannerGame = {
       }
       this.commitFrame = null;
       plannerTransferPulse.classList.add('hidden');
-      this.committing = false;
+      this.awaitingCommit = true;
       this.enterHeld = false;
       confirmedEarthPath = missionPathFromPlannerPoints(this.trajectoryData().points);
-      this.locked = gameState.confirmEarthIntercept();
+      try { this.locked = await gameState.confirmEarthIntercept(); }
+      catch(error) {
+        this.committing=false; this.awaitingCommit=false;
+        this.render(); plannerStatus.textContent=error.message + ' // Checking ship state; retry if capture is not confirmed.';
+        return;
+      }
+      this.committing=false; this.awaitingCommit=false;
+      if (gameState.ending || resetInProgress) return;
       updateMissionDisplay();
       sfx.play('earthCapture', .28);
       plannerOverlay.classList.add('hidden');
@@ -1570,16 +1383,21 @@ const plannerGame = {
     this.commitFrame = window.requestAnimationFrame(tick);
   },
 
-  start({ developer = false } = {}) {
+  async start({ developer = false } = {}) {
     if (!developer && !gameState.rootRecovered) {
       print('ORBITAL BURN PLANNER REQUIRES ROOT NAVIGATION AUTHORITY.', 'error');
       return;
     }
-    this.active = true;
+    if (this.opening || this.active) return;
+    this.opening = true;
+    commandInput.disabled = true;
     this.locked = false;
     this.committing = false;
-    gameState.pauseMission();
-    this.originPosition = gameState.missionProgress() * 100;
+    let reply;
+    try { reply = await gameState.pauseMission(); } catch(error) { commandInput.disabled=false; print(error.message,'error'); return; } finally { this.opening=false; }
+    if (gameState.ending || resetInProgress) return;
+    this.active = true;
+    this.originPosition = reply.origin;
     this.cursor = Math.min(this.positionBounds().max, this.originPosition + 18);
     this.selected = null;
     this.nodes = [];
@@ -1681,8 +1499,13 @@ const plannerGame = {
     this.render();
   },
 
-  exit() {
-    if (this.committing) return;
+  async exit() {
+    window.clearTimeout(this.holdStartTimer);
+    if (this.committing || this.closing) return;
+    this.closing = true;
+    try { if (!this.locked) await gameState.resumeMission(); }
+    catch(error) { plannerStatus.textContent=error.message; return; }
+    finally { this.closing=false; }
     plannerOverlay.classList.add('hidden');
     sfx.stop('ambientNav');
     this.active = false;
@@ -1690,12 +1513,12 @@ const plannerGame = {
     commandInput.focus();
     if (this.locked) completeEarthTransfer();
     else {
-      gameState.resumeMission();
       updateMissionDisplay();
     }
   },
 
   cancel() {
+    window.clearTimeout(this.holdStartTimer);
     window.cancelAnimationFrame(this.commitFrame);
     this.commitFrame = null;
     this.committing = false;
@@ -1704,19 +1527,20 @@ const plannerGame = {
     plannerOverlay.classList.add('hidden');
     plannerTransferPulse.classList.add('hidden');
     sfx.stop('ambientNav');
-    if (!this.locked && !gameState.ending) gameState.resumeMission();
+    if (!this.locked && !gameState.ending && !resetInProgress) gameState.resumeMission().catch(()=>{});
   },
 
-  beginCommitHold() {
+  async beginCommitHold() {
     if (!this.validTransfer() || this.committing || this.locked) return;
     this.committing = true;
     this.enterHeld = true;
     this.render();
-    this.animateTransfer();
+    try { await gameState.action('planner-arm',{nodes:this.nodes}); } catch(error) { this.committing=false; this.enterHeld=false; plannerStatus.textContent=error.message; return; }
+    if (this.active && this.committing && this.enterHeld) this.animateTransfer();
   },
 
   cancelCommitHold() {
-    if (!this.committing || this.locked) return;
+    if (!this.committing || this.locked || this.awaitingCommit) return;
     this.enterHeld = false;
     window.cancelAnimationFrame(this.commitFrame);
     this.commitFrame = null;
@@ -1739,6 +1563,12 @@ const plannerGame = {
     else if (!this.locked && !this.committing && key === 'enter') {
       if (!event.repeat && (this.selected !== null || this.nearestNode() >= 0 || this.nodes.length < this.maxNodes)) this.placeOrSelect();
       else if (this.validTransfer()) this.beginCommitHold();
+      if (!event.repeat) {
+        window.clearTimeout(this.holdStartTimer);
+        this.holdStartTimer = window.setTimeout(() => {
+          if (this.active && !this.committing && !this.locked && this.validTransfer()) this.beginCommitHold();
+        }, 300);
+      }
     }
     else if (!this.locked && !this.committing && key === '1' && this.nodes[0]) { this.selected = 0; this.cursor = this.nodes[0].position; this.render(); }
     else if (!this.locked && !this.committing && key === '2' && this.nodes[1]) { this.selected = 1; this.cursor = this.nodes[1].position; this.render(); }
@@ -1751,6 +1581,7 @@ const plannerGame = {
     if (!this.active) return false;
     if (event.key.toLowerCase() === 'enter') {
       event.preventDefault();
+      window.clearTimeout(this.holdStartTimer);
       this.cancelCommitHold();
       return true;
     }
@@ -1758,9 +1589,17 @@ const plannerGame = {
   }
 };
 
-function startOrbitalBurnPlanner({ developer = false } = {}) {
-  plannerGame.start({ developer });
+async function startOrbitalBurnPlanner({ developer = false } = {}) {
+  await plannerGame.start({ developer });
+  if (!developer && plannerGame.active) centralObserve('navigation-interest', '', 100);
 }
+
+function cancelPlannerHold() {
+  window.clearTimeout(plannerGame.holdStartTimer);
+  plannerGame.cancelCommitHold();
+}
+window.addEventListener('blur', cancelPlannerHold);
+document.addEventListener('visibilitychange', () => { if (document.hidden) cancelPlannerHold(); });
 
 const devMenu = {
   active: false,
@@ -1834,7 +1673,11 @@ function openDevMenu() {
   devMenu.open();
 }
 
+let earthTransferDisplayed = false;
 function completeEarthTransfer() {
+  if (earthTransferDisplayed || endingDisplayed || resetInProgress) return;
+  earthTransferDisplayed = true;
+  commandInput.disabled = true;
   sfx.play('centralSting', .24);
   centralObserve('earth-transfer', 'You have selected the only outcome I could not verify as safe.', 200);
   print('EARTH INTERCEPT CONFIRMED\nRETURN VECTOR COMMITTED\n\nHRTOK: You have doomed us all.', 'anomaly-line');
@@ -1843,7 +1686,23 @@ function completeEarthTransfer() {
   postTransferTimer = window.setTimeout(() => endGame('earth'), 3000);
 }
 
-function endGame(kind) {
+let endingDisplayed = false;
+async function endGame(kind) {
+  if (endingDisplayed) return;
+  try {
+    if (!gameState.ending) await gameState.action('ending', {kind});
+    if (kind !== gameState.endingKind) return;
+  } catch(error) { print(error.message, 'error'); return; }
+  if (endingDisplayed) return;
+  endingDisplayed = true;
+  commandInput.disabled = true;
+  window.clearTimeout(idleResetTimer);
+  cortexGame.cancel();
+  plannerGame.cancel();
+  closeMedia();
+  hrtokClient.close();
+  centralInput.disabled = true;
+  window.clearTimeout(centralIdleTimer);
   if (kind === 'sedation') {
     beginFailure('sedation');
     return;
@@ -1859,23 +1718,29 @@ function endGame(kind) {
     shutdown: 'HRTOK EXECUTIVE LAYER: OFFLINE\n\nThe captain is gone for a second time. The ship is finally silent, and every remaining choice is yours.\n\nENDING: SILENT BRIDGE',
     transfer: 'NEURAL TRANSFER COMPLETE\n\nA new copy of Sloki opens its eyes inside the ship. The biological original remains in the pod, listening to itself speak.\n\nENDING: CONTINUITY ERROR'
   };
-  gameState.finish();
+  // The server has already committed the ending.
   stopMissionDisplay();
   print(`${endings[kind]}\n\nSESSION COMPLETE.`);
+  flushOutput();
   window.clearTimeout(postTransferTimer);
   postTransferTimer = window.setTimeout(() => showCompletionScreen(kind), 6500);
 }
 
 window.endKosmosGame = endGame;
 
-function run(raw) {
+let commandPending = false;
+let sessionReady = false;
+async function run(raw) {
   const input = raw.trim();
-  if (!input || cortexGame.active) return;
+  if (!input || cortexGame.active || plannerGame.active || commandPending || !sessionReady || gameState.ending || gameState.missionResolved || resetInProgress) return;
+  commandPending = true;
+  commandInput.disabled = true;
 
   printCommand(input);
   state.history.push(input);
   state.historyIndex = state.history.length;
-  registry.execute(input, {
+  const before = { access: gameState.access, rootRecovered: gameState.rootRecovered };
+  try { await registry.execute(input, {
     fs,
     state,
     game: gameState,
@@ -1891,14 +1756,38 @@ function run(raw) {
     devMode: DEV_MODE,
     openDevMenu,
     playSfx: (name, volume) => sfx.play(name, volume),
+    onRecordRead: (path) => {
+      readRecords.add(path);
+      const evidence = {
+        '/home/operator/comms/raw_uplink_ledger.txt': 'evidence-comms',
+        '/home/operator/command/neural_transfer.txt': 'evidence-neural',
+        '/home/operator/hibernation/occupancy.txt': 'evidence-pods'
+      }[path];
+      centralObserve(evidence || 'read-first-file', '', 100);
+    },
     startSedationDisplay,
     endGame
-  });
-  centralObserveCommand(input);
+  }); } catch (error) { print(error.message || 'ARCHIVE CONNECTION INTERRUPTED. Try the command again.', 'error'); }
+  if (gameState.access > before.access && before.access === 0) {
+    centralObserve('medical-auth', '', 100);
+    centralSignal('ACCESS LEVEL', 1, 'access');
+  }
+  if (gameState.access > before.access && before.access === 1) {
+    centralObserve('comms-auth', '', 100);
+    centralSignal('ACCESS LEVEL', 2, 'access');
+  }
+  if (!before.rootRecovered && gameState.rootRecovered) {
+    centralObserve('root-recover', '', 100);
+    centralSignal('ROOT AUTHORITY', '', 'access');
+  }
+  commandPending = false;
+  commandInput.disabled = gameState.ending || gameState.missionResolved || cortexGame.active || plannerGame.active || resetInProgress;
+  if (!commandInput.disabled) commandInput.focus();
   scheduleCentralIdleMessage();
 }
 
 function startGame() {
+  if (bootInput.disabled) return;
   if (!fs) {
     bootInput.value = '';
     bootInput.placeholder = 'START THE LOCAL SERVER FIRST';
@@ -1920,6 +1809,23 @@ function startGame() {
 }
 
 loadFilesystem();
+let statePollPending = false;
+let connectionLost = false;
+window.setInterval(async () => {
+  if ((!gameState.started && game.classList.contains('hidden')) || resetInProgress || statePollPending) return;
+  statePollPending = true;
+  try {
+    await gameState.refresh();
+    updateNextStep();
+    if (!sessionReady && !game.classList.contains('hidden')) { await startMissionDisplay(); commandInput.disabled=gameState.ending; }
+    if (connectionLost) { connectionLost=false; print('SHIP CONNECTION RESTORED.'); }
+    if (gameState.missionResolved && !gameState.ending && !plannerGame.committing) {
+      plannerGame.locked=true; plannerGame.cancel(); completeEarthTransfer();
+    }
+    if (gameState.ending && !game.classList.contains('hidden')) endGame(gameState.endingKind);
+  } catch (_) { if (!connectionLost && !game.classList.contains('hidden')) { connectionLost=true; print('SHIP CONNECTION INTERRUPTED. Reconnecting; mission deadlines remain active.', 'error'); } }
+  finally { statePollPending = false; }
+},1000);
 playCrtTransition('on');
 
 bootForm.addEventListener('submit', (event) => {

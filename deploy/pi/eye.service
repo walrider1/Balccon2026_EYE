@@ -1,0 +1,25 @@
+[Unit]
+Description=EYE local game server
+After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=eye-server
+Group=eye-server
+WorkingDirectory=/opt/eye
+EnvironmentFile=/etc/eye.env
+Environment=EYE_STATE_DIR=/var/lib/eye
+ExecStart=/usr/bin/node /opt/eye/server.js
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/eye
+
+[Install]
+WantedBy=multi-user.target

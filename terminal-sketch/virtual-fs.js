@@ -7,6 +7,8 @@ class VirtualFileSystem {
 
   normalize(input = '.', cwd = this.home) {
     if (input === '~') return this.home;
+    if (input.startsWith('~/')) input = `${this.home}/${input.slice(2)}`;
+    if (/^\/(medical|comms|command|engineering|hibernation|botany|food|archives|images)(\/|$)/.test(input)) input = this.home + input;
     const raw = input.startsWith('/') ? input : `${cwd}/${input}`;
     const parts = [];
 

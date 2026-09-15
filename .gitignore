@@ -1,5 +1,6 @@
 # Dependencies and generated logs
 node_modules/
+.runtime/
 npm-debug.log*
 *.log
 .env

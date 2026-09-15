@@ -1,3 +1,4 @@
+const gameTimers = typeof window === 'undefined' ? globalThis : window;
 class KosmosGame {
   constructor() {
     this.sessionNumber = 0;
@@ -6,8 +7,8 @@ class KosmosGame {
   }
 
   reset() {
-    if (this.sedationTimeout) window.clearTimeout(this.sedationTimeout);
-    if (this.missionTimeout) window.clearTimeout(this.missionTimeout);
+    if (this.sedationTimeout) gameTimers.clearTimeout(this.sedationTimeout);
+    if (this.missionTimeout) gameTimers.clearTimeout(this.missionTimeout);
     this.sessionNumber += 1;
     this.access = 0;
     this.rootRecovered = false;
@@ -33,7 +34,9 @@ class KosmosGame {
     if (path.startsWith('/home/operator/command/navigation')) return 3;
     if (path.startsWith('/home/operator/comms')) return 1;
     if (path.startsWith('/home/operator/command') ||
-        path.startsWith('/home/operator/engineering') ||
+          path.startsWith('/home/operator/engineering') ||
+          path.startsWith('/home/operator/botany') ||
+          path.startsWith('/home/operator/food') ||
         path.startsWith('/home/operator/hibernation')) return 2;
     return 0;
   }
@@ -52,7 +55,9 @@ class KosmosGame {
       ['MEDICAL', '/medical', 'AVAILABLE'],
       ['COMMUNICATIONS', '/comms', this.access >= 1 ? 'AVAILABLE' : 'ACCESS LEVEL 1 REQUIRED'],
       ['COMMAND', '/command', this.access >= 2 ? 'PARTIAL ACCESS' : 'ACCESS LEVEL 2 REQUIRED'],
-      ['ENGINEERING', '/engineering', this.access >= 2 ? 'PARTIAL ACCESS' : 'ACCESS LEVEL 2 REQUIRED'],
+        ['ENGINEERING', '/engineering', this.access >= 2 ? 'PARTIAL ACCESS' : 'ACCESS LEVEL 2 REQUIRED'],
+        ['BOTANY', '/botany', this.access >= 2 ? 'AVAILABLE' : 'ACCESS LEVEL 2 REQUIRED'],
+        ['FOOD AND STORES', '/food', this.access >= 2 ? 'AVAILABLE' : 'ACCESS LEVEL 2 REQUIRED'],
       ['HIBERNATION', '/hibernation', this.access >= 2 ? 'PARTIAL ACCESS' : 'ACCESS LEVEL 2 REQUIRED']
     ];
 
@@ -113,7 +118,7 @@ class KosmosGame {
   startSedation(onComplete) {
     if (this.sedationEndsAt || this.rootRecovered) return;
     this.sedationEndsAt = Date.now() + 5 * 60 * 1000;
-    this.sedationTimeout = window.setTimeout(() => {
+    this.sedationTimeout = gameTimers.setTimeout(() => {
       if (!this.rootRecovered && !this.ending) {
         this.ending = true;
         onComplete();
@@ -132,7 +137,7 @@ class KosmosGame {
     if (this.missionResolved || this.ending || !this.missionRemaining) return;
     this.missionPaused = false;
     this.missionEndsAt = Date.now() + this.missionRemaining;
-    this.missionTimeout = window.setTimeout(() => {
+    this.missionTimeout = gameTimers.setTimeout(() => {
       if (!this.missionResolved && !this.ending) {
         this.ending = true;
         this.missionOnComplete?.();
@@ -143,7 +148,7 @@ class KosmosGame {
   pauseMission() {
     if (!this.missionEndsAt || this.missionResolved || this.ending) return false;
     this.missionRemaining = Math.max(0, this.missionEndsAt - Date.now());
-    window.clearTimeout(this.missionTimeout);
+    gameTimers.clearTimeout(this.missionTimeout);
     this.missionTimeout = null;
     this.missionEndsAt = null;
     this.missionPaused = true;
@@ -167,7 +172,7 @@ class KosmosGame {
     if (this.missionResolved || this.ending) return false;
     this.missionResolved = true;
     this.course = 'earth';
-    if (this.missionTimeout) window.clearTimeout(this.missionTimeout);
+    if (this.missionTimeout) gameTimers.clearTimeout(this.missionTimeout);
     this.missionTimeout = null;
     this.missionEndsAt = null;
     this.missionPaused = false;
@@ -192,7 +197,7 @@ class KosmosGame {
 
     this.rootRecovered = true;
     this.access = 3;
-    if (this.sedationTimeout) window.clearTimeout(this.sedationTimeout);
+    if (this.sedationTimeout) gameTimers.clearTimeout(this.sedationTimeout);
     this.sedationTimeout = null;
     this.sedationEndsAt = null;
     return { ok: true, message: 'ROOT RECOVERY COMPLETE\nMEDICAL SEDATION: ABORTED\nNAVIGATION AUTHORITY: GRANTED\n\nNAVIGATION ARCHIVE MOUNTED: /home/operator/command/navigation\nReview the recovered flight records before you act.' };
@@ -219,11 +224,12 @@ class KosmosGame {
 
   finish() {
     this.ending = true;
-    if (this.sedationTimeout) window.clearTimeout(this.sedationTimeout);
+    if (this.sedationTimeout) gameTimers.clearTimeout(this.sedationTimeout);
     this.sedationTimeout = null;
-    if (this.missionTimeout) window.clearTimeout(this.missionTimeout);
+    if (this.missionTimeout) gameTimers.clearTimeout(this.missionTimeout);
     this.missionTimeout = null;
   }
 }
 
-window.KosmosGame = KosmosGame;
+if (typeof module !== 'undefined' && module.exports) module.exports = { KosmosGame };
+else window.KosmosGame = KosmosGame;

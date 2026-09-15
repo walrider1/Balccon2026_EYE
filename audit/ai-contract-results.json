@@ -1,0 +1,15 @@
+{
+  "mockOnly": true,
+  "reply": {
+    "message": "Test reply",
+    "mood": "INVALID_MOOD",
+    "intent": "INVALID_INTENT",
+    "trust_delta": -999,
+    "suspicion_delta": 999,
+    "source": "openai",
+    "model": "gpt-5.6"
+  },
+  "timeoutSignalPresent": false,
+  "structuredOutputSchemaPresent": false,
+  "forbiddenLoreIncludedAtAccessZero": true
+}

@@ -6,6 +6,7 @@ function createCommands() {
   };
 
   return [
+    { name: 'objective', usage: 'objective', description: 'show your current recovery phase and next step', run: ({game, print}) => print(game.objectiveText()) },
     {
       name: 'help',
       usage: 'help',
@@ -41,7 +42,7 @@ function createCommands() {
       name: 'hint',
       usage: 'hint',
       description: 'request a current objective hint',
-      run: ({ game, print }) => print(game.hint(), 'anomaly-line')
+      run: async ({ game, print }) => print(await game.hint(), 'anomaly-line')
     },
     {
       name: 'ls',
@@ -93,7 +94,7 @@ function createCommands() {
       name: 'cat',
       usage: 'cat <file>',
       description: 'open a text record',
-      run: async ({ fs, state, game, print, arg }) => {
+      run: async ({ fs, state, game, print, arg, onRecordRead }) => {
         const { path, node } = fs.resolve(arg, state.cwd);
         if (!node) print(`cat: ${arg}: file not found`, 'error');
         else if (!game.canAccessPath(path)) print(`cat: ${arg}: access level ${game.requiredAccess(path)} required`, 'error');
@@ -102,8 +103,10 @@ function createCommands() {
           const response = await fetch(node.url);
           if (!response.ok) print(`cat: ${arg}: unable to read file`, 'error');
           else {
-            game.registerFileRead(path);
-            print(await response.text());
+            const text = await response.text();
+            await game.registerFileRead(path);
+            print(text);
+            onRecordRead?.(path);
           }
         }
       }
@@ -133,9 +136,9 @@ function createCommands() {
       usage: 'auth <domain> <code>',
       description: 'submit a recovery authorization',
       showInHelp: false,
-      run: ({ game, print, args, startSedationDisplay }) => {
+      run: async ({ game, print, args, startSedationDisplay }) => {
         if (isTerminated({ game, print })) return;
-        const result = game.authorize(args[0] || '', args.slice(1).join(' '));
+        const result = await game.authorize(args[0] || '', args.slice(1).join(' '));
         print(result.message, result.ok ? 'system' : 'error');
         if (result.ok && args[0]?.toLowerCase() === 'comms') {
           game.startSedation(() => window.endKosmosGame('sedation'));
@@ -164,12 +167,10 @@ function createCommands() {
           return;
         }
         if (path === '/home/operator/medical/cortex_echo.app') {
-          startCortexEcho();
-          return;
+          return startCortexEcho();
         }
         if (path === '/home/operator/command/navigation/orbital_burn_planner.app') {
-          startOrbitalBurnPlanner();
-          return;
+          return startOrbitalBurnPlanner();
         }
         print(`run: ${arg}: no handler installed`, 'error');
       }
@@ -178,13 +179,13 @@ function createCommands() {
       name: 'root',
       usage: 'root recover',
       description: 'combine valid ROOT recovery shares',
-      run: ({ game, print, arg, playSfx }) => {
+      run: async ({ game, print, arg, playSfx }) => {
         if (isTerminated({ game, print })) return;
         if (arg.toLowerCase() !== 'recover') {
           print('usage: root recover', 'error');
           return;
         }
-        const result = game.recoverRoot();
+        const result = await game.recoverRoot();
         print(result.message, result.ok ? 'system' : 'error');
         if (result.ok) playSfx?.('rootUnlock', .28);
       }
@@ -200,7 +201,8 @@ function createCommands() {
           print('ACCESS DENIED — ROOT AUTHORIZATION REQUIRED', 'error');
           return;
         }
-        print('DIRECT COURSE ENTRY RETIRED. Review /command/navigation and launch the recovered orbital planner.', 'anomaly-line');
+        if (args.join(' ').toLowerCase() === 'sun confirm') return endGame('sun');
+        print('For voluntary quarantine: course sun confirm. DIRECT COURSE ENTRY RETIRED. Review /command/navigation and launch the recovered orbital planner.', 'anomaly-line');
       }
     },
     {
@@ -214,7 +216,7 @@ function createCommands() {
           print('ACCESS DENIED — ROOT AUTHORIZATION REQUIRED', 'error');
           return;
         }
-        if (arg.toLowerCase() === 'shutdown') endGame('shutdown');
+        if (arg.toLowerCase() === 'shutdown') return endGame('shutdown');
         else print('usage: central shutdown', 'error');
       }
     },
@@ -233,7 +235,7 @@ function createCommands() {
           print('NEURAL TRANSFER CHANNEL UNKNOWN. Search Command continuity archives.', 'error');
           return;
         }
-        if (arg.toLowerCase() === 'transfer --source sloki --target central-ai') endGame('transfer');
+        if (arg.toLowerCase() === 'transfer --source sloki --target central-ai') return endGame('transfer');
         else print('usage: neural transfer --source sloki --target central-ai', 'error');
       }
     },
@@ -255,6 +257,8 @@ function createCommands() {
         print(`CENTRAL: ${reply}`, 'anomaly-line');
       }
     },
+    { name: 'ctf', usage: 'ctf', description: 'start a two-minute optional evidence investigation', run: async ({game,print}) => print((await game.action('ctf-start')).message) },
+    { name: 'flag', usage: 'flag EYE{...}', description: 'submit the forensic evidence flag', run: async ({game,print,arg}) => print((await game.action('flag',{flag:arg})).message) },
     {
       name: 'clear',
       usage: 'clear',

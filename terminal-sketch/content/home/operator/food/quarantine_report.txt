@@ -1,0 +1,9 @@
+SECTOR E // STORES // LOCAL QUARANTINE REPORT
+
+We restricted entry, accounted for supplies, and kept separate records of everyone crossing our boundary. Our team reported that most suspected intruders had been removed.
+
+That is our assessment. We do not possess a test that proves every remaining person is human. Neither does Command possess evidence that everyone here must be a copy.
+
+Please distinguish "not certified safe" from "confirmed lost."
+
+Cross-reference: /food/appeal.txt and /hibernation/occupancy.txt.

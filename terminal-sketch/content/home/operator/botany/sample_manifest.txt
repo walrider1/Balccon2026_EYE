@@ -1,0 +1,10 @@
+SECTOR C // SCIENCE ARCHIVE // MARTIAN SAMPLE
+
+Origin: water recovered from a closed subsurface system on Mars.
+Initial appearance: plant-like aquatic organism. Lack of obvious movement was recorded as an observation, not a safety certification.
+Transport: retained aboard under the captain's authority before its risks were established.
+Research association: Samuel Kovac, botanist; extreme ecosystems and extraterrestrial biology.
+
+The later identity crisis followed contact with the sample. This manifest does not identify the present patient as the original researcher or a replacement.
+
+Cross-reference: /command/crisis_review.txt.
