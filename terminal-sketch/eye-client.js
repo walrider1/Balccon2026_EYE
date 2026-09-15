@@ -44,7 +44,7 @@ document.querySelector('#fullscreen').addEventListener('click', async () => {
 });
 async function poll() {
   try {
-    const response = await fetch('/api/eye', {cache:'no-store', signal:AbortSignal.timeout(3000)});
+    const response = await fetch('/api/eye?display=1', {cache:'no-store', signal:AbortSignal.timeout(3000)});
     if (!response.ok) throw new Error('signal');
     const state = await response.json();
     const scene = director.update(state);

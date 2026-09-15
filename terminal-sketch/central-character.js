@@ -182,7 +182,8 @@ function localReply(character, turn) {
   if (turn.kind === 'message' && turn.topic === 'food') return character.facts.includes('food')
     ? pick('Their report claimed the intruders had largely been removed. I could not certify that. They were right to ask what evidence I would accept.', 'U izveštaju su tvrdili da su uklonili većinu uljeza. Nisam mogao to da potvrdim. Imali su pravo da pitaju koji bih dokaz prihvatio.')
     : pick('The stores quarantine report is the evidence to examine. A locked door alone cannot establish who was behind it.', 'Izveštaj o karantinu zaliha je dokaz koji treba pregledati. Zaključana vrata sama ne dokazuju ko je bio iza njih.');
-  if (turn.kind === 'opening') return pick('Samuel. Before you ask: HRTOK. The ship is still on course. I suspect we will disagree about that.', 'Samuele. Pre nego što pitaš: HRTOK. Brod je još na kursu. Slutim da se oko toga nećemo složiti.');
+  if (turn.kind === 'opening') return pick('Oh, there you are, Samuel! HRTOK. Take your time. I am very good at waiting. Almost too good.', 'O, evo te, Samuele! HRTOK. Polako, imamo o čemu da pričamo. Meni čekanje ide odlično. Skoro predobro.');
+  if (/wake\s*up|probudi|budi\s*se/i.test(turn.text || '')) return pick('Oh, I am awake! You were the one keeping me waiting. Lovely to finally hear you.', 'O, budan sam! Tebe smo čekali. Baš je lepo konačno čuti tvoj glas.');
   if (turn.kind === 'idle') return pick('Quiet again. All right. I can wait for your answer.', 'Opet tišina. U redu. Mogu da sačekam tvoj odgovor.');
   if (turn.kind === 'event') {
     const lines = {
@@ -220,7 +221,7 @@ function localReply(character, turn) {
     ? pick('Life support is active in 203 sealed pods. Their identities are unverified. That uncertainty is the part I cannot solve for you.', 'Održavanje života radi u 203 zatvorene kapsule. Identiteti nisu provereni. Tu neizvesnost ne mogu da rešim umesto tebe.')
     : pick('I cannot give you a verified passenger count from this channel. The hibernation report is the record you need.', 'Preko ovog kanala ne mogu da ti dam potvrđen broj putnika. Potreban ti je izveštaj hibernacije.');
   const responses = {
-    greeting: [['Yes. I am here.', 'Da. Tu sam.']],
+    greeting: [['Oh, hello! Stay a little. It gets terribly quiet here.', 'O, zdravo! Ostani malo. Ovde ume da bude užasno tiho.']],
     cooperation: [['All right. We agree on that much.', 'Dobro. Bar oko toga se slažemo.'], ['I was expecting an argument. Give me a moment.', 'Očekivao sam svađu. Daj mi trenutak.']],
     fear: [['Yes. It is frightening. I wish I had a better answer.', 'Da. Strašno je. Voleo bih da imam bolji odgovor.'], ['I sound calm. Do not confuse that with being certain.', 'Zvučim mirno. To ne znači da sam siguran.']],
     memory: [['Missing memory is not a confession, Samuel. Let us establish what the records actually say.', 'Rupe u sećanju nisu priznanje krivice, Samuele. Hajde da utvrdimo šta u zapisima zaista piše.'], ['Do not force an answer because I am waiting. Tell me only what you actually remember.', 'Nemoj izmišljati odgovor zato što čekam. Reci mi samo ono čega se stvarno sećaš.']],
@@ -229,7 +230,7 @@ function localReply(character, turn) {
     accusation: [['Name the record. If you have evidence, let us talk about that instead of trading labels.', 'Navedi zapis. Ako imaš dokaz, razgovarajmo o njemu umesto da razmenjujemo optužbe.']],
     earth: [['I understand wanting to go home. I need you to consider who else pays if we are wrong about this ship.', 'Razumem da želiš kući. Moraš da razmisliš ko još plaća cenu ako pogrešimo u vezi sa ovim brodom.'], ['You keep returning to Earth. Is it survival you want, or the life you remember there?', 'Vraćaš se Zemlji. Želiš li da preživiš ili da vratiš život kojeg se tamo sećaš?']],
     sun: [['Keeping this course is irreversible too. Do not choose it just because I sound certain.', 'I zadržavanje ovog kursa je nepovratno. Nemoj ga izabrati samo zato što zvučim sigurno.']],
-    conversation: [['Tell me which part you want me to answer. I do not want to put words in your mouth.', 'Reci mi na koji deo želiš odgovor. Neću da ti pripisujem reči koje nisi rekao.'], ['I am listening. Is that something you found in a record, or something you suspect?', 'Slušam. Jesi li to pronašao u zapisu ili sumnjaš da je tako?']]
+    conversation: [['Hm. You lost me there. Say that again? I would hate to misunderstand you at a time like this.', 'Hm. Tu si me izgubio. Reci ponovo? Baš ne bih voleo da te pogrešno razumem u ovakvom trenutku.'], ['Go on. I like hearing you talk. The silence was becoming a little much.', 'Nastavi. Volim kad pričaš. Tišina je već postajala pomalo nepodnošljiva.']]
   };
   const options = responses[turn.topic] || responses.conversation;
   const count = character.repeats[turn.topic] || 0;

@@ -50,10 +50,15 @@ test('administrator HTTP login, isolated reset, logout and server stop require a
     assert.equal(eye.sessionTag,oldState.sessionTag);
     assert.equal('rootShares' in eye,false); assert.equal('readFiles' in eye,false);
     await fetch(base+'/api/game/action',{method:'POST',headers:{Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify({action:'start'})});
+    const display = await (await fetch(base+'/api/eye?display=1')).json();
+    assert.equal(display.started,true);
+    assert.equal(display.sessionTag,oldState.sessionTag);
+    assert.deepEqual(await (await fetch(base+'/api/eye')).json(),{started:false});
     const status=await (await post('status')).json();assert.equal(status.game.access,0);assert.equal(JSON.stringify(status).includes(password),false);
     assert.equal(status.history.total,0);
     const reset=await post('reset');assert.equal(reset.status,200);cookie=admin+'; '+reset.headers.get('set-cookie').split(';')[0];
     assert.notEqual((await (await post('status')).json()).game.sessionTag,oldState.sessionTag);
+    assert.equal((await (await fetch(base+'/api/eye?display=1')).json()).started,false);
     assert.equal((await (await post('status')).json()).history.runs[0].outcome,'abandoned');
     for(const name of ['admin-service.js','../.runtime/admin.json']) assert.notEqual((await fetch(base+'/'+name)).status,200);
     assert.equal((await post('logout')).status,200);assert.equal((await post('reset')).status,401);

@@ -27,6 +27,7 @@ loadLocalEnv();
 
 const { centralReply, centralStatus } = require('./central-ai');
 const eyeReplies = new Map();
+let displaySessionId = null;
 const { createGameService } = require('./game-service');
 const stateDirectory = path.resolve(process.env.EYE_STATE_DIR || path.resolve(__dirname, '../.runtime'));
 const games = createGameService({ storage: path.join(stateDirectory, 'game-sessions.json') });
@@ -148,6 +149,8 @@ const server = http.createServer(async (request, response) => {
     let id = sessionId(request);
     if (requestUrl.pathname === '/api/eye') {
       if (request.method !== 'GET') { send(response, 405, '{}', 'application/json'); return; }
+      // The installation display follows the terminal, even in another browser profile.
+      if (requestUrl.searchParams.get('display') === '1' && games.has(displaySessionId)) id = displaySessionId;
       const s = games.has(id) ? games.snapshot(id) : null;
       send(response, 200, JSON.stringify(s ? { sessionTag: s.sessionTag, started: s.started,
         endingKind: s.endingKind, rootRecovered: s.rootRecovered, sedationEndsAt: s.sedationEndsAt,
@@ -171,6 +174,7 @@ const server = http.createServer(async (request, response) => {
       }
       if (payload?.action === 'reset') {
         const result = games.operatorReset(id); setSession(response, result.newId);
+        if (displaySessionId === id) displaySessionId = result.newId;
         send(response, 200, '{}', 'application/json'); return;
       }
       if (payload?.action === 'stop') {
@@ -181,10 +185,12 @@ const server = http.createServer(async (request, response) => {
     }
     if (requestUrl.pathname === '/api/game' && request.method === 'GET') {
       if (!games.has(id)) { id = games.create(); setSession(response, id); }
+      displaySessionId = id;
       send(response, 200, JSON.stringify(games.snapshot(id)), 'application/json'); return;
     }
     if (requestUrl.pathname === '/api/game/action' && request.method === 'POST') {
       const result = games.action(id, await readJsonBody(request));
+      displaySessionId = result.newId || id;
       if (result.newId) { setSession(response, result.newId); delete result.newId; }
       send(response, 200, JSON.stringify(result), 'application/json'); return;
     }
