@@ -195,13 +195,15 @@ input { color:#e8dfc8; caret-color:#d8a24d; }
 
 /* CRT profile: opt in with ?display=crt, or automatic on narrow displays.
    Percent margins leave room for analog overscan; no simulated scanlines. */
-.crt-readable { font-size:clamp(22px,2.25vw,36px); }
+.crt-readable { font-size:clamp(28px,4.5vw,100px); font-weight:bold; }
 .crt-readable body::before,.crt-readable body::after { display:none; }
 .crt-readable .game { position:fixed; inset:5vh 5vw; height:auto; width:auto; grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); gap:0; }
 .crt-readable .channel-switch { display:flex; align-items:center; flex-wrap:wrap; gap:.35rem; padding:.25rem; background:#000; border-bottom:3px solid #eee; font-size:.7rem; }
 .crt-readable .channel-switch button { font:inherit; font-weight:bold; padding:.3rem .4rem; color:#fff; background:#111; border:2px solid #999; }
 .crt-readable .channel-switch button[aria-pressed="true"] { color:#000; background:#fff; border-color:#fff; }
 .crt-readable #compact-clock { margin-left:auto; color:#fff; }
+.crt-readable .channel-switch > span { display:none; }
+.crt-readable .terminal-panel > .os-titlebar { display:none; }
 .crt-readable .terminal-panel,.crt-readable .trajectory-panel { display:none; height:100%; min-height:0; border:0; background:#000; }
 .crt-readable .terminal-panel.active-channel,.crt-readable .trajectory-panel.active-channel { display:flex; flex-direction:column; box-shadow:none; }
 .crt-readable .trajectory-panel > header,.crt-readable .trajectory-map,.crt-readable .mission-destination,.crt-readable .mission-objective { display:none; }
@@ -210,7 +212,7 @@ input { color:#e8dfc8; caret-color:#d8a24d; }
 .crt-readable #location { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .crt-readable .next-step { padding:.3rem .4rem; font-size:.8rem; line-height:1.25; color:#fff; background:#191919; border-color:#fff; }
 .crt-readable .terminal-scroll { height:auto; flex:1; min-height:0; overflow-y:auto; }
-.crt-readable .output { padding:.4rem; font-size:1rem; line-height:1.4; color:#fff; }
+.crt-readable .output { padding:.3rem; font-size:1rem; line-height:1.25; color:#fff; }
 .crt-readable .line { margin-bottom:.6rem; }
 .crt-readable .system,.crt-readable .central-ai .central-text,.crt-readable .central-user .central-text { color:#fff; }
 .crt-readable .command-form,.crt-readable .central-form { flex:0 0 auto; flex-wrap:wrap; padding:.35rem .4rem; min-height:0; border-top:3px solid #eee; color:#fff; background:#111; font-size:1rem; }
@@ -219,8 +221,9 @@ input { color:#e8dfc8; caret-color:#d8a24d; }
 .crt-readable input,.crt-readable .central-form input { font-size:1rem; color:#fff; min-height:1.5em; }
 .crt-readable input::placeholder { color:#ccc; }
 .crt-readable .central-panel { flex:1; min-height:0; margin:0; border:0; }
+.crt-readable .central-titlebar { display:none; }
 .crt-readable .central-feed { overflow-y:auto; padding:.4rem; }
-.crt-readable .central-line { display:block; font-size:1rem; line-height:1.4; margin-bottom:.7rem; }
+.crt-readable .central-line { display:block; font-size:1rem; line-height:1.25; margin-bottom:.5rem; }
 .crt-readable .central-speaker { display:block; color:#ffe18a; font-size:.8rem; }
 .crt-readable .central-signal { margin:0 0 .4rem; font-size:.8rem; }
 .crt-readable .central-choice { font-size:.85rem; }

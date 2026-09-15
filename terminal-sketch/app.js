@@ -2,12 +2,10 @@ const bootScreen = document.querySelector('#boot-screen');
 const bootSequence = document.querySelector('#boot-sequence');
 const game = document.querySelector('#game');
 const displayMode = new URLSearchParams(window.location.search).get('display');
-const compactScreen = window.matchMedia('(max-width: 900px)');
 function updateDisplayMode() {
-  document.documentElement.classList.toggle('crt-readable', displayMode === 'crt' || (displayMode !== 'desktop' && compactScreen.matches));
+  document.documentElement.classList.toggle('crt-readable', displayMode !== 'desktop');
 }
 updateDisplayMode();
-compactScreen.addEventListener('change', updateDisplayMode);
 document.querySelector('#show-kosmos').addEventListener('click', () => setActiveChannel('command'));
 document.querySelector('#show-hrtok').addEventListener('click', () => setActiveChannel('central'));
 const compactClock = document.querySelector('#compact-clock');
@@ -402,8 +400,8 @@ function updateNextStep() {
   const firstStep = gameState.access === 0 && !reads.includes(firstRecord);
   const recoveryStep = gameState.access === 0 && !reads.includes('/home/operator/medical/recovery_service.txt');
   guide.textContent = firstStep
-    ? 'POČNI OVDE: upiši cat /medical/doctor_note.txt i pritisni Enter. Pročitaj poruku lekara.'
-    : recoveryStep ? 'SLEDEĆE: cat /medical/recovery_service.txt + Enter. Ovde piše kako vraćaš medicinski pristup.'
+    ? 'PRVO: cat /medical/doctor_note.txt + Enter'
+    : recoveryStep ? 'SLEDEĆE: cat /medical/recovery_service.txt + Enter'
     : gameState.objectiveText() + ' // hint + Enter za pomoć';
   guide.title = 'KOSMOS: komande. Tab: razgovor sa HRTOK-om. PageUp / PageDown: čitanje.';
 }
@@ -1136,14 +1134,11 @@ function finishBoot() {
     game.classList.remove('hidden');
     updatePrompt();
     commandInput.focus();
-    startMissionDisplay().then(() => { if (!gameState.ending) { print(gameState.status()); commandInput.disabled = false; commandInput.focus(); } }).catch(error => print(error.message, 'error'));
+    startMissionDisplay().then(() => { if (!gameState.ending) { if (displayMode === 'desktop') print(gameState.status()); commandInput.disabled = false; commandInput.focus(); } }).catch(error => print(error.message, 'error'));
     commandInput.disabled = true;
     armIdleReset();
     sfx.loop('ambientShip', .3);
-    print('KOSMOS EMERGENCY CONSOLE // SESSION RESTORED');
-    print('PATIENT: SAMUEL "SLOKI" KOVAC // USE STATUS FOR CURRENT ACCESS');
-    print('KOSMOS: komande + Enter. TAB: razgovor sa HRTOK-om. PageUp / PageDown: pomeranje teksta.');
-    print('Sledeći korak je označen iznad terminala. help prikazuje sve komande.');
+    print('Tab: razgovor\nPgUp/PgDn: čitaj');
     updateNextStep();
     requestCentralReply({ kind: 'opening' }).then(response => {
       if (response.message && !gameState.ending && !resetInProgress) centralSay(response.message);

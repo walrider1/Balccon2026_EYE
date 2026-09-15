@@ -75,12 +75,12 @@ https://labwc.github.io/labwc-actions.5.html
 
 ## CRT televizor: veliki tekst
 
-Na televizoru otvoriti `http://localhost:5173/?display=crt`.
+Na televizoru otvoriti `http://localhost:5173/`. Krupni CRT prikaz je podrazumevan.
 CRT profil koristi jedan širok kanal; Tab ili dugmad KOSMOS/HRTOK menjaju kanal.
 PageUp/PageDown pomeraju tekst. Polje za unos je stalno vidljivo van skrolovanog
 sadržaja. Sat ostaje u gornjoj traci. Oko i dalje radi na zasebnoj eye.html stranici.
 U ovom profilu Tab ne dopunjava komande. Za standardni prikaz koristiti `?display=desktop`.
-Na prozorima do 900 CSS piksela širine CRT profil se uključuje automatski.
+CRT profil se uključuje na svim rezolucijama osim uz izričito `?display=desktop`.
 Pi launcher eksplicitno otvara CRT profil, uključujući kada konverter prijavi veliku rezoluciju.
 
 Ostavljeno je 5% prostora uz svaku ivicu. Tekst je povećan, uklonjene su simulirane
@@ -88,3 +88,5 @@ scanline/vignette maske, a orbitalna mapa sakrivena u CRT profilu radi prostora 
 Provereni su glavni kanali na browser viewportu 640x480; to nije merenje TV signala.
 Model sa korisnikove nalepnice: LG 21FS2RLX-ZC. Stvarni izlazni video režim i veza
 još nisu potvrđeni. Ovaj profil ne menja rezoluciju Pi-ja niti konvertera.
+
+Dorada: podebljan tekst veličine 4.5% širine browsera (najmanje 28px), umesto ranijih 2.25%. Na 1280px tekst i unos imaju oko 58px. Početni ispis je skraćen na dva reda; status je dostupan komandom status.
