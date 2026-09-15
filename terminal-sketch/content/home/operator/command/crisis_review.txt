@@ -1,0 +1,9 @@
+COMMAND // CRISIS REVIEW // INCOMPLETE RECORD
+
+The captain accepted transport of the Martian sample under pressure to return with a discovery. That decision preceded the identity crisis.
+
+Command later faced an internal challenge to the captain's authority. The continuity transfer preserved his command voice in the central system. It did not provide independent proof that his opponents were copies.
+
+Treat the rescue announcement, the actual uplink ledger and the continuity record as separate pieces of evidence. An order can be authentic while its justification is false.
+
+Cross-reference: /comms/raw_uplink_ledger.txt, /command/neural_transfer.txt and /botany/sample_manifest.txt.

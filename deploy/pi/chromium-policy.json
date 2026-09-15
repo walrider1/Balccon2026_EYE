@@ -1,0 +1,10 @@
+{
+  "DeveloperToolsAvailability": 2,
+  "DownloadRestrictions": 3,
+  "PrintingEnabled": false,
+  "PasswordManagerEnabled": false,
+  "IncognitoModeAvailability": 1,
+  "BrowserSignin": 0,
+  "URLBlocklist": ["*"],
+  "URLAllowlist": ["http://localhost:5173/*"]
+}

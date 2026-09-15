@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="sr-Latn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EYE — Administrator</title>
+<style>body{background:#101715;color:#c6efd9;font:16px monospace;max-width:760px;margin:3rem auto;padding:1rem}input,button{font:inherit;padding:.7rem;margin:.4rem 0}button{cursor:pointer}pre{white-space:pre-wrap;line-height:1.6}fieldset{margin-top:1.5rem}a{color:#c6efd9}[hidden]{display:none}</style></head>
+<body><h1>EYE — Administrator</h1><p>Kontrole lokalne partije. Administratorska prijava traje 10 minuta.</p>
+<form id="login"><label>Administratorska šifra <input id="password" type="password" autocomplete="current-password" required maxlength="200"></label><button>Prijavi se</button></form>
+<p id="message" role="status"></p>
+<section id="controls" hidden><pre id="status"></pre><button id="refresh">Osveži status</button><button id="logout">Odjavi se</button>
+<h2>Istorija partija</h2><pre id="history"></pre>
+<fieldset><legend>Nova partija</legend><p>Prekida trenutnu partiju u ovom browser profilu. Prethodni napredak se briše.</p><label><input id="confirm-reset" type="checkbox"> Potvrđujem novu partiju</label><button id="reset">Pokreni novu partiju</button></fieldset>
+<fieldset><legend>Zaustavljanje programa</legend><p>Zaustavlja lokalni EYE server. Za ponovno pokretanje potrebna je komanda node terminal-sketch/server.js. Ovo ne gasi računar.</p><label><input id="confirm-stop" type="checkbox"> Potvrđujem zaustavljanje servera</label><button id="stop">Zaustavi server</button></fieldset></section>
+<p><a href="/">Povratak na igru</a></p><script src="admin-client.js"></script></body></html>

@@ -1,0 +1,42 @@
+[
+  {
+    "origin": 0,
+    "solution": {
+      "position": 2,
+      "deltaV": 60,
+      "angle": -150,
+      "distance": 0.7317346754332752
+    },
+    "note": "Numerical search only; not a human playthrough or difficulty assessment."
+  },
+  {
+    "origin": 33,
+    "solution": {
+      "position": 35,
+      "deltaV": 140,
+      "angle": -130,
+      "distance": 18.655007554370034
+    },
+    "note": "Numerical search only; not a human playthrough or difficulty assessment."
+  },
+  {
+    "origin": 60,
+    "solution": {
+      "position": 62,
+      "deltaV": 260,
+      "angle": -140,
+      "distance": 15.493225755993041
+    },
+    "note": "Numerical search only; not a human playthrough or difficulty assessment."
+  },
+  {
+    "origin": 80,
+    "solution": {
+      "position": 82,
+      "deltaV": 340,
+      "angle": -160,
+      "distance": 18.277277968286487
+    },
+    "note": "Numerical search only; not a human playthrough or difficulty assessment."
+  }
+]

@@ -1,0 +1,15 @@
+[Unit]
+Description=EYE terminal and eye kiosk windows
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/bash /opt/eye/deploy/pi/start-display.sh
+Restart=always
+RestartSec=3
+KillMode=control-group
+TimeoutStopSec=10
+
+[Install]
+WantedBy=graphical-session.target

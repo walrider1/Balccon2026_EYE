@@ -1,0 +1,9 @@
+SECTOR B // MAINTENANCE HANDOVER
+
+After isolation, the repair crews split over who could allocate supplies and authorize work on critical systems. One group sought to bring every repair under its control. Others refused to surrender their independent access.
+
+The struggle for resources began before anyone could establish how many copies were present. Do not interpret every technical disagreement as evidence of infection.
+
+The independent recovery interlocks remain relevant: central authority and patient-safety authority are not interchangeable.
+
+Cross-reference: /engineering/interlock_status.txt.

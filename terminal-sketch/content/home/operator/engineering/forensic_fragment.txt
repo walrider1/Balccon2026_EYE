@@ -1,0 +1,4 @@
+FORENSIC CHAIN // 2 OF 3
+A controller records an order; a witness records its consequence.
+FRAGMENT: WITNESS
+The final link is held in Command.

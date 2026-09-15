@@ -1,0 +1,9 @@
+SECTOR C // HYDROPONICS // RECOVERED SHIFT NOTES
+
+Before the quarantine, Kovac kept this section working as one crew. After the dispute over his identity and his transfer to the medical regeneration chamber, every decision became a vote about who was still human.
+
+Two groups now keep separate watches. Each accuses the other of protecting an imitation. Both use the same old staff roster as proof.
+
+The roster establishes who worked here. It cannot establish who is standing in their place.
+
+Cross-reference: /botany/sample_manifest.txt and /medical/identity_limits.txt.

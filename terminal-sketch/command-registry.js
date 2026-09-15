@@ -19,7 +19,8 @@ class CommandRegistry {
 
   execute(rawInput, context) {
     const tokens = this.parse(rawInput);
-    const name = tokens.shift().toLowerCase();
+    const name = (tokens.shift() || '').toLowerCase();
+    if (!name) return;
     const command = this.commands.get(name);
 
     if (!command) {
@@ -27,7 +28,7 @@ class CommandRegistry {
       return;
     }
 
-    command.run({ ...context, args: tokens, arg: tokens.join(' ') });
+    return command.run({ ...context, args: tokens, arg: tokens.join(' ') });
   }
 
   helpLines() {

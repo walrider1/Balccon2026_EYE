@@ -1,0 +1,5 @@
+FORENSIC CHAIN // 3 OF 3
+A copied memory is evidence of continuity, not proof of consent.
+FRAGMENT: CONTINUITY
+Submit the chain in transmission order: Comms, Engineering, Command.
+Use: flag EYE{...}

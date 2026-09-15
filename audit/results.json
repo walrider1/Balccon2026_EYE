@@ -1,0 +1,131 @@
+{
+  "date": "2026-09-09",
+  "commit": "cfbca5d",
+  "results": [
+    {
+      "name": "Navigation locked initially",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Early comms authorization rejected",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Wrong medical code rejected",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Early root recovery rejected",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Medical code grants access 1",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Repeated medical code rejected",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Comms code grants access 2",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Sedation enables Cortex",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Cortex code requires issuance",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Issued Cortex code accepted",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ROOT stops sedation and opens navigation",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Planner pauses mission",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Mission resumes",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Earth intercept resolves mission",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Reset clears progress",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Sedation expiry ends game",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Known gap: course maintain sun cannot select ending",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "HTTP /",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "HTTP /api/files",
+      "ok": true,
+      "detail": "status=200 (unauthenticated)"
+    },
+    {
+      "name": "HTTP /game-engine.js",
+      "ok": true,
+      "detail": "status=200 (unauthenticated)"
+    },
+    {
+      "name": "HTTP /central-ai.js",
+      "ok": true,
+      "detail": "status=200 (unauthenticated)"
+    },
+    {
+      "name": "HTTP /ai/captain_lore.txt",
+      "ok": true,
+      "detail": "status=200 (unauthenticated)"
+    },
+    {
+      "name": "HTTP /content/home/operator/comms/recovery_service.txt",
+      "ok": true,
+      "detail": "status=200 (unauthenticated)"
+    },
+    {
+      "name": "HTTP /content/home/operator/command/neural_transfer.txt",
+      "ok": true,
+      "detail": "status=200 (unauthenticated)"
+    },
+    {
+      "name": "Central response available",
+      "ok": true,
+      "detail": "source=local"
+    }
+  ]
+}

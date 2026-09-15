@@ -21,9 +21,9 @@
             </div>
           </div>
           <div class="boot-rule"></div>
-          <p class="boot-command">TYPE <strong>start system</strong> TO BEGIN</p>
+          <p class="boot-command">UPIŠI <strong>start system</strong> I PRITISNI <kbd>ENTER</kbd></p>
           <p id="mount-status" class="mount-status">UČITAVANJE ARHIVE...</p>
-          <form id="boot-form"><span class="boot-prompt">KOSMOS:&gt;</span><input id="boot-input" autocomplete="off" autofocus spellcheck="false" /></form>
+          <form id="boot-form"><span class="boot-prompt">KOSMOS:&gt;</span><input id="boot-input" aria-label="Pokretanje sistema" placeholder="start system" autocomplete="off" autofocus spellcheck="false" /></form>
           <div class="boot-card-footer"><span>© 1987 JUGOSLOVENSKA SVEMIRSKA AGENCIJA</span></div>
         </div>
       </div>
@@ -61,9 +61,10 @@
     <main id="game" class="game hidden">
       <section class="terminal-panel" aria-label="KOSMOS terminal">
         <header class="os-titlebar"><span class="os-brand"><img src="/YSP/JSA_emblem_transparent_v2.png" alt="" /><b>KOSMOS</b><span>// OPERATIVNI SISTEM</span></span><span id="location">/home/operator</span></header>
+        <div id="next-step" class="next-step" role="status"></div>
         <div id="terminal-scroll" class="terminal-scroll">
           <div id="output" class="output" aria-live="polite"></div>
-          <form id="command-form" class="command-form"><span id="prompt">operator@kosmos:/home/operator $</span><input id="command-input" autocomplete="off" autofocus spellcheck="false" /></form>
+          <form id="command-form" class="command-form"><span id="prompt">operator@kosmos:/home/operator $</span><input id="command-input" aria-label="KOSMOS komanda" placeholder="Komanda + Enter" autocomplete="off" autofocus spellcheck="false" /></form>
         </div>
       </section>
       <aside class="trajectory-panel" aria-label="Mission trajectory and HRTOK channel">
@@ -159,9 +160,11 @@
     </section>
     <div id="crt-transition" class="crt-transition hidden" aria-hidden="true"></div>
     <script src="virtual-fs.js"></script>
-    <script src="game-engine.js"></script>
+    <script src="game-client.js"></script>
+    <script src="planner-physics.js"></script>
     <script src="command-registry.js"></script>
     <script src="commands.js"></script>
+    <script src="central-client.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
