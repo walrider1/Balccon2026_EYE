@@ -17,12 +17,26 @@ test('identity and navigation reveal independently from read records', () => {
   assert.equal(game.navigationKnown(), false);
 });
 
-test('HRTOK starts without identity or navigation facts and learns from records', () => {
+test('HRTOK knows Sloki but keeps navigation and continuity undisclosed', () => {
   const character = createCharacter();
   const opening = prepareTurn(character, {kind:'opening', text:'', state:{}});
-  assert.doesNotMatch(localReply(character, opening), /Samuel|Kovac|Sun|captain/i);
-  assert.equal(allowedFacts(character).some(f => ['patient','course','neural'].includes(f.id)), false);
+  assert.doesNotMatch(localReply(character, opening), /Sun|captain/i);
+  assert.equal(allowedFacts(character).some(f => ['course','neural'].includes(f.id)), false);
   prepareTurn(character, {kind:'message',text:'hello',state:{readFiles:['/home/operator/medical/patient_intake.txt']}});
   assert.equal(character.facts.includes('patient'),true);
   assert.equal(character.facts.includes('course'),false);
 });
+
+ test('basic orientation questions receive relevant English fallback answers', () => {
+  const character = createCharacter();
+  for (const [text, expected] of [
+    ['where am i?', /medical section/i],
+    ['Who am i where are we? i dont know anything', /Samuel Kovac.*medical section/i],
+    ['what happened to me?', /head injury.*regeneration/i],
+    ["why can't i remember?", /memory/i]
+  ]) {
+    const turn = prepareTurn(character, {kind:'message',text,state:{}});
+    assert.match(localReply(character,turn), expected);
+    assert.doesNotMatch(localReply(character,turn), /copy|captain|solar/i);
+  }
+ });

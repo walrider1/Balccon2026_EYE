@@ -459,8 +459,8 @@ function centralSay(text, cls = 'central-ai') {
 }
 
 function centralEcho(text) {
-  centralLine(gameState.identityKnown() ? 'SLOKI' : 'UNKNOWN', text, 'central-user');
-  centralMemory.messages.push({ speaker: gameState.identityKnown() ? 'SLOKI' : 'UNKNOWN', text: String(text).slice(0, 600) });
+  centralLine('SLOKI', text, 'central-user');
+  centralMemory.messages.push({ speaker: 'SLOKI', text: String(text).slice(0, 600) });
   centralMemory.messages = centralMemory.messages.slice(-10);
 }
 

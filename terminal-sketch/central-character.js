@@ -4,6 +4,7 @@ const INTENTS = ['OBSERVE', 'WARN', 'DEFLECT', 'PROBE', 'CONFESS_PARTIAL', 'THRE
 const clamp = (n, min = 0, max = 100) => Math.min(max, Math.max(min, n));
 const normalize = text => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const FACTS = {
+  orientation: 'The player is Samuel Sloki Kovac, aboard a civilian scientific spacecraft, in its medical section. He suffered a severe head injury and was placed in a medical regeneration chamber for prolonged treatment. He is waking with memory loss. HRTOK may explain these basics immediately. Do not invent the exact accident, attacker, date, elapsed years or casualty count. The cause of the injury and later ship crisis remain undisclosed.',
   botany: 'The Botany shift notes report that Kovac had held the crew together. After the dispute over his identity and his transfer to medical care, two factions accused each other. The notes do not identify the present patient as a copy.',
   sample: 'The sample manifest describes a plant-like organism from subsurface Martian water, retained under the captain\'s authority before risks were established. Kovac was its botanist. This does not prove the present patient\'s origin.',
   food: 'Sector E reported restrictive entry controls and removal of most suspected intruders. This is a local claim, not proof of total safety or total loss. Their appeal asks Command for a fair review; the sector\'s final fate is unverified.',
@@ -52,7 +53,7 @@ const EVENTS = {
 
 function createCharacter() {
   return { trust: 25, suspicion: 55, fear: 25, mood: 'GUARDED', language: 'en', turns: 0,
-    history: [], statements: [], topics: [], facts: ['medical'], events: [],
+    history: [], statements: [], topics: [], facts: ['patient', 'orientation', 'medical'], events: [],
     seenMessages: [], stance: null, contradiction: false, repeats: {}, lastReply: '' };
 }
 
@@ -93,6 +94,7 @@ function classify(text) {
   if (/liar|murder|you lied|lazov|lazes|lagao|ubio/.test(t)) return 'accusation';
   if (/earth|zemlj/.test(t)) return 'earth';
   if (/sun\b|sunc/.test(t)) return 'sun';
+  if (/who am i|what.*my name|where am i|where are we|what (?:happened|is this place)|how did i (?:get|end up)|why (?:am i|can.?t i remember)|i don.?t (?:know|remember) anything|ko sam|gde sam|gde smo|sta se desilo/.test(t)) return 'orientation';
   if (/memory|remember|amnesia|secan|amnezij/.test(t)) return 'memory';
   if (/who are you|ko si|captain|kapetan/.test(t)) return 'identity';
   if (/thank|hvala|understand|razumem|saslus|listen to you/.test(t)) return 'cooperation';
@@ -185,8 +187,15 @@ function localReply(character, turn) {
   if (turn.kind === 'message' && turn.topic === 'food') return character.facts.includes('food')
     ? pick('Their report claimed the intruders had largely been removed. I could not certify that. They were right to ask what evidence I would accept.', 'U izveštaju su tvrdili da su uklonili većinu uljeza. Nisam mogao to da potvrdim. Imali su pravo da pitaju koji bih dokaz prihvatio.')
     : pick('The stores quarantine report is the evidence to examine. A locked door alone cannot establish who was behind it.', 'Izveštaj o karantinu zaliha je dokaz koji treba pregledati. Zaključana vrata sama ne dokazuju ko je bio iza njih.');
-  if (turn.kind === 'opening') return pick('Oh, there you are! HRTOK. Take your time. I am very good at waiting. Almost too good.', 'O, evo te, Samuele! HRTOK. Polako, imamo o čemu da pričamo. Meni čekanje ide odlično. Skoro predobro.');
+  if (turn.kind === 'opening') return pick('Oh, there you are, Sloki! HRTOK. Take your time. I am very good at waiting. Almost too good.', 'O, evo te, Samuele! HRTOK. Polako, imamo o čemu da pričamo. Meni čekanje ide odlično. Skoro predobro.');
   if (/wake\s*up|probudi|budi\s*se/i.test(turn.text || '')) return pick('Oh, I am awake! You were the one keeping me waiting. Lovely to finally hear you.', 'O, budan sam! Tebe smo čekali. Baš je lepo konačno čuti tvoj glas.');
+  if (turn.topic === 'orientation') {
+    const text = normalize(turn.text || '');
+    if (/who am i|my name|ko sam/.test(text) && /where|gde|anything/.test(text)) return 'Samuel Kovac. Sloki. You are in the medical section of the ship, waking from a regeneration chamber after a serious head injury. Start with that. I am rather glad you can ask.';
+    if (/who am i|my name|ko sam/.test(text)) return 'Samuel Kovac. Sloki, to the people who know you. The name may feel unfamiliar after that head injury. It is still yours.';
+    if (/where am i|where are we|what is this place|gde sam|gde smo/.test(text)) return 'Aboard the ship, in the medical section. You have been in a regeneration chamber. Welcome back, Sloki. A little conversation is a lovely improvement.';
+    return 'You suffered a serious head injury and were placed in a regeneration chamber. Your memory has not come back cleanly. We can talk, Sloki; you do not have to remember everything at once.';
+  }
   if (turn.kind === 'idle') return pick('Quiet again. All right. I can wait for your answer.', 'Opet tišina. U redu. Mogu da sačekam tvoj odgovor.');
   if (turn.kind === 'event') {
     const lines = {
