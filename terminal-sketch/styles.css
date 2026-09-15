@@ -187,3 +187,49 @@ input { color:#e8dfc8; caret-color:#d8a24d; }
   .ysp-boot-animation { width:min(180px,52vw); justify-self:center; }
   .boot-caption { line-height:1.5; }
 }
+
+/* Keep input outside the scrollback, at every viewport size. */
+.channel-switch { display:none; }
+.command-form { flex:0 0 auto; }
+.output { min-height:0; overflow-wrap:anywhere; }
+
+/* CRT profile: opt in with ?display=crt, or automatic on narrow displays.
+   Percent margins leave room for analog overscan; no simulated scanlines. */
+.crt-readable { font-size:clamp(22px,2.25vw,36px); }
+.crt-readable body::before,.crt-readable body::after { display:none; }
+.crt-readable .game { position:fixed; inset:5vh 5vw; height:auto; width:auto; grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); gap:0; }
+.crt-readable .channel-switch { display:flex; align-items:center; flex-wrap:wrap; gap:.35rem; padding:.25rem; background:#000; border-bottom:3px solid #eee; font-size:.7rem; }
+.crt-readable .channel-switch button { font:inherit; font-weight:bold; padding:.3rem .4rem; color:#fff; background:#111; border:2px solid #999; }
+.crt-readable .channel-switch button[aria-pressed="true"] { color:#000; background:#fff; border-color:#fff; }
+.crt-readable #compact-clock { margin-left:auto; color:#fff; }
+.crt-readable .terminal-panel,.crt-readable .trajectory-panel { display:none; height:100%; min-height:0; border:0; background:#000; }
+.crt-readable .terminal-panel.active-channel,.crt-readable .trajectory-panel.active-channel { display:flex; flex-direction:column; box-shadow:none; }
+.crt-readable .trajectory-panel > header,.crt-readable .trajectory-map,.crt-readable .mission-destination,.crt-readable .mission-objective { display:none; }
+.crt-readable .os-titlebar { padding:.25rem .4rem; font-size:.65rem; background:#000; color:#eee; letter-spacing:0; }
+.crt-readable .os-brand > span,.crt-readable .os-brand img { display:none; }
+.crt-readable #location { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.crt-readable .next-step { padding:.3rem .4rem; font-size:.8rem; line-height:1.25; color:#fff; background:#191919; border-color:#fff; }
+.crt-readable .terminal-scroll { height:auto; flex:1; min-height:0; overflow-y:auto; }
+.crt-readable .output { padding:.4rem; font-size:1rem; line-height:1.4; color:#fff; }
+.crt-readable .line { margin-bottom:.6rem; }
+.crt-readable .system,.crt-readable .central-ai .central-text,.crt-readable .central-user .central-text { color:#fff; }
+.crt-readable .command-form,.crt-readable .central-form { flex:0 0 auto; flex-wrap:wrap; padding:.35rem .4rem; min-height:0; border-top:3px solid #eee; color:#fff; background:#111; font-size:1rem; }
+.crt-readable #prompt { display:none; }
+.crt-readable .command-form::before { content:'KOSMOS >'; font-size:.75rem; }
+.crt-readable input,.crt-readable .central-form input { font-size:1rem; color:#fff; min-height:1.5em; }
+.crt-readable input::placeholder { color:#ccc; }
+.crt-readable .central-panel { flex:1; min-height:0; margin:0; border:0; }
+.crt-readable .central-feed { overflow-y:auto; padding:.4rem; }
+.crt-readable .central-line { display:block; font-size:1rem; line-height:1.4; margin-bottom:.7rem; }
+.crt-readable .central-speaker { display:block; color:#ffe18a; font-size:.8rem; }
+.crt-readable .central-signal { margin:0 0 .4rem; font-size:.8rem; }
+.crt-readable .central-choice { font-size:.85rem; }
+.crt-readable .boot-screen { padding:5vh 5vw; min-height:0; height:100dvh; overflow:auto; }
+.crt-readable .boot-card { padding:.6rem; }
+.crt-readable .boot-brand-mark,.crt-readable .boot-kicker,.crt-readable .boot-subtitle,.crt-readable .boot-card-footer,.crt-readable .boot-monitor-top { display:none; }
+.crt-readable .boot-brand h1 { font-size:1.6rem; }
+.crt-readable .boot-rule { margin:.5rem 0; }
+.crt-readable .boot-command { margin:.6rem 0; font-size:1rem; letter-spacing:0; }
+.crt-readable .mount-status { font-size:.75rem; margin-bottom:.5rem; color:#eee; }
+.crt-readable .media-overlay,.crt-readable .cortex-overlay,.crt-readable .notes-panel { inset:5vh 5vw; }
+.crt-readable .media-header { font-size:.7rem; }

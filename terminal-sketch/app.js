@@ -1,6 +1,19 @@
 const bootScreen = document.querySelector('#boot-screen');
 const bootSequence = document.querySelector('#boot-sequence');
 const game = document.querySelector('#game');
+const displayMode = new URLSearchParams(window.location.search).get('display');
+const compactScreen = window.matchMedia('(max-width: 900px)');
+function updateDisplayMode() {
+  document.documentElement.classList.toggle('crt-readable', displayMode === 'crt' || (displayMode !== 'desktop' && compactScreen.matches));
+}
+updateDisplayMode();
+compactScreen.addEventListener('change', updateDisplayMode);
+document.querySelector('#show-kosmos').addEventListener('click', () => setActiveChannel('command'));
+document.querySelector('#show-hrtok').addEventListener('click', () => setActiveChannel('central'));
+const compactClock = document.querySelector('#compact-clock');
+const sourceClock = document.querySelector('#mission-clock');
+new MutationObserver(() => { compactClock.textContent = sourceClock.textContent; })
+  .observe(sourceClock, { childList:true, characterData:true, subtree:true });
 const bootForm = document.querySelector('#boot-form');
 const bootInput = document.querySelector('#boot-input');
 const mountStatus = document.querySelector('#mount-status');
@@ -374,6 +387,8 @@ function setActiveChannel(channel) {
   activeChannel = channel === 'central' ? 'central' : 'command';
   terminalPanel.classList.toggle('active-channel', activeChannel === 'command');
   trajectoryPanel.classList.toggle('active-channel', activeChannel === 'central');
+  document.querySelector('#show-kosmos').setAttribute('aria-pressed', String(activeChannel === 'command'));
+  document.querySelector('#show-hrtok').setAttribute('aria-pressed', String(activeChannel === 'central'));
   if (activeChannel === 'central') centralInput.focus();
   else commandInput.focus();
 }
@@ -1893,7 +1908,7 @@ commandInput.addEventListener('keydown', (event) => {
   if (event.key === 'Tab') {
     event.preventDefault();
     event.stopPropagation();
-    if (event.ctrlKey || event.shiftKey) toggleActiveChannel();
+    if (document.documentElement.classList.contains('crt-readable') || event.ctrlKey || event.shiftKey) toggleActiveChannel();
     else completeCommandInput();
     return;
   }

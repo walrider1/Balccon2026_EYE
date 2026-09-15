@@ -59,13 +59,14 @@
     </main>
 
     <main id="game" class="game hidden">
+      <nav class="channel-switch" aria-label="Kanali terminala"><button id="show-kosmos" type="button">KOSMOS</button><button id="show-hrtok" type="button">HRTOK</button><span>Tab: promeni kanal</span><strong id="compact-clock">15:00</strong></nav>
       <section class="terminal-panel" aria-label="KOSMOS terminal">
         <header class="os-titlebar"><span class="os-brand"><img src="/YSP/JSA_emblem_transparent_v2.png" alt="" /><b>KOSMOS</b><span>// OPERATIVNI SISTEM</span></span><span id="location">/home/operator</span></header>
         <div id="next-step" class="next-step" role="status"></div>
         <div id="terminal-scroll" class="terminal-scroll">
           <div id="output" class="output" aria-live="polite"></div>
-          <form id="command-form" class="command-form"><span id="prompt">operator@kosmos:/home/operator $</span><input id="command-input" aria-label="KOSMOS komanda" placeholder="Komanda + Enter" autocomplete="off" autofocus spellcheck="false" /></form>
         </div>
+        <form id="command-form" class="command-form"><span id="prompt">operator@kosmos:/home/operator $</span><input id="command-input" aria-label="KOSMOS komanda" placeholder="Komanda + Enter" autocomplete="off" autofocus spellcheck="false" /></form>
       </section>
       <aside class="trajectory-panel" aria-label="Mission trajectory and HRTOK channel">
         <header class="os-titlebar"><span><b>JSA NAV</b> // ORBITAL TRAJECTORY</span><strong id="mission-clock">15:00</strong></header>

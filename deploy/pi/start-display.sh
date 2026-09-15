@@ -18,7 +18,7 @@ main_pid=$!
 trap 'kill "$main_pid" 2>/dev/null || true' EXIT
 trap 'exit 0' TERM INT
 sleep 3
-"$browser" --user-data-dir="$profile" --no-first-run --noerrdialogs --kiosk --new-window --app=http://localhost:5173/
+"$browser" --user-data-dir="$profile" --no-first-run --noerrdialogs --kiosk --new-window --app=http://localhost:5173/?display=crt
 wait "$main_pid"
 # eye-display.service restarts a failed/closed browser process. Individual-window
 # closure and physical monitor placement must still pass the target-device test.
