@@ -1,9 +1,10 @@
-CLINICAL NOTE // DR. M. PETROVIC
+MEDICAL // RECOVERY SUMMARY
 
-Kovac may awaken confused. Do not ask him to remember a long credential.
+PATIENT: SAMUEL "SLOKI" KOVAC
+ROLE: BOTANIST / CURRENTLY UNDER MEDICAL CARE
+A severe head injury required prolonged treatment in a regeneration chamber.
+Memory loss is expected. The injury alone cannot establish what happened before admission.
 
-Emergency recovery authentication is deliberately simple:
-use the regeneration chamber identifier, then the date of the LAST MANUAL OVERRIDE.
-
-The controller will reject admission dates and scan dates.
-Format is documented by the recovery service.
+CHAMBER: 07
+LAST MANUAL OVERRIDE: 04/12
+Use these two values with the format in recovery_service.txt.

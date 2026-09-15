@@ -28,6 +28,7 @@ loadLocalEnv();
 const { centralReply, centralStatus } = require('./central-ai');
 const eyeReplies = new Map();
 let displaySessionId = null;
+let displayEpoch = 0;
 const { createGameService } = require('./game-service');
 const stateDirectory = path.resolve(process.env.EYE_STATE_DIR || path.resolve(__dirname, '../.runtime'));
 const games = createGameService({ storage: path.join(stateDirectory, 'game-sessions.json') });
@@ -78,6 +79,8 @@ async function buildContentIndex(directory = contentRoot, relativePath = '') {
   const entries = await fs.promises.readdir(directory, { withFileTypes: true });
 
   for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+    // Legacy URLs stay readable for saved sessions; the new introduction has two records.
+    if (relativePath.replace(/\\/g, '/') === 'home/operator/medical' && ['patient_intake.txt','medbay_audit.txt','identity_limits.txt','patient_safety.txt'].includes(entry.name)) continue;
     const absolutePath = path.join(directory, entry.name);
     const nextRelativePath = path.join(relativePath, entry.name);
 
@@ -152,7 +155,7 @@ const server = http.createServer(async (request, response) => {
       // The installation display follows the terminal, even in another browser profile.
       if (requestUrl.searchParams.get('display') === '1' && games.has(displaySessionId)) id = displaySessionId;
       const s = games.has(id) ? games.snapshot(id) : null;
-      send(response, 200, JSON.stringify(s ? { sessionTag: s.sessionTag, started: s.started,
+      send(response, 200, JSON.stringify(s ? { sessionTag: s.sessionTag + ':' + displayEpoch, started: s.started,
         endingKind: s.endingKind, rootRecovered: s.rootRecovered, sedationEndsAt: s.sedationEndsAt,
         readCount: s.readFiles.length, ai: eyeReplies.get(id) || null } : { started: false }), 'application/json');
       return;
@@ -189,7 +192,9 @@ const server = http.createServer(async (request, response) => {
       send(response, 200, JSON.stringify(games.snapshot(id)), 'application/json'); return;
     }
     if (requestUrl.pathname === '/api/game/action' && request.method === 'POST') {
-      const result = games.action(id, await readJsonBody(request));
+      const action = await readJsonBody(request);
+      const result = games.action(id, action);
+      if (action.action === 'start' || action.action === 'reset') displayEpoch++;
       displaySessionId = result.newId || id;
       if (result.newId) { setSession(response, result.newId); delete result.newId; }
       send(response, 200, JSON.stringify(result), 'application/json'); return;
@@ -255,7 +260,7 @@ const server = http.createServer(async (request, response) => {
     if (!isYspAsset && !publicFiles.includes(relativeFile) && !isEyeMedia && !relativeFile.startsWith('content/') && !relativeFile.startsWith('audio/')) {
       send(response, 404, 'Not found', 'text/plain'); return;
     }
-    if (relativeFile.includes(':') || relativeFile.split('/').some(part => part.startsWith('.')) ||
+    if (relativeFile.includes(':') || relativeFile.split('/').some(part => part.startsWith('.') && !(part === '.bonus' && relativeFile.startsWith('content/home/operator/.bonus/'))) ||
         (!isYspAsset && (relativeFile.startsWith('ai/') || ['server.js', 'central-ai.js', 'central-character.js'].includes(relativeFile)))) {
       send(response, 404, 'Not found', 'text/plain; charset=utf-8');
       return;

@@ -1,0 +1,7 @@
+OPTIONAL // THE MISSING GALLERY
+
+Some directories do not announce themselves. Try ls -a.
+Three fragments describe one chain of evidence.
+After restoring Communications access, type ctf to begin the optional cipher hunt.
+Read its three fragments and submit flag EYE{...} to unlock .bonus.
+The gallery is a bonus, never a requirement for finishing the story.

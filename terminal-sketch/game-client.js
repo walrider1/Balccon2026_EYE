@@ -10,6 +10,7 @@ class RemoteKosmosGame {
     return 0;
   }
   canAccessPath(path) {
+    if (path.startsWith('/home/operator/.bonus')) return Boolean(this.ctf?.completed);
     if (path.startsWith('/home/operator/command/navigation') && !this.rootRecovered) return false;
     return this.access >= this.requiredAccess(path);
   }
@@ -28,12 +29,12 @@ class RemoteKosmosGame {
     return `SHIP NETWORK SECTORS\n\n${sectors.map(([name, path, status]) => `${name.padEnd(16)} ${path.padEnd(16)} ${status}`).join('\n')}`;
   }
   objectiveText() { return this.objective ? `RECOVERY ${this.objective.phase}/3 // ${this.objective.text}` : 'RECOVERY // CONNECTING'; }
-  identityKnown() { return (this.readFiles || []).some(p => ['/home/operator/medical/patient_intake.txt', '/home/operator/wake_protocol.txt'].includes(p)); }
+  identityKnown() { return (this.readFiles || []).some(p => ['/home/operator/medical/doctor_note.txt', '/home/operator/medical/patient_intake.txt', '/home/operator/wake_protocol.txt'].includes(p)); }
   navigationKnown() { return this.course === 'earth' || (this.readFiles || []).some(p => ['/home/operator/wake_protocol.txt', '/home/operator/command/navigation/decision_brief.txt'].includes(p)); }
   status() {
     const identity = this.identityKnown();
     const navigation = this.navigationKnown();
-    return `SYSTEM STATUS\n\nCURRENT USER: ${identity ? 'SAMUEL KOVAC' : 'UNKNOWN'}\nROLE: ${identity ? 'MEDICAL PATIENT' : 'UNKNOWN'}\nACCESS: LEVEL ${this.access}${this.rootRecovered ? ' // ROOT' : ''}\nCOURSE: ${navigation ? (this.course === 'earth' ? 'EARTH TRANSFER' : 'SOLAR TERMINATION') : 'UNKNOWN'}\nDESTINATION: ${navigation ? this.course.toUpperCase() : 'UNKNOWN'}`;
+    return `SYSTEM STATUS\n\nCURRENT USER: ${identity ? 'SAMUEL KOVAC' : 'UNKNOWN'}\nROLE: ${identity ? 'BOTANIST / MEDICAL PATIENT' : 'UNKNOWN'}\nACCESS: LEVEL ${this.access}${this.rootRecovered ? ' // ROOT' : ''}\nCOURSE: ${navigation ? (this.course === 'earth' ? 'EARTH TRANSFER' : 'SOLAR TERMINATION') : 'UNKNOWN'}\nDESTINATION: ${navigation ? this.course.toUpperCase() : 'UNKNOWN'}`;
   }
   formatTime(milliseconds) {
     const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));

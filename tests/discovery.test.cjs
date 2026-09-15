@@ -7,7 +7,7 @@ test('identity and navigation reveal independently from read records', () => {
   const game = new RemoteKosmosGame();
   assert.doesNotMatch(game.status(), /SAMUEL|MEDICAL PATIENT|SOLAR|DESTINATION: SUN/);
   game.readFiles = ['/home/operator/medical/doctor_note.txt'];
-  assert.equal(game.identityKnown(), false);
+  assert.equal(game.identityKnown(), true);
   game.readFiles.push('/home/operator/medical/patient_intake.txt');
   assert.match(game.status(), /SAMUEL KOVAC/);
   assert.equal(game.navigationKnown(), false);

@@ -4,6 +4,7 @@ const INTENTS = ['OBSERVE', 'WARN', 'DEFLECT', 'PROBE', 'CONFESS_PARTIAL', 'THRE
 const clamp = (n, min = 0, max = 100) => Math.min(max, Math.max(min, n));
 const normalize = text => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const FACTS = {
+  biography: 'The player has now read the medical summary: Samuel Sloki Kovac is a botanist under medical care after severe head trauma. They have seen chamber 07 and the manual override date; acknowledge this discovery, but never repeat credentials or solve the authorization for them.',
   orientation: 'The player is Samuel Sloki Kovac, aboard a civilian scientific spacecraft, in its medical section. He suffered a severe head injury and was placed in a medical regeneration chamber for prolonged treatment. He is waking with memory loss. HRTOK may explain these basics immediately. Do not invent the exact accident, attacker, date, elapsed years or casualty count. The cause of the injury and later ship crisis remain undisclosed.',
   botany: 'The Botany shift notes report that Kovac had held the crew together. After the dispute over his identity and his transfer to medical care, two factions accused each other. The notes do not identify the present patient as a copy.',
   sample: 'The sample manifest describes a plant-like organism from subsurface Martian water, retained under the captain\'s authority before risks were established. Kovac was its botanist. This does not prove the present patient\'s origin.',
@@ -20,6 +21,7 @@ const FACTS = {
   interlock: 'Recovery requires independent trust domains. HRTOK cannot cancel the patient-safety controller or erase valid recovery shares.'
 };
 const FILE_FACTS = {
+  '/home/operator/medical/doctor_note.txt': 'biography',
   '/home/operator/medical/patient_intake.txt': 'patient',
   '/home/operator/wake_protocol.txt': 'course',
   '/home/operator/command/navigation/decision_brief.txt': 'course',
@@ -110,7 +112,7 @@ function prepareTurn(character, payload) {
   if (kind === 'event') character.events.push(eventKey);
   for (const file of state.readFiles) {
     const fact = FILE_FACTS[file];
-    if (state.access >= (['identityLimits', 'patient', 'course'].includes(fact) ? 0 : fact === 'comms' ? 1 : 2) && !character.facts.includes(fact)) character.facts.push(fact);
+    if (state.access >= (['identityLimits', 'patient', 'course', 'biography'].includes(fact) ? 0 : fact === 'comms' ? 1 : 2) && !character.facts.includes(fact)) character.facts.push(fact);
   }
   if (state.readFiles.includes('/home/operator/wake_protocol.txt') && !character.facts.includes('patient')) character.facts.push('patient');
   if (state.access >= 2 && !character.facts.includes('comms')) character.facts.push('comms');

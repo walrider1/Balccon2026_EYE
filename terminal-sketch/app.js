@@ -336,8 +336,20 @@ function flushOutput() {
 }
 function print(text, cls = 'system') {
   if (cls === 'error') sfx.play('commandError', .16);
-  outputQueue.push({ text: String(text), cls });
-  typeNextOutputLine();
+  flushOutput();
+  const line = document.createElement('div');
+  line.className = `line ${cls}`;
+  const value = String(text);
+  if (cls === 'archive-record') {
+    for (const row of value.split('\n')) {
+      const part = document.createElement('span');
+      part.textContent = row + '\n';
+      if (/^(PATIENT:|ROLE:|CHAMBER:|LAST MANUAL OVERRIDE:|CURRENT COURSE:|DESTINATION:|AUTHORIZATION|auth |run |.*UNSENT|.*BLOCK TIME)/i.test(row)) part.className = 'record-key';
+      line.append(part);
+    }
+  } else line.textContent = value;
+  output.append(line);
+  terminalScroll.scrollTop = terminalScroll.scrollHeight;
 }
 
 function typeNextOutputLine() {
@@ -395,7 +407,12 @@ function updateNextStep() {
   const guide = document.getElementById('next-step');
   if (!guide) return;
   guide.hidden = Boolean(gameState.ending || gameState.missionResolved);
-  guide.textContent = 'ls: list files  //  cat <file>: read  //  help: controls';
+  const remaining = gameState.missionPaused ? gameState.missionRemaining : (gameState.missionEndsAt || Date.now()) - Date.now();
+  const urgent = remaining < 180000 || (gameState.sedationEndsAt && !gameState.rootRecovered && gameState.sedationEndsAt - Date.now() < 90000);
+  guide.classList.toggle('urgent-hint', Boolean(urgent));
+  guide.textContent = urgent ? 'TIME CRITICAL // ' + gameState.objectiveText() + ' // Type hint for help.' : 'ls: list  |  cd <folder>: enter  |  cat <file>: read  |  help: all commands';
+  const discovered = document.querySelector('#discovered-status');
+  if (discovered) discovered.textContent = `NAME: ${gameState.identityKnown() ? 'SAMUEL "SLOKI" KOVAC' : 'UNKNOWN'}  //  ROLE: ${gameState.identityKnown() ? 'BOTANIST / PATIENT' : 'UNKNOWN'}`;
   guide.title = 'Enter: submit. Ctrl+Right: HRTOK. Ctrl+Left: KOSMOS.';
 }
 
@@ -733,7 +750,7 @@ function updateMissionDisplay() {
   const known = gameState.navigationKnown();
   document.querySelector('.trajectory-map').classList.toggle('hidden', !known);
   if (!known) {
-    missionClock.textContent = '--:--';
+    missionClock.textContent = gameState.missionPaused ? 'PAUSED' : formatCountdown(Math.max(0, (gameState.missionEndsAt || Date.now()) - Date.now()));
     missionDestination.textContent = 'CURRENT VECTOR: UNKNOWN';
     missionObjective.textContent = 'NAVIGATION DATA UNKNOWN';
     return;
@@ -1769,6 +1786,8 @@ async function run(raw) {
     playSfx: (name, volume) => sfx.play(name, volume),
     onRecordRead: (path) => {
       readRecords.add(path);
+      updateNextStep();
+      updateMissionDisplay();
       const evidence = {
         '/home/operator/comms/raw_uplink_ledger.txt': 'evidence-comms',
         '/home/operator/command/neural_transfer.txt': 'evidence-neural',

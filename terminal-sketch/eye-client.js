@@ -7,6 +7,7 @@ if (typeof location !== 'undefined' && new URLSearchParams(location.search).get(
 }
 let current = null, hold = false, lastState = null, idleIndex = 0;
 let transientUntil = 0;
+let lastVideoTime = -1, lastVideoProgress = Date.now();
 let mediaError = '', connectionLost = false, loadStarted = 0, retryAt = 0, generation = 0;
 function showStatus() {
   signal.textContent = connectionLost ? 'SIGNAL LOST' : mediaError || (lastState?.started ? '' : 'HRTOK // STANDBY');
@@ -53,6 +54,11 @@ async function poll() {
     connectionLost = false;
     if (loadStarted && Date.now() - loadStarted > 10000 && video.readyState < 2 && !retryAt) {
       mediaError = 'EYE VIDEO LOADING — RETRYING'; retryAt = Date.now();
+    }
+    if (Number.isFinite(video.currentTime) && video.currentTime !== lastVideoTime) {
+      lastVideoTime = video.currentTime; lastVideoProgress = Date.now();
+    } else if (!video.ended && Date.now() - lastVideoProgress > 10000) {
+      retryAt = Date.now(); lastVideoProgress = Date.now();
     }
     if (scene) play(scene);
     else if (retryAt && Date.now() >= retryAt) play({clip:current,loop:video.loop,hold});

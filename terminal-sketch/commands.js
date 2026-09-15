@@ -46,10 +46,12 @@ function createCommands() {
     },
     {
       name: 'ls',
-      usage: 'ls [folder]',
+      usage: 'ls [-a] [folder]',
       description: 'list an accessible directory',
       run: ({ fs, state, game, print, arg }) => {
-        const { path, node } = fs.resolve(arg || '.', state.cwd);
+        const showHidden = /(^|\s)-a(\s|$)/.test(arg || '');
+        const target = (arg || '').replace(/(^|\s)-a(?=\s|$)/g, '').trim();
+        const { path, node } = fs.resolve(target || '.', state.cwd);
         if (!node || node.type !== 'dir') {
           print(`ls: cannot access '${path}': no such directory`, 'error');
           return;
@@ -58,7 +60,7 @@ function createCommands() {
           print(`ls: '${path}': access level ${game.requiredAccess(path)} required`, 'error');
           return;
         }
-        const entries = game.visibleEntries(fs, path);
+        const entries = (fs.list(path) || []).filter(({name}) => (showHidden || !name.startsWith('.')) && (name === '.bonus' || game.canAccessPath(`${path}/${name}`)));
         print(entries.length ? entries.map(({ name, type }) => type === 'dir' ? `${name}/` : name).join('    ') : '[empty]');
       }
     },
@@ -73,7 +75,7 @@ function createCommands() {
           return;
         }
         if (!game.canAccessPath(path)) {
-          print(`cd: ${arg}: access level ${game.requiredAccess(path)} required`, 'error');
+          print(path.includes('/.bonus') ? 'BONUS LOCKED // Solve the optional ctf and submit its flag. Read bonus_riddle.txt.' : `cd: ${arg}: access level ${game.requiredAccess(path)} required`, 'error');
           return;
         }
         state.cwd = path;
@@ -105,7 +107,7 @@ function createCommands() {
           else {
             const text = await response.text();
             await game.registerFileRead(path);
-            print(text);
+            print(text, 'archive-record');
             onRecordRead?.(path);
           }
         }
@@ -135,7 +137,6 @@ function createCommands() {
       name: 'auth',
       usage: 'auth <domain> <code>',
       description: 'submit a recovery authorization',
-      showInHelp: false,
       run: async ({ game, print, args, startSedationDisplay }) => {
         if (isTerminated({ game, print })) return;
         const result = await game.authorize(args[0] || '', args.slice(1).join(' '));

@@ -107,3 +107,10 @@ Sačekaj završni ekran. Time si završio jednu celu partiju.
 
 Nema potrebe za razgovorom sa AI-jem da bi kodovi radili. Za test ličnosti
 slobodno razgovaraj između faza, ali tajmeri nastavljaju da teku.
+
+
+## Kraći uvod i bonus galerija
+Medical sada prikazuje doctor_note.txt (identitet i dve vrednosti za autorizaciju), recovery_service.txt (format i Cortex pravila) i Cortex aplikaciju. Stari URL-ovi zapisa ostaju dostupni za postojeće sesije.
+Komande i zapisi se prikazuju odmah. Crveni redovi označavaju tragove, a poslednja tri minuta misije ili poslednjih 90 sekundi sedacije uključuju crveno upozorenje sa ciljem. Tajmer je vidljiv i pre otkrivanja destinacije.
+Bonus: `ls -a` otkriva `.bonus`. Posle Communications autorizacije pokreni `ctf`, pročitaj tri forensic_fragment.txt zapisa i predaj `flag EYE{SIGNAL_WITNESS_CONTINUITY}`. Zatim `cd /home/operator/.bonus`, `ls` i `display pcele.png` ili `display IMG_2406.JPG`. Bonus nije uslov za završetak.
+Oko prati ponovni ulazak u terminal i reset partije; običan refresh ne resetuje rok misije.

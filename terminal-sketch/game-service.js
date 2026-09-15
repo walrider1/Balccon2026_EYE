@@ -129,7 +129,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
   }
   function canRead(id, file) {
     const s = get(id);
-    return s.started && !s.game.ending && s.game.canAccessPath(file);
+    return s.started && !s.game.ending && (!file.startsWith('/home/operator/.bonus') || Boolean(s.ctf?.completed)) && s.game.canAccessPath(file);
   }
   function recordRead(id, file) {
     const s = get(id);
@@ -249,7 +249,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
       const stage = !g.rootShares.medical ? 'medical' : !g.rootShares.comms ? 'comms' : !g.rootShares.cortex ? 'cortex' : !g.rootRecovered ? 'root' : 'navigation';
       const level = Math.min(3, (s.hintCounts[stage] || 0) + 1); s.hintCounts[stage] = level;
       const details = {
-        medical: ['Read /medical/doctor_note.txt and /medical/recovery_service.txt.', 'Compare patient_intake.txt with medbay_audit.txt. Use the chamber and LAST MANUAL OVERRIDE date in the documented format.'],
+        medical: ['Read /medical/doctor_note.txt and /medical/recovery_service.txt.', 'Use CHAMBER 07 and LAST MANUAL OVERRIDE 04/12 from doctor_note.txt. Enter: auth medical MR-07-0412'],
         comms: ['Read /comms/raw_uplink_ledger.txt and /comms/lock_audit.txt.', 'Combine the UNSENT packet ID and BLOCK TIME using /comms/recovery_service.txt.'],
         cortex: ['Run /medical/cortex_echo.app while sedation is active.', 'Press the displayed A/S/K/L key once per signal. At least 15 of 20 must match; retries are allowed.'],
         root: ['All three shares have been accepted. Enter: root recover.', 'ROOT recovery stops sedation and opens the navigation archive. Enter: root recover.'],
@@ -264,7 +264,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
       if (s.ctf?.completed) throw new GameError(409, 'FLAG ALREADY VERIFIED');
       if (!s.ctf || now() >= s.ctf.endsAt) throw new GameError(409, 'CTF WINDOW CLOSED. Use ctf to retry.');
       if (!CTF_FILES.every(file => s.readFiles.includes(file)) || input.flag !== CTF_FLAG) throw new GameError(403, 'FLAG REJECTED. Verify all three evidence fragments and their order.');
-      s.ctf.completed = true; result.message = 'FLAG VERIFIED // CHAIN OF EVIDENCE RESTORED\nOptional investigation complete. Continue your current recovery objective.';
+      s.ctf.completed = true; result.message = 'FLAG VERIFIED // CHAIN OF EVIDENCE RESTORED\nBonus archive unlocked: cd /home/operator/.bonus. Use ls, then display <file>.';
     } else throw new GameError(400, 'UNKNOWN ACTION');
     s.revision++; persist(); return { ...result, state: snapshot(id) };
   }

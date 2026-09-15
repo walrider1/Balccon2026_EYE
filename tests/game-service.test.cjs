@@ -65,3 +65,15 @@ test('failed durable reset preserves the old session and permits a later retry',
 test('too-late planner does not freeze the mission in an unusable state',()=>{
  const f=fixture();root(f);const deadline=f.service.snapshot(f.id).missionEndsAt;f.advance(deadline-f.now()-1000);assert.throws(()=>f.act('planner-start'),/WINDOW CLOSED/);assert.equal(f.service.snapshot(f.id).missionPaused,false);f.advance(1001);assert.equal(f.service.snapshot(f.id).endingKind,'mission');
 });
+
+test('bonus gallery requires verified optional cipher and relocks on reset',()=>{
+ const f=fixture();f.act('start');
+ const image='/home/operator/.bonus/pcele.png';
+ assert.equal(f.service.canRead(f.id,image),false);
+ comms(f);f.act('ctf-start');
+ for(const folder of ['comms','engineering','command']) f.service.recordRead(f.id,`/home/operator/${folder}/forensic_fragment.txt`);
+ f.act('flag',{flag:'EYE{SIGNAL_WITNESS_CONTINUITY}'});
+ assert.equal(f.service.canRead(f.id,image),true);
+ const reset=f.service.operatorReset(f.id);f.service.action(reset.newId,{action:'start'});
+ assert.equal(f.service.canRead(reset.newId,image),false);
+});

@@ -1,8 +1,11 @@
-MEDICAL RECOVERY SERVICE
+MEDICAL // ACCESS RECOVERY
 
-AUTHORIZATION FORMAT:
 auth medical MR-<CHAMBER>-<OVERRIDE MMDD>
+Use the two-digit chamber and four-digit override date from doctor_note.txt.
+This releases medical access and the first of three ROOT shares.
 
-On successful authentication, the medical trust domain will release one ROOT recovery share.
-
-This service is governed by patient-safety firmware and cannot be overridden by CENTRAL.
+IF SEDATION STARTS:
+run /medical/cortex_echo.app
+Press the displayed A/S/K/L key. Pass 15 of 20 signals.
+Then submit the displayed code with auth cortex <code>.
+The independent safety controller accepts this even if HRTOK objects.
