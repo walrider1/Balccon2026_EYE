@@ -75,13 +75,14 @@ https://labwc.github.io/labwc-actions.5.html
 
 ## CRT televizor: veliki tekst
 
-Na televizoru otvoriti `http://localhost:5173/`. Krupni CRT prikaz je podrazumevan.
+Terminal na običnom monitoru: `http://localhost:5173/` (standardni raspored). CRT prikazuje samo `http://localhost:5173/eye.html?kiosk=1`.
+Opcioni krupni tekstualni prikaz ostaje dostupan na `/?display=crt`.
 CRT profil koristi jedan širok kanal; Tab ili dugmad KOSMOS/HRTOK menjaju kanal.
 PageUp/PageDown pomeraju tekst. Polje za unos je stalno vidljivo van skrolovanog
 sadržaja. Sat ostaje u gornjoj traci. Oko i dalje radi na zasebnoj eye.html stranici.
 U ovom profilu Tab ne dopunjava komande. Za standardni prikaz koristiti `?display=desktop`.
-CRT profil se uključuje na svim rezolucijama osim uz izričito `?display=desktop`.
-Pi launcher eksplicitno otvara CRT profil, uključujući kada konverter prijavi veliku rezoluciju.
+CRT tekstualni profil uključuje se samo uz `?display=crt`.
+Pi launcher otvara `?display=desktop` za običan monitor i eye.html za CRT.
 
 Ostavljeno je 5% prostora uz svaku ivicu. Tekst je povećan, uklonjene su simulirane
 scanline/vignette maske, a orbitalna mapa sakrivena u CRT profilu radi prostora za tekst.
@@ -90,3 +91,16 @@ Model sa korisnikove nalepnice: LG 21FS2RLX-ZC. Stvarni izlazni video režim i v
 još nisu potvrđeni. Ovaj profil ne menja rezoluciju Pi-ja niti konvertera.
 
 Dorada: podebljan tekst veličine 4.5% širine browsera (najmanje 28px), umesto ranijih 2.25%. Na 1280px tekst i unos imaju oko 58px. Početni ispis je skraćen na dva reda; status je dostupan komandom status.
+
+### Raspored svih prozora
+
+Početni ekran ima centriran sadržaj i unos preko cele širine. Boot sekvenca,
+arhiva, beleške, Cortex, planer i završeci koriste zajedničke margine od 6%.
+Preveliki dijalozi imaju unutrašnji skrol; PageUp/PageDown pomeraju otvoreni
+Cortex/planer/završni prozor, a u beleškama rade u samom tekstualnom polju.
+Planer čuva odnos stranica mape i ne smanjuje mapu da bi ugurao sve kontrole.
+Ovo je raspored unutar aplikacije; vidljiva traka Chromium-a na fotografiji
+pripada browseru i uklanja se njegovim kiosk/fullscreen režimom.
+Vizuelna provera osnovnih stanja izvršena je na statičnim kopijama prozora
+u browseru na 640x480; stvarni CRT i kompletni interaktivni izazovi nisu
+ponovo odigrani na fizičkom uređaju.

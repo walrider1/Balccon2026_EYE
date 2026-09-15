@@ -3,7 +3,7 @@ const bootSequence = document.querySelector('#boot-sequence');
 const game = document.querySelector('#game');
 const displayMode = new URLSearchParams(window.location.search).get('display');
 function updateDisplayMode() {
-  document.documentElement.classList.toggle('crt-readable', displayMode !== 'desktop');
+  document.documentElement.classList.toggle('crt-readable', displayMode === 'crt');
 }
 updateDisplayMode();
 document.querySelector('#show-kosmos').addEventListener('click', () => setActiveChannel('command'));
@@ -1134,11 +1134,11 @@ function finishBoot() {
     game.classList.remove('hidden');
     updatePrompt();
     commandInput.focus();
-    startMissionDisplay().then(() => { if (!gameState.ending) { if (displayMode === 'desktop') print(gameState.status()); commandInput.disabled = false; commandInput.focus(); } }).catch(error => print(error.message, 'error'));
+    startMissionDisplay().then(() => { if (!gameState.ending) { if (displayMode !== 'crt') print(gameState.status()); commandInput.disabled = false; commandInput.focus(); } }).catch(error => print(error.message, 'error'));
     commandInput.disabled = true;
     armIdleReset();
     sfx.loop('ambientShip', .3);
-    print('Tab: razgovor\nPgUp/PgDn: čitaj');
+    print(displayMode === 'crt' ? 'Tab: razgovor\nPgUp/PgDn: čitaj' : 'Ctrl+Right: HRTOK / Ctrl+Left: KOSMOS\nPageUp / PageDown: čitaj. help: komande.');
     updateNextStep();
     requestCentralReply({ kind: 'opening' }).then(response => {
       if (response.message && !gameState.ending && !resetInProgress) centralSay(response.message);
@@ -1928,6 +1928,15 @@ commandInput.addEventListener('keydown', (event) => {
 });
 
 document.addEventListener('keydown', (event) => {
+  if (document.documentElement.classList.contains('crt-readable') && ['PageUp', 'PageDown'].includes(event.key)) {
+    if (!notesPanel.classList.contains('hidden')) return; // textarea handles its own scroll
+    const dialog = document.querySelector('.planner-overlay:not(.hidden), .cortex-overlay:not(.hidden), .dev-menu-overlay:not(.hidden), .failure-screen:not(.hidden)');
+    if (dialog) {
+      event.preventDefault();
+      dialog.scrollTop += (event.key === 'PageUp' ? -1 : 1) * dialog.clientHeight * .75;
+      return;
+    }
+  }
   if (devMenu.handleKey(event)) return;
   if (cortexGame.handleKey(event)) return;
   if (plannerGame.handleKey(event)) return;
