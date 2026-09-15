@@ -61,12 +61,12 @@ test('important statements survive short history and explicit changed position i
   assert.match((await api.reply(payload(15, { text: 'I choose the Sun.' }))).message, /change your mind/);
 });
 
-test('Serbian fallback and relationship are coherent', async () => {
+test('Serbian input receives English replies and preserves relationship', async () => {
   const api = createCentralService({ env: {} });
   const reply = await api.reply(payload(1, { text: 'Hvala, razumem.' }));
-  assert.match(reply.message, /Bar oko toga se slažemo/); assert.ok(reply.trust_delta > 0);
+  assert.match(reply.message, /We agree on that much/); assert.ok(reply.trust_delta > 0);
   const help = await api.reply(payload(2, { text: 'Šta dalje?' }));
-  assert.match(help.message, /medicinske/);
+  assert.match(help.message, /medical/i);
 });
 
 test('provider uses schema, trusted instructions, bounded memory and no full secret lore', async () => {

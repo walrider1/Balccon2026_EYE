@@ -4,73 +4,73 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#060b0c" />
-    <title>KOSMOS / OPERATIVNI SISTEM</title>
+    <title>KOSMOS / OPERATING SYSTEM</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main id="boot-screen" class="boot-screen" aria-live="polite">
       <div class="boot-monitor">
-        <div class="boot-monitor-top"><span>KOSMOS // SISTEMSKI ROM</span><span>MODEL N-17 / REV 2.6</span></div>
+        <div class="boot-monitor-top"><span>KOSMOS // SYSTEM ROM</span><span>MODEL N-17 / REV 2.6</span></div>
         <div class="boot-card">
           <div class="boot-brand">
             <div class="boot-brand-mark"><img src="/YSP/JSA_emblem_transparent_v2.png" alt="JSA emblem" /></div>
             <div>
-              <p class="boot-kicker">JUGOSLOVENSKA SVEMIRSKA AGENCIJA</p>
+              <p class="boot-kicker">YUGOSLAV SPACE AGENCY</p>
               <h1>KOSMOS</h1>
-              <p class="boot-subtitle">ORBITALNI OPERATIVNI SISTEM</p>
+              <p class="boot-subtitle">ORBITAL OPERATING SYSTEM</p>
             </div>
           </div>
           <div class="boot-rule"></div>
-          <p class="boot-command">UPIŠI <strong>start system</strong> I PRITISNI <kbd>ENTER</kbd></p>
-          <p id="mount-status" class="mount-status">UČITAVANJE ARHIVE...</p>
-          <form id="boot-form"><span class="boot-prompt">KOSMOS:&gt;</span><input id="boot-input" aria-label="Pokretanje sistema" placeholder="start system" autocomplete="off" autofocus spellcheck="false" /></form>
-          <div class="boot-card-footer"><span>© 1987 JUGOSLOVENSKA SVEMIRSKA AGENCIJA</span></div>
+          <p class="boot-command">TYPE <strong>start system</strong> AND PRESS <kbd>ENTER</kbd></p>
+          <p id="mount-status" class="mount-status">LOADING ARCHIVE...</p>
+          <form id="boot-form"><span class="boot-prompt">KOSMOS:&gt;</span><input id="boot-input" aria-label="Start system" placeholder="start system" autocomplete="off" autofocus spellcheck="false" /></form>
+          <div class="boot-card-footer"><span>© 1987 YUGOSLAV SPACE AGENCY</span></div>
         </div>
       </div>
     </main>
 
     <main id="boot-sequence" class="boot-sequence hidden" aria-live="polite">
-      <div class="boot-sequence-header"><span>KOSMOS // SAMOPROVERA SISTEMA</span><span id="boot-stage">PROVERA U TOKU</span></div>
+      <div class="boot-sequence-header"><span>KOSMOS // SYSTEM SELF-TEST</span><span id="boot-stage">CHECKING</span></div>
       <div id="ysp-boot-frame" class="ysp-boot-frame">
         <div class="boot-post-card">
-          <div class="boot-post-heading"><span>KOSMOS SISTEMSKI ROM</span><span>1987.11.03</span></div>
+          <div class="boot-post-heading"><span>KOSMOS SYSTEM ROM</span><span>1987.11.03</span></div>
           <div class="boot-post-body">
             <div class="boot-post-logo"><img id="boot-emblem" src="/YSP/JSA_emblem_transparent_v2.png" alt="JSA emblem" /></div>
             <div class="boot-post-log" id="boot-log">
-              <p>KOSMOS / RAČUNAR LETA</p>
-              <p>ROM 2.6.14 &nbsp; JUGOSLOVENSKA SVEMIRSKA AGENCIJA 1987</p>
+              <p>KOSMOS / FLIGHT COMPUTER</p>
+              <p>ROM 2.6.14 &nbsp; YUGOSLAV SPACE AGENCY 1987</p>
               <p class="boot-log-dim">----------------------------------------</p>
               <p data-boot-log="1">CPU 8086 ................. <b>OK</b></p>
-              <p data-boot-log="2">MEMORIJA ................ <b>WAIT</b></p>
-              <p data-boot-log="3">NAVIGACIONA MAGISTRALA .. <b>WAIT</b></p>
-              <p data-boot-log="4">VEZA SA PACIJENTOM ...... <b>WAIT</b></p>
+              <p data-boot-log="2">MEMORY ................ <b>WAIT</b></p>
+              <p data-boot-log="3">NAVIGATION BUS .. <b>WAIT</b></p>
+              <p data-boot-log="4">TERMINAL LINK ...... <b>WAIT</b></p>
               <p class="boot-log-dim">----------------------------------------</p>
-              <p id="boot-post-message" class="boot-post-message">UČITAVANJE SISTEMA...</p>
+              <p id="boot-post-message" class="boot-post-message">LOADING SYSTEM...</p>
             </div>
           </div>
           <div class="boot-progress"><span id="boot-progress-bar"></span></div>
-          <div class="boot-post-footer"><span>YSP SIGURNA VEZA</span><span id="boot-post-status">SAČEKAJTE</span></div>
+          <div class="boot-post-footer"><span>YSP SECURE LINK</span><span id="boot-post-status">PLEASE WAIT</span></div>
         </div>
-        <img id="ysp-boot-animation" class="ysp-boot-animation" src="/YSP/JSA_boot_transparent.gif" alt="Jugoslovenska Svemirska Agencija boot animation" />
+        <img id="ysp-boot-animation" class="ysp-boot-animation" src="/YSP/JSA_boot_transparent.gif" alt="Yugoslav Space Agency boot animation" />
         <audio id="ysp-boot-sound" preload="auto"><source src="/YSP/JSA_boot_sound_v1.mp3" type="audio/mpeg" /></audio>
-        <p class="boot-caption">JUGOSLOVENSKA SVEMIRSKA AGENCIJA / SISTEM SPREMAN</p>
+        <p class="boot-caption">YUGOSLAV SPACE AGENCY / SYSTEM READY</p>
       </div>
-      <div class="boot-sequence-footer"><span>NE ISKLJUČUJTE NAPAJANJE</span><span>SIGURNO OKRUŽENJE ZA OBNOVU</span><span>IZDANJE 87.11</span></div>
+      <div class="boot-sequence-footer"><span>DO NOT POWER OFF</span><span>SECURE RECOVERY ENVIRONMENT</span><span>RELEASE 87.11</span></div>
     </main>
 
     <main id="game" class="game hidden">
-      <nav class="channel-switch" aria-label="Kanali terminala"><button id="show-kosmos" type="button">KOSMOS</button><button id="show-hrtok" type="button">HRTOK</button><span>Tab: promeni kanal</span><strong id="compact-clock">15:00</strong></nav>
+      <nav class="channel-switch" aria-label="Terminal channels"><button id="show-kosmos" type="button">KOSMOS</button><button id="show-hrtok" type="button">HRTOK</button><span>Shift+Tab: switch channel</span><strong id="compact-clock">--:--</strong></nav>
       <section class="terminal-panel" aria-label="KOSMOS terminal">
-        <header class="os-titlebar"><span class="os-brand"><img src="/YSP/JSA_emblem_transparent_v2.png" alt="" /><b>KOSMOS</b><span>// OPERATIVNI SISTEM</span></span><span id="location">/home/operator</span></header>
+        <header class="os-titlebar"><span class="os-brand"><img src="/YSP/JSA_emblem_transparent_v2.png" alt="" /><b>KOSMOS</b><span>// OPERATING SYSTEM</span></span><span id="location">/home/operator</span></header>
         <div id="next-step" class="next-step" role="status"></div>
         <div id="terminal-scroll" class="terminal-scroll">
           <div id="output" class="output" aria-live="polite"></div>
         </div>
-        <form id="command-form" class="command-form"><span id="prompt">operator@kosmos:/home/operator $</span><input id="command-input" aria-label="KOSMOS komanda" placeholder="Komanda + Enter" autocomplete="off" autofocus spellcheck="false" /></form>
+        <form id="command-form" class="command-form"><span id="prompt">operator@kosmos:/home/operator $</span><input id="command-input" aria-label="KOSMOS command" placeholder="Command + Enter" autocomplete="off" autofocus spellcheck="false" /></form>
       </section>
       <aside class="trajectory-panel" aria-label="Mission trajectory and HRTOK channel">
-        <header class="os-titlebar"><span><b>JSA NAV</b> // ORBITAL TRAJECTORY</span><strong id="mission-clock">15:00</strong></header>
-        <svg class="trajectory-map" viewBox="0 0 300 380" role="img" aria-label="Current ship trajectory toward the Sun">
+        <header class="os-titlebar"><span><b>JSA NAV</b> // ORBITAL TRAJECTORY</span><strong id="mission-clock">--:--</strong></header>
+        <svg class="trajectory-map hidden" viewBox="0 0 300 380" role="img" aria-label="Ship navigation display">
           <defs><filter id="trajectory-glow"><feGaussianBlur stdDeviation="2.4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
           <circle class="trajectory-orbit orbit-earth" cx="238" cy="56" r="23" />
           <circle class="trajectory-earth" cx="238" cy="56" r="7" />
@@ -80,10 +80,10 @@
           <path id="mission-path" class="mission-path sun-course" d="M45 78 C235 95 272 235 170 280" />
           <circle id="mission-ship" class="mission-ship" cx="45" cy="78" r="5" />
         </svg>
-        <p id="mission-destination" class="mission-destination">CURRENT VECTOR: SUN</p>
-        <p id="mission-objective" class="mission-objective">SOLAR ARRIVAL IN PROGRESS</p>
+        <p id="mission-destination" class="mission-destination">CURRENT VECTOR: UNKNOWN</p>
+        <p id="mission-objective" class="mission-objective">NAVIGATION DATA UNKNOWN</p>
         <section class="central-panel" aria-label="HRTOK communications channel">
-          <header class="os-titlebar central-titlebar"><span><b>HRTOK</b> // CAPTAIN CONTINUITY</span><span id="central-status">MONITORING</span></header>
+          <header class="os-titlebar central-titlebar"><span><b>HRTOK</b> // VOICE CHANNEL</span><span id="central-status">MONITORING</span></header>
           <div id="central-feed" class="central-feed" aria-live="polite"></div>
           <form id="central-form" class="central-form">
             <span>HRTOK:&gt;</span>

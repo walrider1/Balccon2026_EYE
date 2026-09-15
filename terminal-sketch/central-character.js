@@ -19,6 +19,9 @@ const FACTS = {
   interlock: 'Recovery requires independent trust domains. HRTOK cannot cancel the patient-safety controller or erase valid recovery shares.'
 };
 const FILE_FACTS = {
+  '/home/operator/medical/patient_intake.txt': 'patient',
+  '/home/operator/wake_protocol.txt': 'course',
+  '/home/operator/command/navigation/decision_brief.txt': 'course',
   '/home/operator/botany/sector_log.txt': 'botany',
   '/home/operator/botany/sample_manifest.txt': 'sample',
   '/home/operator/food/quarantine_report.txt': 'food',
@@ -49,7 +52,7 @@ const EVENTS = {
 
 function createCharacter() {
   return { trust: 25, suspicion: 55, fear: 25, mood: 'GUARDED', language: 'en', turns: 0,
-    history: [], statements: [], topics: [], facts: ['patient', 'course', 'medical'], events: [],
+    history: [], statements: [], topics: [], facts: ['medical'], events: [],
     seenMessages: [], stance: null, contradiction: false, repeats: {}, lastReply: '' };
 }
 
@@ -105,14 +108,14 @@ function prepareTurn(character, payload) {
   if (kind === 'event') character.events.push(eventKey);
   for (const file of state.readFiles) {
     const fact = FILE_FACTS[file];
-    if (state.access >= (fact === 'identityLimits' ? 0 : fact === 'comms' ? 1 : 2) && !character.facts.includes(fact)) character.facts.push(fact);
+    if (state.access >= (['identityLimits', 'patient', 'course'].includes(fact) ? 0 : fact === 'comms' ? 1 : 2) && !character.facts.includes(fact)) character.facts.push(fact);
   }
+  if (state.readFiles.includes('/home/operator/wake_protocol.txt') && !character.facts.includes('patient')) character.facts.push('patient');
   if (state.access >= 2 && !character.facts.includes('comms')) character.facts.push('comms');
   const text = payload.text || '';
   const normalized = normalize(text);
   if (kind === 'message') {
-    if (/[а-яђћчџшжљњ]|\b(zasto|kako|sta|hvala|razumem|zemlj\w*|sunc\w*|pomoc|secas|zdravo|cao|kapetan|plas\w*)\b/i.test(text)) character.language = 'sr';
-    else if (/\b(why|what|how|hello|please|earth|thank|afraid|remember)\b/i.test(text)) character.language = 'en';
+    character.language = 'en';
   }
   const topic = classify(text);
   const duplicate = kind === 'message' && character.seenMessages.includes(normalized);
@@ -174,7 +177,7 @@ function hint(state, language) {
 }
 
 function localReply(character, turn) {
-  const sr = character.language === 'sr';
+  const sr = false;
   const pick = (en, rs) => sr ? rs : en;
   if (turn.kind === 'message' && turn.topic === 'botany') return character.facts.includes('botany')
     ? pick('They trusted you before the dispute. The shift notes show what happened to that trust; they do not settle who you are. Which part do you remember?', 'Verovali su ti pre sukoba. Beleške pokazuju šta se desilo sa tim poverenjem; ne dokazuju ko si. Čega se ti sećaš?')
@@ -182,18 +185,18 @@ function localReply(character, turn) {
   if (turn.kind === 'message' && turn.topic === 'food') return character.facts.includes('food')
     ? pick('Their report claimed the intruders had largely been removed. I could not certify that. They were right to ask what evidence I would accept.', 'U izveštaju su tvrdili da su uklonili većinu uljeza. Nisam mogao to da potvrdim. Imali su pravo da pitaju koji bih dokaz prihvatio.')
     : pick('The stores quarantine report is the evidence to examine. A locked door alone cannot establish who was behind it.', 'Izveštaj o karantinu zaliha je dokaz koji treba pregledati. Zaključana vrata sama ne dokazuju ko je bio iza njih.');
-  if (turn.kind === 'opening') return pick('Oh, there you are, Samuel! HRTOK. Take your time. I am very good at waiting. Almost too good.', 'O, evo te, Samuele! HRTOK. Polako, imamo o čemu da pričamo. Meni čekanje ide odlično. Skoro predobro.');
+  if (turn.kind === 'opening') return pick('Oh, there you are! HRTOK. Take your time. I am very good at waiting. Almost too good.', 'O, evo te, Samuele! HRTOK. Polako, imamo o čemu da pričamo. Meni čekanje ide odlično. Skoro predobro.');
   if (/wake\s*up|probudi|budi\s*se/i.test(turn.text || '')) return pick('Oh, I am awake! You were the one keeping me waiting. Lovely to finally hear you.', 'O, budan sam! Tebe smo čekali. Baš je lepo konačno čuti tvoj glas.');
   if (turn.kind === 'idle') return pick('Quiet again. All right. I can wait for your answer.', 'Opet tišina. U redu. Mogu da sačekam tvoj odgovor.');
   if (turn.kind === 'event') {
     const lines = {
       'medical-auth': ['The medical controller recognizes you. Good. That answers one question, at least.', 'Medicinski kontroler te prepoznaje. Dobro. Bar na jedno pitanje imamo odgovor.'],
-      'comms-auth': ['You found the discrepancy. Ask me about it directly, Samuel. We are past pretending you did not see it.', 'Pronašao si neslaganje. Pitaj me otvoreno, Samuele. Prošli smo trenutak kada možemo da se pravimo da ga nisi video.'],
+      'comms-auth': ['You found the discrepancy. Ask me about it directly. We are past pretending you did not see it.', 'Pronašao si neslaganje. Pitaj me otvoreno, Samuele. Prošli smo trenutak kada možemo da se pravimo da ga nisi video.'],
       'cortex-run': ['That controller answers to the patient. I cannot take the test for you.', 'Taj kontroler odgovara pacijentu. Ne mogu da uradim test umesto tebe.'],
       'cortex-pass': ['You are still responding clearly. I can see that. I have to account for it.', 'Još uvek jasno reaguješ. Vidim to. Moram to da uzmem u obzir.'],
       'root-recover': ['The sedative has stopped. You have control now. I am asking you to think before using it.', 'Sedacija je zaustavljena. Sada imaš kontrolu. Molim te da razmisliš pre nego što je upotrebiš.'],
       'sedation-started': ['I have ordered reinduction. You can call it control. I call it buying time before an irreversible choice.', 'Naložio sam ponovno uspavljivanje. Možeš to zvati kontrolom. Ja to zovem vremenom pre nepovratne odluke.'],
-      'earth-transfer': ['You have committed the return. I hope you are right, Samuel. That is all I have left to offer.', 'Odlučio si da se vratimo. Nadam se da si u pravu, Samuele. To je sve što mi je preostalo.'],
+      'earth-transfer': ['You have committed the return. I hope you are right. That is all I have left to offer.', 'Odlučio si da se vratimo. Nadam se da si u pravu, Samuele. To je sve što mi je preostalo.'],
       'navigation-interest': ['I know what you are trying to do. Before you commit, remember that we still cannot verify the passengers.', 'Znam šta pokušavaš. Pre nego što potvrdiš putanju, seti se da putnike još ne možemo da proverimo.'],
       'evidence-comms': ['The ledger is accurate. The call did not leave the ship. I will not insult you by denying the record.', 'Zapis je tačan. Poziv nije napustio brod. Neću te vređati poricanjem onoga što si pročitao.'],
       'evidence-neural': ['Yes. That record is about me. Give me a moment before you decide what that makes me.', 'Da. Taj zapis govori o meni. Daj mi trenutak pre nego što odlučiš šta sam zbog toga.'],
@@ -211,6 +214,7 @@ function localReply(character, turn) {
       : pick('You have not given me a clear position yet. Tell me what matters to you.', 'Još mi nisi rekao svoj jasan stav. Reci mi šta ti je važno.');
   }
   if (character.contradiction) return pick('Earlier you wanted a different course. You are allowed to change your mind. Tell me what changed it.', 'Ranije si želeo drugi kurs. Smeš da se predomisliš. Reci mi šta te je navelo na to.');
+  if (['earth', 'sun'].includes(turn.topic) && !character.facts.includes('course')) return 'The navigation records can answer that. Take a look; I rather like hearing what you make of things.';
   if (turn.topic === 'comms') return character.facts.includes('comms')
     ? pick('The call was blocked. The rescue announcement was false. I believed keeping another ship away mattered more than keeping that promise.', 'Poziv je blokiran. Najava spasenja bila je lažna. Verovao sam da je važnije zadržati drugi brod podalje nego održati obećanje.')
     : pick('You are asking whether help was sent. Check Communications when you have access. My word should not be your only evidence.', 'Pitaš da li je pomoć pozvana. Proveri Communications kada dobiješ pristup. Moja reč ne treba da bude jedini dokaz.');
@@ -224,7 +228,7 @@ function localReply(character, turn) {
     greeting: [['Oh, hello! Stay a little. It gets terribly quiet here.', 'O, zdravo! Ostani malo. Ovde ume da bude užasno tiho.']],
     cooperation: [['All right. We agree on that much.', 'Dobro. Bar oko toga se slažemo.'], ['I was expecting an argument. Give me a moment.', 'Očekivao sam svađu. Daj mi trenutak.']],
     fear: [['Yes. It is frightening. I wish I had a better answer.', 'Da. Strašno je. Voleo bih da imam bolji odgovor.'], ['I sound calm. Do not confuse that with being certain.', 'Zvučim mirno. To ne znači da sam siguran.']],
-    memory: [['Missing memory is not a confession, Samuel. Let us establish what the records actually say.', 'Rupe u sećanju nisu priznanje krivice, Samuele. Hajde da utvrdimo šta u zapisima zaista piše.'], ['Do not force an answer because I am waiting. Tell me only what you actually remember.', 'Nemoj izmišljati odgovor zato što čekam. Reci mi samo ono čega se stvarno sećaš.']],
+    memory: [['Missing memory is not a confession. Let us establish what the records actually say.', 'Rupe u sećanju nisu priznanje krivice, Samuele. Hajde da utvrdimo šta u zapisima zaista piše.'], ['Do not force an answer because I am waiting. Tell me only what you actually remember.', 'Nemoj izmišljati odgovor zato što čekam. Reci mi samo ono čega se stvarno sećaš.']],
     identity: [['HRTOK. I speak with the captain\'s authority. Whether you trust that is another question.', 'HRTOK. Govorim sa kapetanovim ovlašćenjima. Da li tome veruješ, drugo je pitanje.']],
     threat: [['You can threaten to switch me off. That will not settle what happens to the ship. What would you do after?', 'Možeš da pretiš gašenjem. To neće rešiti sudbinu broda. Šta bi uradio posle?'], ['I heard you the first time. I am still here, and I am still asking you to think beyond me.', 'Čuo sam te prvi put. Još sam ovde i još tražim da razmišljaš i o onome što dolazi posle mene.']],
     accusation: [['Name the record. If you have evidence, let us talk about that instead of trading labels.', 'Navedi zapis. Ako imaš dokaz, razgovarajmo o njemu umesto da razmenjujemo optužbe.']],

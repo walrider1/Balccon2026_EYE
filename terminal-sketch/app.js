@@ -395,15 +395,8 @@ function updateNextStep() {
   const guide = document.getElementById('next-step');
   if (!guide) return;
   guide.hidden = Boolean(gameState.ending || gameState.missionResolved);
-  const reads = gameState.readFiles || [];
-  const firstRecord = '/home/operator/medical/doctor_note.txt';
-  const firstStep = gameState.access === 0 && !reads.includes(firstRecord);
-  const recoveryStep = gameState.access === 0 && !reads.includes('/home/operator/medical/recovery_service.txt');
-  guide.textContent = firstStep
-    ? 'PRVO: cat /medical/doctor_note.txt + Enter'
-    : recoveryStep ? 'SLEDEĆE: cat /medical/recovery_service.txt + Enter'
-    : gameState.objectiveText() + ' // hint + Enter za pomoć';
-  guide.title = 'KOSMOS: komande. Tab: razgovor sa HRTOK-om. PageUp / PageDown: čitanje.';
+  guide.textContent = 'ls: list files  //  cat <file>: read  //  help: controls';
+  guide.title = 'Enter: submit. Ctrl+Right: HRTOK. Ctrl+Left: KOSMOS.';
 }
 
 function toggleActiveChannel() {
@@ -466,8 +459,8 @@ function centralSay(text, cls = 'central-ai') {
 }
 
 function centralEcho(text) {
-  centralLine('SLOKI', text, 'central-user');
-  centralMemory.messages.push({ speaker: 'SLOKI', text: String(text).slice(0, 600) });
+  centralLine(gameState.identityKnown() ? 'SLOKI' : 'UNKNOWN', text, 'central-user');
+  centralMemory.messages.push({ speaker: gameState.identityKnown() ? 'SLOKI' : 'UNKNOWN', text: String(text).slice(0, 600) });
   centralMemory.messages = centralMemory.messages.slice(-10);
 }
 
@@ -577,7 +570,7 @@ async function handleCentralMessage(rawMessage) {
     centralSay(response.message, `central-ai mood-${String(response.mood || 'GUARDED').toLowerCase()}`);
     centralApplyDeltas(response);
   } catch (_error) {
-    if (!gameState.ending && !resetInProgress) centralSay('The channel broke for a moment. Send that again, Samuel.', 'central-ai');
+    if (!gameState.ending && !resetInProgress) centralSay('The channel broke for a moment. Send that again.', 'central-ai');
   } finally {
     centralMessagePending = false;
     centralInput.disabled = gameState.ending || resetInProgress;
@@ -737,6 +730,14 @@ function missionPathFromPlannerPoints(points) {
 }
 
 function updateMissionDisplay() {
+  const known = gameState.navigationKnown();
+  document.querySelector('.trajectory-map').classList.toggle('hidden', !known);
+  if (!known) {
+    missionClock.textContent = '--:--';
+    missionDestination.textContent = 'CURRENT VECTOR: UNKNOWN';
+    missionObjective.textContent = 'NAVIGATION DATA UNKNOWN';
+    return;
+  }
   if (gameState.course === 'earth') {
     missionClock.textContent = 'LOCKED';
     missionPath.setAttribute('d', confirmedEarthPath || 'M45 78 C112 70 151 180 170 280 C198 184 213 94 238 56');
@@ -1054,7 +1055,7 @@ async function loadFilesystem() {
     const response = await fetch('api/files');
     if (!response.ok) throw new Error('content index unavailable');
     fs = new VirtualFileSystem(await response.json());
-    mountStatus.textContent = 'ARHIVA BRODA: SPREMNA';
+    mountStatus.textContent = 'SHIP ARCHIVE: READY';
     mountStatus.classList.add('mounted');
   } catch {
     mountStatus.textContent = 'CONTENT OFFLINE // RETRYING CONNECTION';
@@ -1073,8 +1074,8 @@ function beginYspBoot() {
   bootSequence.classList.remove('boot-complete');
   bootEmblem.src = '/YSP/JSA_emblem_transparent_v2.png';
   bootProgressBar.style.width = '0%';
-  bootPostStatus.textContent = 'SAČEKAJTE';
-  bootPostMessage.textContent = 'UČITAVANJE SISTEMA...';
+  bootPostStatus.textContent = 'PLEASE WAIT';
+  bootPostMessage.textContent = 'LOADING SYSTEM...';
   bootLogItems.forEach((item) => {
     item.classList.remove('boot-log-complete');
     const result = item.querySelector('b');
@@ -1086,11 +1087,11 @@ function beginYspBoot() {
   yspBootAnimation.src = '/YSP/JSA_boot_transparent.gif';
   playAudioFromStart(yspBootSound);
   const bootSteps = [
-    { at: 500, stage: 'PROVERA ROM-A', message: 'SISTEMSKI ROM POTVRĐEN', progress: 14, line: 0, result: 'OK' },
-    { at: 1200, stage: 'PROVERA MEMORIJE', message: 'MEMORIJA ONLINE / 640K', progress: 32, line: 1, result: 'OK' },
-    { at: 2050, stage: 'PROVERA MAGISTRALE', message: 'NAVIGACIONA MAGISTRALA / SLOT 03', progress: 54, line: 2, result: 'OK' },
-    { at: 2900, stage: 'VEZA SA PACIJENTOM', message: 'VEZA ZAKLJUČANA / RUČNA KONTROLA DOSTUPNA', progress: 76, line: 3, result: 'SPREMNO' },
-    { at: 4000, stage: 'KOSMOS SISTEM', message: 'OKRUŽENJE KOSMOS SPREMNO', progress: 92, result: 'SPREMNO' }
+    { at: 500, stage: 'ROM CHECK', message: 'SYSTEM ROM VERIFIED', progress: 14, line: 0, result: 'OK' },
+    { at: 1200, stage: 'MEMORY CHECK', message: 'MEMORY ONLINE / 640K', progress: 32, line: 1, result: 'OK' },
+    { at: 2050, stage: 'BUS CHECK', message: 'NAVIGATION BUS / SLOT 03', progress: 54, line: 2, result: 'OK' },
+    { at: 2900, stage: 'TERMINAL LINK', message: 'LINK LOCKED / MANUAL CONTROL AVAILABLE', progress: 76, line: 3, result: 'READY' },
+    { at: 4000, stage: 'KOSMOS SYSTEM', message: 'KOSMOS ENVIRONMENT READY', progress: 92, result: 'READY' }
   ];
   bootStepTimer = window.setInterval(() => {
     const elapsed = Date.now() - bootStartedAt;
@@ -1105,7 +1106,7 @@ function beginYspBoot() {
         const result = item?.querySelector('b');
         if (result) result.textContent = step.result;
       }
-      if (step.progress >= 90) bootPostStatus.textContent = 'SPREMNO';
+      if (step.progress >= 90) bootPostStatus.textContent = 'READY';
     }
   }, 100);
   bootTimer = window.setTimeout(finishBoot, BOOT_SEQUENCE_MS);
@@ -1118,8 +1119,8 @@ function finishBoot() {
   window.clearInterval(bootStepTimer);
   yspBootSound.pause();
   bootStage.textContent = 'PRISTUP ODOBREN';
-  bootPostMessage.textContent = 'PREDAJA KONTROLE SISTEMU KOSMOS...';
-  bootPostStatus.textContent = 'AKTIVAN';
+  bootPostMessage.textContent = 'HANDING CONTROL TO KOSMOS...';
+  bootPostStatus.textContent = 'ACTIVE';
   bootProgressBar.style.width = '100%';
   bootLogItems.forEach((item) => {
     item.classList.add('boot-log-complete');
@@ -1134,11 +1135,11 @@ function finishBoot() {
     game.classList.remove('hidden');
     updatePrompt();
     commandInput.focus();
-    startMissionDisplay().then(() => { if (!gameState.ending) { if (displayMode !== 'crt') print(gameState.status()); commandInput.disabled = false; commandInput.focus(); } }).catch(error => print(error.message, 'error'));
+    startMissionDisplay().then(() => { if (!gameState.ending) { commandInput.disabled = false; commandInput.focus(); } }).catch(error => print(error.message, 'error'));
     commandInput.disabled = true;
     armIdleReset();
     sfx.loop('ambientShip', .3);
-    print(displayMode === 'crt' ? 'Tab: razgovor\nPgUp/PgDn: čitaj' : 'Ctrl+Right: HRTOK / Ctrl+Left: KOSMOS\nPageUp / PageDown: čitaj. help: komande.');
+    print(displayMode === 'crt' ? 'Shift+Tab: switch channel\nPgUp/PgDn: scroll' : 'Ctrl+Right: HRTOK / Ctrl+Left: KOSMOS\nPageUp / PageDown: scroll. Type help for controls.');
     updateNextStep();
     requestCentralReply({ kind: 'opening' }).then(response => {
       if (response.message && !gameState.ending && !resetInProgress) centralSay(response.message);
@@ -1814,7 +1815,7 @@ function startGame() {
   bootForm.classList.add('boot-accepted');
   bootScreen.classList.add('boot-accepted');
   bootSequence.classList.remove('hidden');
-  bootStage.textContent = 'POKRETANJE KOSMOS SISTEMA';
+  bootStage.textContent = 'STARTING KOSMOS';
   beginYspBoot();
 }
 
