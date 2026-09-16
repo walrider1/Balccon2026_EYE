@@ -299,3 +299,6 @@ input { color:#e8dfc8; caret-color:#d8a24d; }
 .discovered-status { flex: 0 0 auto; padding: 7px 12px; color: #b8dce6; font-size: .85em; border-bottom: 1px solid #29404a; }
 .next-step.urgent-hint { color: #ff8585; border-color: #ff7373; background: #321518; }
 #mission-clock { color: #fff0c0; font-size: 1.3em; }
+
+.progression-help { color: #ff8585; font-weight: 700; }
+.trajectory-map.hidden { display: none !important; }

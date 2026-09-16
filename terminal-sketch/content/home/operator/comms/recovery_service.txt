@@ -6,3 +6,7 @@ EVIDENCE FORMAT:
 auth comms F-<UNSENT PACKET ID>-<BLOCK TIME>
 
 Use raw telemetry. Announcements are not primary records.
+
+"comms" is the domain. Replace the bracketed parts with values from the ledger and audit.
+Example format only: packet 123 at 09:45 becomes auth comms F-123-0945.
+Use the actual UNSENT packet and block time, not these example numbers.

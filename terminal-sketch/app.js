@@ -103,6 +103,7 @@ let bootStartedAt = 0;
 let bootStepIndex = 0;
 let bootFinished = false;
 let confirmedEarthPath = null;
+let earthVisualStart = null;
 const centralMemory = {
   observed: new Set(),
   exchangeCount: 0,
@@ -756,16 +757,21 @@ function updateMissionDisplay() {
     return;
   }
   if (gameState.course === 'earth') {
-    missionClock.textContent = 'LOCKED';
-    missionPath.setAttribute('d', confirmedEarthPath || 'M45 78 C112 70 151 180 170 280 C198 184 213 94 238 56');
+    if (!earthVisualStart) earthVisualStart = { at: performance.now(), x: Number(missionShip.getAttribute('cx')), y: Number(missionShip.getAttribute('cy')) };
+    const origin = earthVisualStart;
+    const fraction = Math.min(1, (performance.now() - origin.at) / 2500);
+    const control = { x: origin.x + (238 - origin.x) * .65, y: origin.y };
+    const x = (1-fraction)**2*origin.x + 2*(1-fraction)*fraction*control.x + fraction**2*238;
+    const y = (1-fraction)**2*origin.y + 2*(1-fraction)*fraction*control.y + fraction**2*56;
+    missionClock.textContent = 'TRANSFER';
+    missionPath.setAttribute('d', `M${origin.x} ${origin.y} Q${control.x} ${control.y} 238 56`);
     missionPath.classList.remove('sun-course');
     missionPath.classList.add('earth-course');
-    missionShip.setAttribute('cx', '238');
-    missionShip.setAttribute('cy', '56');
+    missionShip.setAttribute('cx', String(x));
+    missionShip.setAttribute('cy', String(y));
     missionDestination.textContent = 'CURRENT VECTOR: EARTH';
     missionObjective.textContent = 'EARTH INTERCEPT CONFIRMED';
     trajectoryPanel.classList.add('earth-confirmed');
-    stopMissionDisplay();
     return;
   }
   if (!gameState.missionEndsAt && !gameState.missionPaused) return;
@@ -788,6 +794,7 @@ function updateMissionDisplay() {
 
 async function startMissionDisplay() {
   confirmedEarthPath = null;
+  earthVisualStart = null;
   await gameState.startMission();
   sessionReady = true;
   if (gameState.sedationEndsAt) startSedationDisplay();

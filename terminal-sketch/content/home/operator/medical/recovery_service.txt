@@ -1,10 +1,14 @@
 A NOTE FOR SLOKI // DR. PETROVIC
 
-Sloki, you are a botanist, not a programmer. I left you the short version.
+Sloki, you can keep an alien plant alive but a command prompt defeats you.
+I am sorry about the accident. It was my fault. I should have done better.
+I left these instructions to make the next part easier. I trust you to do the right thing.
 Type one command at a time, then press Enter. No coding required.
 
 FIRST: RESTORE MEDICAL ACCESS
-"auth" means authorize. "medical" selects the medical controller.
+"auth" means authorize. The domain says WHICH controller; the code is its password.
+Example: auth medical MR-07-0412
+Here medical is the domain, and MR-07-0412 is the code.
 Join MR, your chamber number and the override date with hyphens.
 CHAMBER: 07
 DATE: 04/12 becomes 0412 (remove the slash).
@@ -17,6 +21,8 @@ Read recovery_service.txt there with cat recovery_service.txt.
 Cortex is not your next step yet.
 
 LATER: ONLY IF THE SEDATION COUNTDOWN STARTS
+Sedation means being put to sleep with medication. When its timer reaches zero,
+you lose consciousness and the session ends. Cortex can stop that.
 "run" starts an application; "cd" only changes your folder.
 TYPE: run /medical/cortex_echo.app
 Already inside /medical? run cortex_echo.app works too.

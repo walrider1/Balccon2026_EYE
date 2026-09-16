@@ -11,7 +11,19 @@ function createCommands() {
       name: 'help',
       usage: 'help',
       description: 'show available commands',
-      run: ({ print, registry }) => print(`COMMAND INDEX\n\n${registry.helpLines()}\n\nStart with: status, sectors, then ls.`)
+      run: ({ print, registry, game }) => {
+        const phase = !game.rootShares.medical
+          ? 'MEDICAL ACCESS\ncat /medical/doctor_note.txt\ncat /medical/recovery_service.txt\nauth medical MR-07-0412'
+          : !game.rootShares.comms
+          ? 'COMMUNICATIONS ACCESS\ncd /comms\nls\ncat recovery_service.txt\ncat raw_uplink_ledger.txt\ncat lock_audit.txt\nauth comms F-<packet>-<time> // replace brackets with evidence values'
+          : !game.rootShares.cortex
+          ? 'STOP SEDATION\nrun /medical/cortex_echo.app\nauth cortex <code-from-test> // use your own test result'
+          : !game.rootRecovered
+          ? 'RESTORE CONTROL\nroot recover'
+          : 'CHOOSE AN OUTCOME\ncat /command/navigation/decision_brief.txt\nrun /command/navigation/orbital_burn_planner.app\ncentral shutdown // ends the game by shutting down HRTOK';
+        print('RELEVANT NOW // ' + phase + '\nhint // next-step help', 'progression-help');
+        print(`ALL COMMANDS\n${registry.helpLines()}\n\nauth <domain> <code>: domain is the controller (medical/comms/cortex); code is its recovery credential. Do not type angle brackets.\nrun <file.app>: launch an application. cd <folder>: change folder.`);
+      }
     },
     {
       name: 'dev',
@@ -144,7 +156,7 @@ function createCommands() {
         if (result.ok && args[0]?.toLowerCase() === 'comms') {
           game.startSedation(() => window.endKosmosGame('sedation'));
           startSedationDisplay();
-          print('MEDICAL REINDUCTION ORDER RECEIVED\nSOURCE: CENTRAL EXECUTIVE AI\nSEDATION PROTOCOL ACTIVE\nTIME TO UNCONSCIOUSNESS: 05:00\n\nIndependent patient-safety firmware may still accept a response challenge. Check Medical.', 'anomaly-line');
+          print('MEDICAL REINDUCTION ORDER RECEIVED\nSOURCE: CENTRAL EXECUTIVE AI\nSEDATION PROTOCOL ACTIVE // Medication will put you to sleep. Stop it before time runs out.\nTIME TO UNCONSCIOUSNESS: 05:00\n\nIndependent patient-safety firmware may still accept a response challenge. Check Medical.', 'anomaly-line');
         }
       }
     },
