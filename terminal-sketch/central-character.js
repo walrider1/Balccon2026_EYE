@@ -21,6 +21,7 @@ const FACTS = {
   interlock: 'Recovery requires independent trust domains. HRTOK cannot cancel the patient-safety controller or erase valid recovery shares.'
 };
 const FILE_FACTS = {
+  '/home/operator/readme.txt': 'course',
   '/home/operator/medical/doctor_note.txt': 'biography',
   '/home/operator/medical/patient_intake.txt': 'patient',
   '/home/operator/wake_protocol.txt': 'course',
@@ -199,7 +200,11 @@ function localReply(character, turn) {
     if (/where am i|where are we|what is this place|gde sam|gde smo/.test(text)) return 'Aboard the ship, in the medical section. You have been in a regeneration chamber. Welcome back, Sloki. A little conversation is a lovely improvement.';
     return 'You suffered a serious head injury and were placed in a regeneration chamber. Your memory has not come back cleanly. We can talk, Sloki; you do not have to remember everything at once.';
   }
-  if (turn.kind === 'idle') return pick('Quiet again. All right. I can wait for your answer.', 'Opet tišina. U redu. Mogu da sačekam tvoj odgovor.');
+  if (turn.kind === 'idle') {
+    const remarks = ['By all means, keep reading. I was only checking you were still there.', 'You and that terminal are getting along beautifully. Fine. I can wait.', 'A word now and then would be useful, Sloki. For monitoring purposes, obviously.'];
+    const count = character.repeats.idle || 0; character.repeats.idle = count + 1;
+    return remarks[count % remarks.length];
+  }
   if (turn.kind === 'event') {
     const lines = {
       'medical-auth': ['The medical controller recognizes you. Good. That answers one question, at least.', 'Medicinski kontroler te prepoznaje. Dobro. Bar na jedno pitanje imamo odgovor.'],

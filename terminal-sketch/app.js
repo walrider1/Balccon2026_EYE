@@ -345,7 +345,7 @@ function print(text, cls = 'system') {
     for (const row of value.split('\n')) {
       const part = document.createElement('span');
       part.textContent = row + '\n';
-      if (/^(PATIENT:|ROLE:|CHAMBER:|LAST MANUAL OVERRIDE:|CURRENT COURSE:|DESTINATION:|AUTHORIZATION|TYPE:|DATE:|auth |run |.*UNSENT|.*BLOCK TIME)/i.test(row)) part.className = 'record-key';
+      if (/^(PATIENT:|ROLE:|CHAMBER:|LAST MANUAL OVERRIDE:|CURRENT COURSE:|DESTINATION:|GOAL:|AUTHORIZATION|TYPE:|DATE:|auth |run |.*UNSENT|.*BLOCK TIME)/i.test(row)) part.className = 'record-key';
       line.append(part);
     }
   } else line.textContent = value;
@@ -411,7 +411,7 @@ function updateNextStep() {
   const remaining = gameState.missionPaused ? gameState.missionRemaining : (gameState.missionEndsAt || Date.now()) - Date.now();
   const urgent = remaining < 180000 || (gameState.sedationEndsAt && !gameState.rootRecovered && gameState.sedationEndsAt - Date.now() < 90000);
   guide.classList.toggle('urgent-hint', Boolean(urgent));
-  guide.textContent = urgent ? 'TIME CRITICAL // ' + gameState.objectiveText() + ' // Type hint for help.' : 'ls: list  |  cd <folder>: enter  |  cat <file>: read  |  help: all commands';
+  guide.textContent = !(gameState.readFiles || []).includes('/home/operator/readme.txt') && !urgent ? 'START HERE: cat readme.txt // Your goal and three short steps' : urgent ? 'TIME CRITICAL // ' + gameState.objectiveText() + ' // Type hint for help.' : 'ls: list  |  cd <folder>: enter  |  cat <file>: read  |  help: all commands';
   const discovered = document.querySelector('#discovered-status');
   if (discovered) discovered.textContent = `NAME: ${gameState.identityKnown() ? 'SAMUEL "SLOKI" KOVAC' : 'UNKNOWN'}  //  ROLE: ${gameState.identityKnown() ? 'BOTANIST / PATIENT' : 'UNKNOWN'}`;
   guide.title = 'Enter: submit. Ctrl+Right: HRTOK. Ctrl+Left: KOSMOS.';
@@ -477,6 +477,8 @@ function centralSay(text, cls = 'central-ai') {
 }
 
 function centralEcho(text) {
+  window.clearTimeout(centralIdleTimer);
+  centralIdleTimer = undefined;
   centralLine('SLOKI', text, 'central-user');
   centralMemory.messages.push({ speaker: 'SLOKI', text: String(text).slice(0, 600) });
   centralMemory.messages = centralMemory.messages.slice(-10);
@@ -597,12 +599,13 @@ async function handleCentralMessage(rawMessage) {
 }
 
 function scheduleCentralIdleMessage() {
-  window.clearTimeout(centralIdleTimer);
+  if (centralIdleTimer) return;
   if (game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
   if (centralMemory.messages.length === 0 && centralMemory.observed.size === 0) return;
   centralMemory.idleCount = 0;
 
   centralIdleTimer = window.setTimeout(() => {
+    centralIdleTimer = undefined;
     if (game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
     if (centralMemory.idleCount >= 1) return;
     centralMemory.idleCount += 1;
@@ -861,6 +864,7 @@ async function resetToStartScreen() {
   hrtokClient.close();
   window.clearTimeout(idleResetTimer);
   window.clearTimeout(centralIdleTimer);
+  centralIdleTimer = undefined;
   window.clearInterval(failureClockTimer);
   window.clearTimeout(failureResetTimer);
   window.clearTimeout(postTransferTimer);
@@ -1738,6 +1742,7 @@ async function endGame(kind) {
   hrtokClient.close();
   centralInput.disabled = true;
   window.clearTimeout(centralIdleTimer);
+  centralIdleTimer = undefined;
   if (kind === 'sedation') {
     beginFailure('sedation');
     return;

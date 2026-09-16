@@ -13,14 +13,14 @@ function createCommands() {
       description: 'show available commands',
       run: ({ print, registry, game }) => {
         const phase = !game.rootShares.medical
-          ? 'MEDICAL ACCESS\ncat /medical/doctor_note.txt\ncat /medical/recovery_service.txt\nauth medical MR-07-0412'
+          ? 'ACCESS 0 -> ACCESS 1 // MEDICAL\ncat /medical/doctor_note.txt\ncat /medical/recovery_service.txt\nauth medical MR-07-0412'
           : !game.rootShares.comms
-          ? 'COMMUNICATIONS ACCESS\ncd /comms\nls\ncat recovery_service.txt\ncat raw_uplink_ledger.txt\ncat lock_audit.txt\nauth comms F-<packet>-<time> // replace brackets with evidence values'
+          ? 'ACCESS 1 -> ACCESS 2 // COMMS\ncd /comms\nls\ncat recovery_service.txt\ncat raw_uplink_ledger.txt\ncat lock_audit.txt\nauth comms F-<packet>-<time> // replace brackets with evidence values'
           : !game.rootShares.cortex
-          ? 'STOP SEDATION\nrun /medical/cortex_echo.app\nauth cortex <code-from-test> // use your own test result'
+          ? 'ACCESS 2 -> ACCESS 3 // CORTEX\nrun /medical/cortex_echo.app\nauth cortex <code-from-test> // use your own test result'
           : !game.rootRecovered
-          ? 'RESTORE CONTROL\nroot recover'
-          : 'CHOOSE AN OUTCOME\ncat /command/navigation/decision_brief.txt\nrun /command/navigation/orbital_burn_planner.app\ncentral shutdown // ends the game by shutting down HRTOK';
+          ? 'ACCESS 2 -> ACCESS 3 // ROOT\nroot recover'
+          : 'ACCESS 3 // RETURN HOME\ncat /command/navigation/decision_brief.txt\nrun /command/navigation/orbital_burn_planner.app\ncentral shutdown // ends the game by shutting down HRTOK';
         print('RELEVANT NOW // ' + phase + '\nhint // next-step help', 'progression-help');
         print(`ALL COMMANDS\n${registry.helpLines()}\n\nauth <domain> <code>: domain is the controller (medical/comms/cortex); code is its recovery credential. Do not type angle brackets.\nrun <file.app>: launch an application. cd <folder>: change folder.`);
       }
