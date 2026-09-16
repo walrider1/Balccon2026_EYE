@@ -13,16 +13,21 @@ function createCommands() {
       description: 'show available commands',
       run: ({ print, registry, game }) => {
         const phase = !game.rootShares.medical
-          ? 'ACCESS 0 -> ACCESS 1 // MEDICAL\ncat /medical/doctor_note.txt\ncat /medical/recovery_service.txt\nauth medical MR-07-0412'
+          ? {goal: 'ACCESS 0 -> 1 // Read the medical records and restore medical access.', commands: ['ls','cd','cat','auth']}
           : !game.rootShares.comms
-          ? 'ACCESS 1 -> ACCESS 2 // COMMS\ncd /comms\nls\ncat recovery_service.txt\ncat raw_uplink_ledger.txt\ncat lock_audit.txt\nauth comms F-<packet>-<time> // replace brackets with evidence values'
+          ? {goal: 'ACCESS 1 -> 2 // Investigate the blocked transmission and restore communications access.', commands: ['ls','cd','cat','auth']}
           : !game.rootShares.cortex
-          ? 'ACCESS 2 -> ACCESS 3 // CORTEX\nrun /medical/cortex_echo.app\nauth cortex <code-from-test> // use your own test result'
+          ? {goal: 'ACCESS 2 -> 3 // Complete the response challenge and verify its result to stop sedation.', commands: ['run','auth']}
           : !game.rootRecovered
-          ? 'ACCESS 2 -> ACCESS 3 // ROOT\nroot recover'
-          : 'ACCESS 3 // RETURN HOME\ncat /command/navigation/decision_brief.txt\nrun /command/navigation/orbital_burn_planner.app\ncentral shutdown // ends the game by shutting down HRTOK';
-        print('RELEVANT NOW // ' + phase + '\nhint // next-step help', 'progression-help');
-        print(`ALL COMMANDS\n${registry.helpLines()}\n\nauth <domain> <code>: domain is the controller (medical/comms/cortex); code is its recovery credential. Do not type angle brackets.\nrun <file.app>: launch an application. cd <folder>: change folder.`);
+          ? {goal: 'ACCESS 2 -> 3 // Combine the recovered authorizations to regain control.', commands: ['root']}
+          : {goal: 'ACCESS 3 // Review navigation and plan the return to Earth.', commands: ['cat','run']};
+        print('RELEVANT NOW // ' + phase.goal);
+        print('ALL COMMANDS');
+        const relevant = new Set(['hint', ...phase.commands]);
+        for (const command of new Set(registry.commands.values())) {
+          if (command.showInHelp === false) continue;
+          print(`  ${command.usage.padEnd(28)} ${command.description}`, relevant.has(command.name) ? 'help-relevant' : 'system', command.usage);
+        }
       }
     },
     {

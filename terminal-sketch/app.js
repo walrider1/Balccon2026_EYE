@@ -335,13 +335,19 @@ function flushOutput() {
   }
   outputTyping=false;
 }
-function print(text, cls = 'system') {
+function print(text, cls = 'system', highlightedUsage = '') {
   if (cls === 'error') sfx.play('commandError', .16);
   flushOutput();
   const line = document.createElement('div');
   line.className = `line ${cls}`;
   const value = String(text);
-  if (cls === 'archive-record') {
+  if (cls === 'help-relevant') {
+    line.append(document.createTextNode('  '));
+    const usage = document.createElement('span');
+    usage.className = 'record-key';
+    usage.textContent = highlightedUsage;
+    line.append(usage, document.createTextNode(value.slice(2 + highlightedUsage.length)));
+  } else if (cls === 'archive-record') {
     for (const row of value.split('\n')) {
       const part = document.createElement('span');
       part.textContent = row + '\n';
