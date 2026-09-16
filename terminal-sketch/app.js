@@ -1379,8 +1379,8 @@ const plannerGame = {
     plannerNodeCount.textContent = `BURN NODES: ${this.nodes.length}/${this.maxNodes}`;
     plannerDv.textContent = `DELTA-V: ${this.totalDeltaV()} / ${this.maxDeltaV} m/s`;
     plannerSelected.textContent = this.selected === null
-      ? `CURSOR: ${this.cursor}%`
-      : `NODE ${this.selected + 1}: ${this.nodes[this.selected].position}% // ${this.nodes[this.selected].deltaV} m/s // ${this.nodes[this.selected].angle >= 0 ? '+' : ''}${this.nodes[this.selected].angle}°`;
+      ? `CURSOR: ${this.cursor.toFixed(1)}%`
+      : `NODE ${this.selected + 1}: ${this.nodes[this.selected].position.toFixed(1)}% // ${this.nodes[this.selected].deltaV} m/s // ${this.nodes[this.selected].angle >= 0 ? '+' : ''}${this.nodes[this.selected].angle}°`;
     plannerIntercept.textContent = trajectory.captured ? 'INTERCEPT: EARTH CAPTURE' : `CLOSEST APPROACH: ${Math.round(trajectory.captureDistance)} km`;
 
     if (this.committing) {

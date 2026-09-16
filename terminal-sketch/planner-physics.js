@@ -51,8 +51,16 @@ return {
     return (position - this.originPosition) / Math.max(1, 100 - this.originPosition);
   },
 
+  solarArrivalPosition() {
+    for (let position = this.originPosition; position <= 100; position += .1) {
+      const point = this.pointAt(position);
+      if (Math.hypot(point.x-this.sun.x, point.y-this.sun.y) <= 38) return position;
+    }
+    return 100;
+  },
+
   positionBounds() {
-    const max = 99.8;
+    const max = this.nodes.length && this.selected !== 0 ? 99.8 : Math.max(this.originPosition, this.solarArrivalPosition() - .2);
     const baseMin = Math.min(max, this.originPosition + 1);
     if (this.nodes.length && this.selected !== 0) {
       const firstNode = this.nodes[0];
@@ -111,20 +119,35 @@ return {
     const burnPositions = [];
     const burnVectors = [];
     let orbitStartIndex = 0;
+    let terminal = null;
+    const append = point => {
+      const start = points.at(-1);
+      let earliest = 2, body = null;
+      if (start) for (const [name, center, radius] of [['sun',this.sun,38],['earth',this.earth,33]]) {
+        const dx=point.x-start.x, dy=point.y-start.y;
+        const ox=start.x-center.x, oy=start.y-center.y;
+        const a=dx*dx+dy*dy, b=2*(ox*dx+oy*dy), c=ox*ox+oy*oy-radius*radius;
+        const discriminant=b*b-4*a*c;
+        const t=c<=0 ? 0 : a>0 && discriminant>=0 ? (-b-Math.sqrt(discriminant))/(2*a) : 2;
+        if(t>=0 && t<=1 && t<earliest){earliest=t;body=name;}
+      }
+      if(body){points.push({x:start.x+(point.x-start.x)*earliest,y:start.y+(point.y-start.y)*earliest});terminal=body;return false;}
+      points.push(point);return true;
+    };
 
     if (!nodes.length) {
       for (let step = 0; step <= 160; step += 1) {
         const position = this.originPosition + ((100 - this.originPosition) * step / 160);
-        points.push(this.pointAt(position));
+        if (!append(this.pointAt(position))) break;
       }
-      return { points, burnPositions, burnVectors, orbitStartIndex };
+      return { points, burnPositions, burnVectors, orbitStartIndex, terminal };
     }
 
     const firstNode = nodes[0];
     const coastSteps = Math.max(8, Math.round((firstNode.position - this.originPosition) * 2.5));
     for (let step = 0; step <= coastSteps; step += 1) {
       const position = this.originPosition + ((firstNode.position - this.originPosition) * step / coastSteps);
-      points.push(this.pointAt(position));
+      if (!append(this.pointAt(position))) return { points, burnPositions, burnVectors, orbitStartIndex, terminal };
     }
     orbitStartIndex = points.length - 1;
 
@@ -156,10 +179,10 @@ return {
       state.vy += acceleration.y * this.integrationDt;
       state.x += state.vx * this.integrationDt;
       state.y += state.vy * this.integrationDt;
-      points.push({ x: state.x, y: state.y });
+      if (!append({ x: state.x, y: state.y })) break;
     }
 
-    return { points, burnPositions, burnVectors, orbitStartIndex };
+    return { points, burnPositions, burnVectors, orbitStartIndex, terminal };
   },
 
   captureDistance(points) {
@@ -179,9 +202,9 @@ return {
   },
 
   trajectoryData() {
-    const { points, burnPositions, burnVectors, orbitStartIndex } = this.trajectory();
+    const { points, burnPositions, burnVectors, orbitStartIndex, terminal } = this.trajectory();
     const captureDistance = this.captureDistance(points);
-    return { points, burnPositions, burnVectors, orbitStartIndex, captureDistance, captured: captureDistance <= 33 };
+    return { points, burnPositions, burnVectors, orbitStartIndex, captureDistance, terminal, captured: terminal === 'earth' || (terminal !== 'sun' && captureDistance <= 33) };
   },
 
   validTransfer() {
