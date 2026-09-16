@@ -21,7 +21,7 @@ function createCommands() {
           : !game.rootRecovered
           ? {goal: 'ACCESS 2 -> 3 // Combine the recovered authorizations to regain control.', commands: ['root']}
           : {goal: 'ACCESS 3 // Review navigation and plan the return to Earth.', commands: ['cat','run']};
-        print('RELEVANT NOW // ' + phase.goal);
+        print('RELEVANT NOW // ' + phase.goal, 'progression-help');
         print('ALL COMMANDS');
         const relevant = new Set(['hint', ...phase.commands]);
         for (const command of new Set(registry.commands.values())) {
