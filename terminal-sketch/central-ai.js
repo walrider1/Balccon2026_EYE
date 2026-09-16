@@ -122,7 +122,7 @@ function createCentralService(options = {}) {
       calls = calls.filter(time => now() - time < 60000);
       // Spend API calls on conversation; atmosphere and completed events use authored lines.
       const wantsModel = payload.kind === 'message' && !['help', 'boundary', 'recall'].includes(turn.topic);
-      const unreadEvidence = ['botany', 'food', 'neural', 'pods', 'comms'].includes(turn.topic) && !character.facts.includes(turn.topic);
+      const unreadEvidence = (turn.topic === 'people' && !['pods','food','crisis'].some(fact => character.facts.includes(fact))) || ['botany', 'food', 'neural', 'pods', 'comms'].includes(turn.topic) && !character.facts.includes(turn.topic);
       if (wantsModel) {
         fallbackReason = unreadEvidence ? 'unread_evidence' : !health.configured ? 'not_configured' : session.calls >= maxCalls ? 'session_budget'
           : calls.length >= globalLimit || active >= 2 ? 'capacity' : now() < cooldownUntil ? 'provider_cooldown' : null;

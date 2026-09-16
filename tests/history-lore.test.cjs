@@ -58,3 +58,14 @@ test('failed save rolls back both ending and its history entry',t=>{
  try{assert.throws(()=>api.snapshot(id));assert.equal(api.history().total,0);}finally{fs.renameSync=rename;}
  api.snapshot(id);assert.equal(api.history().total,1);
 });
+
+test('general crew questions withhold facts before evidence and defend documented facts afterwards',async()=>{
+ const ai=createCentralService({env:{}});
+ const base={sessionId:'crew_disclosure_test',kind:'message',text:'What happened to the people?'};
+ const before=await ai.reply({...base,requestId:'before',state:{access:0,readFiles:[]}});
+ assert.equal(before.fallbackReason,'unread_evidence');
+ assert.doesNotMatch(before.message,/203|dead|killed/i);
+ const after=await ai.reply({...base,requestId:'after',state:{access:2,readFiles:['/home/operator/hibernation/occupancy.txt']}});
+ assert.match(after.message,/203 sealed pods/);
+ assert.match(after.message,/I kept that running/);
+});

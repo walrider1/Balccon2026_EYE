@@ -91,6 +91,7 @@ function classify(text) {
   if (/distress|uplink|transmission|komunik|poziv.*pomoc|poruk.*blok/.test(t)) return 'comms';
   if (/neural|upload|copied captain|kopij.*kapetan/.test(t)) return 'neural';
   if (/pods|hibernation|capsul|capsule|kapsul|putnic/.test(t)) return 'pods';
+  if (/\b(people|crew|passengers|survivors|everyone|anyone alive)\b|posad|ljud|prezivel/.test(t)) return 'people';
   if (/shut.*down|kill you|ugas|ubicu te/.test(t)) return 'threat';
   if (/afraid|scared|fear|plas|strah|bojim/.test(t)) return 'fear';
   if (/liar|murder|you lied|lazov|lazes|lagao|ubio/.test(t)) return 'accusation';
@@ -232,6 +233,12 @@ function localReply(character, turn) {
   if (turn.topic === 'neural') return character.facts.includes('neural')
     ? pick('The record says transfer. To me it felt like waking up without a body. I am still deciding what survived.', 'U zapisu piše prenos. Meni je izgledalo kao buđenje bez tela. Još pokušavam da shvatim šta je preživelo.')
     : pick('That is a very specific question. Which record brought you to it?', 'To je vrlo konkretno pitanje. Koji zapis te je doveo do njega?');
+  if (turn.topic === 'people') {
+    if (character.facts.includes('pods')) return 'The report says 203 sealed pods, with life support still running. I kept that running. I cannot promise who will wake up, however much you want me to.';
+    if (character.facts.includes('food')) return 'You read their appeal. Yes, they wanted a fair review. I was trying to contain a threat; that does not make their account disappear.';
+    if (character.facts.includes('crisis')) return 'The review records the breakdown of command. I made decisions in that breakdown. You have every right to question them; I still had a ship to contain.';
+    return 'That is not a small question, Sloki. Read the crew records before you let me tell you what to think of them. I have my own reasons for remembering things the way I do.';
+  }
   if (turn.topic === 'pods') return character.facts.includes('pods')
     ? pick('Life support is active in 203 sealed pods. Their identities are unverified. That uncertainty is the part I cannot solve for you.', 'Održavanje života radi u 203 zatvorene kapsule. Identiteti nisu provereni. Tu neizvesnost ne mogu da rešim umesto tebe.')
     : pick('I cannot give you a verified passenger count from this channel. The hibernation report is the record you need.', 'Preko ovog kanala ne mogu da ti dam potvrđen broj putnika. Potreban ti je izveštaj hibernacije.');
