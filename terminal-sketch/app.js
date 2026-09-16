@@ -344,7 +344,7 @@ function print(text, cls = 'system') {
     for (const row of value.split('\n')) {
       const part = document.createElement('span');
       part.textContent = row + '\n';
-      if (/^(PATIENT:|ROLE:|CHAMBER:|LAST MANUAL OVERRIDE:|CURRENT COURSE:|DESTINATION:|AUTHORIZATION|auth |run |.*UNSENT|.*BLOCK TIME)/i.test(row)) part.className = 'record-key';
+      if (/^(PATIENT:|ROLE:|CHAMBER:|LAST MANUAL OVERRIDE:|CURRENT COURSE:|DESTINATION:|AUTHORIZATION|TYPE:|DATE:|auth |run |.*UNSENT|.*BLOCK TIME)/i.test(row)) part.className = 'record-key';
       line.append(part);
     }
   } else line.textContent = value;
@@ -1167,7 +1167,7 @@ function finishBoot() {
 
 async function startCortexEcho({ developer = false } = {}) {
   if (!developer && !gameState.canStartCortex()) {
-    print('CORTEX ECHO UNAVAILABLE // It can only challenge an active sedation order.', 'error');
+    print(gameState.rootRecovered ? 'CORTEX NOT NEEDED // ROOT is already recovered. Type objective for your next step.' : gameState.access < 1 ? 'CORTEX NOT READY // Your run command is correct. First restore medical access: read /medical/recovery_service.txt and use auth medical. Then investigate /comms.' : 'CORTEX NOT READY // Your run command is correct. Continue in /comms: cat /comms/recovery_service.txt. Return to Cortex only when the sedation countdown starts.', 'error');
     return;
   }
   try { await cortexGame.start({ developer }); } catch (error) { print(error.message, 'error'); return; }

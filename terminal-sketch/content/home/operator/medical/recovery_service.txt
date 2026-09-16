@@ -1,11 +1,25 @@
-MEDICAL // ACCESS RECOVERY
+A NOTE FOR SLOKI // DR. PETROVIC
 
-auth medical MR-<CHAMBER>-<OVERRIDE MMDD>
-Use the two-digit chamber and four-digit override date from doctor_note.txt.
-This releases medical access and the first of three ROOT shares.
+Sloki, you are a botanist, not a programmer. I left you the short version.
+Type one command at a time, then press Enter. No coding required.
 
-IF SEDATION STARTS:
-run /medical/cortex_echo.app
-Press the displayed A/S/K/L key. Pass 15 of 20 signals.
-Then submit the displayed code with auth cortex <code>.
-The independent safety controller accepts this even if HRTOK objects.
+FIRST: RESTORE MEDICAL ACCESS
+"auth" means authorize. "medical" selects the medical controller.
+Join MR, your chamber number and the override date with hyphens.
+CHAMBER: 07
+DATE: 04/12 becomes 0412 (remove the slash).
+TYPE: auth medical MR-07-0412
+
+NEXT: OPEN COMMUNICATIONS
+TYPE: cd /comms
+TYPE: ls
+Read recovery_service.txt there with cat recovery_service.txt.
+Cortex is not your next step yet.
+
+LATER: ONLY IF THE SEDATION COUNTDOWN STARTS
+"run" starts an application; "cd" only changes your folder.
+TYPE: run /medical/cortex_echo.app
+Already inside /medical? run cortex_echo.app works too.
+Press the displayed A/S/K/L key; pass 15 of 20 signals.
+Submit the code you receive: auth cortex <your-code>
+Then type: root recover

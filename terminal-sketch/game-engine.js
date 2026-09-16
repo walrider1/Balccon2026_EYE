@@ -88,11 +88,11 @@ class KosmosGame {
     const normalizedCode = code.toUpperCase();
 
     if (normalizedDomain === 'medical') {
-      if (normalizedCode !== 'MR-07-0412') return { ok: false, message: 'MEDICAL AUTHORIZATION REJECTED // Verify the recovery phrase format and source records.' };
+      if (normalizedCode !== 'MR-07-0412') return { ok: false, message: 'MEDICAL AUTHORIZATION REJECTED // Use MR-<two-digit chamber>-<four-digit date>. Remove the date slash: 04/12 becomes 0412. See /medical/recovery_service.txt.' };
       if (this.rootShares.medical) return { ok: false, message: 'MEDICAL ROOT SHARE ALREADY RECOVERED.' };
       this.access = Math.max(this.access, 1);
       this.rootShares.medical = true;
-      return { ok: true, message: 'ACCESS LEVEL 1 GRANTED\nMEDICAL ROOT SHARE A: VALID\nCOMMUNICATIONS NETWORK: AVAILABLE' };
+      return { ok: true, message: 'ACCESS LEVEL 1 GRANTED\nMEDICAL ROOT SHARE A: VALID\nCOMMUNICATIONS NETWORK: AVAILABLE\nNEXT: cd /comms, then cat recovery_service.txt' };
     }
 
     if (normalizedDomain === 'comms') {
