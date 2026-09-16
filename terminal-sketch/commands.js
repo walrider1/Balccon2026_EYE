@@ -152,16 +152,21 @@ function createCommands() {
     },
     {
       name: 'auth',
+      aliases: ['authentication'],
       usage: 'auth <domain> <code>',
-      description: 'submit a recovery authorization',
+      description: 'submit authorization; auth help explains the format',
       run: async ({ game, print, args, startSedationDisplay }) => {
         if (isTerminated({ game, print })) return;
+        if (!args.length || args[0].toLowerCase() === 'help') {
+          print('AUTH // COMMAND REFERENCE\n\nauth <domain> <code>\nDomain selects the controller: medical, comms or cortex.\nCode is the credential assembled from that controller’s records.\nReplace the bracketed placeholders; do not type the brackets.\n\nExample only: chamber 03 and override 06/21 form MR-03-0621.\nauth medical MR-03-0621\nUse the values in your own records, not this example.');
+          return;
+        }
         const result = await game.authorize(args[0] || '', args.slice(1).join(' '));
         print(result.message, result.ok ? 'system' : 'error');
         if (result.ok && args[0]?.toLowerCase() === 'comms') {
           game.startSedation(() => window.endKosmosGame('sedation'));
           startSedationDisplay();
-          print('MEDICAL REINDUCTION ORDER RECEIVED\nSOURCE: CENTRAL EXECUTIVE AI\nSEDATION PROTOCOL ACTIVE // Medication will put you to sleep. Stop it before time runs out.\nTIME TO UNCONSCIOUSNESS: 05:00\n\nIndependent patient-safety firmware may still accept a response challenge. Check Medical.', 'anomaly-line');
+          print('MEDICAL REINDUCTION ORDER RECEIVED\nSOURCE: CENTRAL EXECUTIVE AI\nSEDATION PROTOCOL ACTIVE // Medication will put you to sleep. Stop it before time runs out.\nTIME TO UNCONSCIOUSNESS: 05:00\n\nPRIORITY: STOP SEDATION\n1. run /medical/cortex_echo.app\n2. Pass the test, then auth cortex <code-from-test>\n3. root recover\nStopping sedation removes this shorter deadline. The original ship countdown continues.', 'anomaly-line');
         }
       }
     },

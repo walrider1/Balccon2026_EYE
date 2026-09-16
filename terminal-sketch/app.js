@@ -697,13 +697,13 @@ function updateSedationDisplay() {
   const critical = remaining <= 2 * 60 * 1000;
   sedationHud.classList.toggle('sedation-critical', critical);
   if (gameState.cortexCodeIssued && !gameState.rootShares.cortex) {
-    sedationMessage.textContent = `ATTESTATION READY // auth cortex ${gameState.cortexCode}`;
+    sedationMessage.textContent = `STEP 2/3 // auth cortex ${gameState.cortexCode}`;
   } else if (gameState.rootShares.cortex) {
-    sedationMessage.textContent = 'ALL ROOT SHARES VALID // NEXT: root recover';
+    sedationMessage.textContent = 'STEP 3/3 // root recover';
   } else {
     sedationMessage.textContent = critical
-      ? 'CONSCIOUSNESS UNSTABLE // COMPLETE ROOT RECOVERY'
-      : 'HRTOK SEDATION PROTOCOL ACTIVE';
+      ? 'URGENT // run /medical/cortex_echo.app'
+      : 'STEP 1/3 // run /medical/cortex_echo.app';
   }
   if (critical) scheduleFatigueBlink();
 }

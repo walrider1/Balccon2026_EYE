@@ -1,28 +1,8 @@
-MEDICAL // QUICK INSTRUCTIONS
+MEDICAL // RECOVERY SERVICE
 
-Type one command at a time, then press Enter. No coding required.
+The chamber controller accepts the chamber number and the date of the last manual override as proof of access. Both are recorded in the clinical note; admission and scan dates are not valid.
 
-FIRST: RESTORE MEDICAL ACCESS
-"auth" means authorize. The domain says WHICH controller; the code is its password.
-Example: auth medical MR-07-0412
-Here medical is the domain, and MR-07-0412 is the code.
-Join MR, your chamber number and the override date with hyphens.
-CHAMBER: 07
-DATE: 04/12 becomes 0412 (remove the slash).
-TYPE: auth medical MR-07-0412
+Credential format: MR-<chamber>-<override MMDD>
+Keep the month and day together, without a slash. A valid credential releases the medical authorization and opens Communications.
 
-NEXT: OPEN COMMUNICATIONS
-TYPE: cd /comms
-TYPE: ls
-Read recovery_service.txt there with cat recovery_service.txt.
-Cortex is not your next step yet.
-
-LATER: ONLY IF THE SEDATION COUNTDOWN STARTS
-Sedation means being put to sleep with medication. When its timer reaches zero,
-you lose consciousness and the session ends. Cortex can stop that.
-"run" starts an application; "cd" only changes your folder.
-TYPE: run /medical/cortex_echo.app
-Already inside /medical? run cortex_echo.app works too.
-Press the displayed A/S/K/L key; pass 15 of 20 signals.
-Submit the code you receive: auth cortex <your-code>
-Then type: root recover
+COMMAND REFERENCE: auth help

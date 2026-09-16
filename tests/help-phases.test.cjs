@@ -23,3 +23,14 @@ test('help highlights phase-specific usages in the full list without solved comm
   assert.doesNotMatch(rows.map(r=>r[0]).join('\n'),/MR-07-0412|cat \/medical|auth cortex CORTEX/);
  }
 });
+
+test('authentication help explains syntax without attempting authorization',async()=>{
+ const ctx=vm.createContext({window:{}});
+ vm.runInContext(fs.readFileSync('terminal-sketch/commands.js','utf8'),ctx);
+ const auth=vm.runInContext('createCommands()',ctx).find(c=>c.name==='auth');
+ const output=[];
+ await auth.run({game:{ending:false,authorize:()=>assert.fail('Help must not authorize')},args:['help'],print:t=>output.push(t)});
+ assert.match(output.join(''),/Domain selects the controller/);
+ assert.doesNotMatch(output.join(''),/MR-07-0412/);
+ assert.ok(auth.aliases.includes('authentication'));
+});

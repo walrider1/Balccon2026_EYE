@@ -146,9 +146,10 @@
       <textarea id="notes-input" class="notes-input" aria-label="Field notes" placeholder="Record codes, names, and observations here..." spellcheck="false"></textarea>
       <p class="notes-hint">RIGHT CTRL SAVES THIS VIEW AND RETURNS TO THE CONSOLE</p>
     </section>
-    <aside id="sedation-hud" class="sedation-hud hidden" aria-live="polite">
+    <aside id="sedation-hud" class="sedation-hud hidden" role="alert">
       <div class="sedation-heading"><span>MEDICAL REINDUCTION</span><strong id="sedation-clock">05:00</strong></div>
       <div class="sedation-track"><span id="sedation-progress" class="sedation-progress"></span></div>
+      <p class="sedation-explanation">RED ALERT // Medication is putting you to sleep. Stop it before this timer reaches zero. The ship countdown continues.</p>
       <p id="sedation-message">HRTOK SEDATION PROTOCOL ACTIVE</p>
     </aside>
     <section id="failure-screen" class="failure-screen hidden" role="alert" aria-live="assertive">

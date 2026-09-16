@@ -1,12 +1,8 @@
-COMMUNICATIONS RECOVERY SERVICE
+COMMUNICATIONS // RECOVERY SERVICE
 
-This trust domain releases its ROOT share only after a falsified or blocked emergency transmission is proven from primary records.
+An emergency packet was blocked. The raw uplink ledger identifies the unsent packet; the lock audit records when it was stopped. Together they establish the evidence needed to recover this controller.
 
-EVIDENCE FORMAT:
-auth comms F-<UNSENT PACKET ID>-<BLOCK TIME>
+Credential format: F-<unsent packet ID>-<block HHMM>
+Keep the hour and minute together, without a colon. Bridge announcements are not primary evidence.
 
-Use raw telemetry. Announcements are not primary records.
-
-"comms" is the domain. Replace the bracketed parts with values from the ledger and audit.
-Example format only: packet 123 at 09:45 becomes auth comms F-123-0945.
-Use the actual UNSENT packet and block time, not these example numbers.
+COMMAND REFERENCE: auth help
