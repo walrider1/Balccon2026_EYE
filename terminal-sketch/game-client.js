@@ -30,7 +30,7 @@ class RemoteKosmosGame {
   }
   objectiveText() { return this.objective ? `RECOVERY ${this.objective.phase}/3 // ${this.objective.text}` : 'RECOVERY // CONNECTING'; }
   identityKnown() { return (this.readFiles || []).some(p => ['/home/operator/medical/doctor_note.txt', '/home/operator/medical/patient_intake.txt', '/home/operator/wake_protocol.txt'].includes(p)); }
-  navigationKnown() { return this.course === 'earth' || (this.readFiles || []).some(p => ['/home/operator/readme.txt', '/home/operator/wake_protocol.txt', '/home/operator/command/navigation/decision_brief.txt'].includes(p)); }
+  navigationKnown() { return true; }
   status() {
     const identity = this.identityKnown();
     const navigation = this.navigationKnown();

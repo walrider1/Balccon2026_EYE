@@ -71,7 +71,7 @@
       </section>
       <aside class="trajectory-panel" aria-label="Mission trajectory and HRTOK channel">
         <header class="os-titlebar"><span><b>JSA NAV</b> // ORBITAL TRAJECTORY</span><strong id="mission-clock">--:--</strong></header>
-        <svg class="trajectory-map hidden" viewBox="0 0 300 380" role="img" aria-label="Ship navigation display">
+        <svg class="trajectory-map" viewBox="0 0 300 380" role="img" aria-label="Ship navigation display">
           <defs><filter id="trajectory-glow"><feGaussianBlur stdDeviation="2.4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
           <circle class="trajectory-orbit orbit-earth" cx="238" cy="56" r="23" />
           <circle class="trajectory-earth" cx="238" cy="56" r="7" />
@@ -81,8 +81,8 @@
           <path id="mission-path" class="mission-path sun-course" d="M45 78 C235 95 272 235 170 280" />
           <circle id="mission-ship" class="mission-ship" cx="45" cy="78" r="5" />
         </svg>
-        <p id="mission-destination" class="mission-destination">CURRENT VECTOR: UNKNOWN</p>
-        <p id="mission-objective" class="mission-objective">NAVIGATION DATA UNKNOWN</p>
+        <p id="mission-destination" class="mission-destination">CURRENT VECTOR: SUN</p>
+        <p id="mission-objective" class="mission-objective">SOLAR ARRIVAL IN PROGRESS</p>
         <section class="central-panel" aria-label="HRTOK communications channel">
           <header class="os-titlebar central-titlebar"><span><b>HRTOK</b> // VOICE CHANNEL</span><span id="central-status">MONITORING</span></header>
           <div id="central-feed" class="central-feed" aria-live="polite"></div>

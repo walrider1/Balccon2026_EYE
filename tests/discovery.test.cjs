@@ -3,18 +3,18 @@ const assert = require('node:assert/strict');
 const { RemoteKosmosGame } = require('../terminal-sketch/game-client');
 const { createCharacter, prepareTurn, allowedFacts, localReply } = require('../terminal-sketch/central-character');
 
-test('identity and navigation reveal independently from read records', () => {
+test('navigation is visible immediately while identity is discovered through records', () => {
   const game = new RemoteKosmosGame();
-  assert.doesNotMatch(game.status(), /SAMUEL|MEDICAL PATIENT|SOLAR|DESTINATION: SUN/);
+  assert.doesNotMatch(game.status(), /SAMUEL|MEDICAL PATIENT/);
   game.readFiles = ['/home/operator/medical/doctor_note.txt'];
   assert.equal(game.identityKnown(), true);
   game.readFiles.push('/home/operator/medical/patient_intake.txt');
   assert.match(game.status(), /SAMUEL KOVAC/);
-  assert.equal(game.navigationKnown(), false);
+  assert.equal(game.navigationKnown(), true);
   game.readFiles.push('/home/operator/wake_protocol.txt');
   assert.match(game.status(), /DESTINATION: SUN/);
   game.readFiles = [];
-  assert.equal(game.navigationKnown(), false);
+  assert.equal(game.navigationKnown(), true);
 });
 
 test('HRTOK knows Sloki but keeps navigation and continuity undisclosed', () => {
