@@ -114,3 +114,7 @@ Medical sada prikazuje doctor_note.txt (identitet i dve vrednosti za autorizacij
 Komande i zapisi se prikazuju odmah. Crveni redovi označavaju tragove, a poslednja tri minuta misije ili poslednjih 90 sekundi sedacije uključuju crveno upozorenje sa ciljem. Tajmer je vidljiv i pre otkrivanja destinacije.
 Bonus: `ls -a` otkriva `.bonus`. Posle Communications autorizacije pokreni `ctf`, pročitaj tri forensic_fragment.txt zapisa i predaj `flag EYE{SIGNAL_WITNESS_CONTINUITY}`. Zatim `cd /home/operator/.bonus`, `ls` i `display pcele.png` ili `display IMG_2406.JPG`. Bonus nije uslov za završetak.
 Oko prati ponovni ulazak u terminal i reset partije; običan refresh ne resetuje rok misije.
+
+
+## Communications minigra
+Posle Medical autorizacije: `run /comms/relay_patch.app`. Klikom ili Tab/Enter promeni oznaku svakog releja da odgovara odredištu, pa VERIFY LINK. Uspeh daje Access 2 i pokreće sedaciju. Stari auth comms kod ostaje kompatibilan za ranije testove i prolaze; novi tok igre koristi releje.

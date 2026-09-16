@@ -551,6 +551,7 @@ function chooseCentralPrompt(index = centralPrompt?.selected) {
 }
 
 function centralObserve(key, text, delay = 900) {
+  if (!['sedation-started','root-recover','earth-transfer','evidence-neural','evidence-pods'].includes(key)) return;
   if (centralMemory.observed.has(key)) return;
   centralMemory.observed.add(key);
   window.setTimeout(async () => {
@@ -605,7 +606,7 @@ async function handleCentralMessage(rawMessage) {
 }
 
 function scheduleCentralIdleMessage() {
-  if (centralIdleTimer) return;
+  if (centralIdleTimer || centralMemory.idleCount >= 1) return;
   if (game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
   if (centralMemory.messages.length === 0 && centralMemory.observed.size === 0) return;
   centralMemory.idleCount = 0;
@@ -625,7 +626,7 @@ function scheduleCentralIdleMessage() {
       .catch(() => {
         // Silence is preferable to a fabricated observation during a connection failure.
       });
-  }, 65000 + Math.random() * 40000);
+  }, 150000 + Math.random() * 30000);
 }
 
 function updatePrompt() {
@@ -697,13 +698,13 @@ function updateSedationDisplay() {
   const critical = remaining <= 2 * 60 * 1000;
   sedationHud.classList.toggle('sedation-critical', critical);
   if (gameState.cortexCodeIssued && !gameState.rootShares.cortex) {
-    sedationMessage.textContent = `STEP 2/3 // auth cortex ${gameState.cortexCode}`;
+    sedationMessage.textContent = `RESPONSE VERIFIED // Submit the attestation using the medical controller instructions.`;
   } else if (gameState.rootShares.cortex) {
-    sedationMessage.textContent = 'STEP 3/3 // root recover';
+    sedationMessage.textContent = 'ALL SHARES VERIFIED // Combine the recovered authorizations to stop sedation.';
   } else {
     sedationMessage.textContent = critical
-      ? 'URGENT // run /medical/cortex_echo.app'
-      : 'STEP 1/3 // run /medical/cortex_echo.app';
+      ? 'URGENT // Find the independent response test in Medical.'
+      : 'MEDICAL SAFETY // An independent response test can challenge this order.';
   }
   if (critical) scheduleFatigueBlink();
 }
@@ -1308,7 +1309,7 @@ const cortexGame = {
       if (success && this.developerTest) {
         print('CORTEX ECHO DEVELOPER TEST COMPLETE.');
       } else if (success) {
-        print(`CORTEX ECHO COMPLETE\nATTESTATION CODE: ${code}\n\nNEXT STEP: auth cortex ${code}\nTHEN: root recover`);
+        print(`CORTEX ECHO COMPLETE\nATTESTATION CODE: ${code}\n\nThe Medical recovery service explains how to submit this attestation and restore control.`);
       } else {
         print('CORTEX ECHO FAILED // The patient-safety controller will allow another attempt.', 'error');
       }

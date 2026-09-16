@@ -15,7 +15,7 @@ function createCommands() {
         const phase = !game.rootShares.medical
           ? {goal: 'ACCESS 0 -> 1 // Read the medical records and restore medical access.', commands: ['ls','cd','cat','auth']}
           : !game.rootShares.comms
-          ? {goal: 'ACCESS 1 -> 2 // Investigate the blocked transmission and restore communications access.', commands: ['ls','cd','cat','auth']}
+          ? {goal: 'ACCESS 1 -> 2 // Repair the blocked relay to restore communications access.', commands: ['ls','cd','cat','run']}
           : !game.rootShares.cortex
           ? {goal: 'ACCESS 2 -> 3 // Complete the response challenge and verify its result to stop sedation.', commands: ['run','auth']}
           : !game.rootRecovered
@@ -166,7 +166,7 @@ function createCommands() {
         if (result.ok && args[0]?.toLowerCase() === 'comms') {
           game.startSedation(() => window.endKosmosGame('sedation'));
           startSedationDisplay();
-          print('MEDICAL REINDUCTION ORDER RECEIVED\nSOURCE: CENTRAL EXECUTIVE AI\nSEDATION PROTOCOL ACTIVE // Medication will put you to sleep. Stop it before time runs out.\nTIME TO UNCONSCIOUSNESS: 05:00\n\nPRIORITY: STOP SEDATION\n1. run /medical/cortex_echo.app\n2. Pass the test, then auth cortex <code-from-test>\n3. root recover\nStopping sedation removes this shorter deadline. The original ship countdown continues.', 'anomaly-line');
+          print('RED ALERT // Sedation started. Find the independent patient-safety application in Medical before you lose consciousness.', 'progression-help');
         }
       }
     },
@@ -189,6 +189,7 @@ function createCommands() {
           print(`run: ${arg}: not an executable app`, 'error');
           return;
         }
+        if (path === '/home/operator/comms/relay_patch.app') return window.openRelayPatch(game, print);
         if (path === '/home/operator/medical/cortex_echo.app') {
           return startCortexEcho();
         }

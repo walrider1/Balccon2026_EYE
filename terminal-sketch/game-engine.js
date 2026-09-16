@@ -208,7 +208,7 @@ class KosmosGame {
       return 'HINT // Medical records contain a chamber number and a specific kind of date. The recovery service defines their order.';
     }
     if (!this.rootShares.comms) {
-      return 'HINT // The captain announcement is a claim. The raw uplink ledger and lock audit are evidence.';
+      return 'HINT // The emergency link is blocked. Communications has a relay maintenance application that can restore it.';
     }
     if (!this.rootShares.cortex) {
       return 'HINT // CENTRAL has begun sedation. The independent medical controller can test whether you are consciously responding.';

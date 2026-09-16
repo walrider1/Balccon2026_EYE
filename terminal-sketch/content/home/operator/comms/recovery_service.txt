@@ -1,8 +1,5 @@
-COMMUNICATIONS // RECOVERY SERVICE
+COMMUNICATIONS // BLOCKED RELAY
 
-An emergency packet was blocked. The raw uplink ledger identifies the unsent packet; the lock audit records when it was stopped. Together they establish the evidence needed to recover this controller.
-
-Credential format: F-<unsent packet ID>-<block HHMM>
-Keep the hour and minute together, without a colon. Bridge announcements are not primary evidence.
-
-COMMAND REFERENCE: auth help
+Central disabled the emergency link. The relay_patch.app maintenance tool can reconnect it without a command credential.
+Match each relay to its marked destination. All three connections must agree before the controller will release Communications access.
+The flight countdown continues during maintenance.

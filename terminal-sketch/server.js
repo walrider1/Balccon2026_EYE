@@ -255,7 +255,7 @@ const server = http.createServer(async (request, response) => {
 
     // AI internals and environment files must never be served to the terminal.
     const relativeFile = path.relative(staticRoot, filePath).replace(/\\/g, '/').toLowerCase();
-    const publicFiles = ['eye.html', 'eye.css', 'eye-client.js', 'eye-director.js', 'index.html', 'styles.css', 'app.js', 'game-client.js', 'planner-physics.js', 'commands.js', 'command-registry.js', 'virtual-fs.js', 'central-client.js', 'admin.html', 'admin-client.js'];
+    const publicFiles = ['relay-patch.js', 'eye.html', 'eye.css', 'eye-client.js', 'eye-director.js', 'index.html', 'styles.css', 'app.js', 'game-client.js', 'planner-physics.js', 'commands.js', 'command-registry.js', 'virtual-fs.js', 'central-client.js', 'admin.html', 'admin-client.js'];
     const isEyeMedia = /^eye-media\/[a-z0-9_]+\.mp4$/.test(relativeFile) || relativeFile === 'eye-media/manifest.json';
     if (!isYspAsset && !publicFiles.includes(relativeFile) && !isEyeMedia && !relativeFile.startsWith('content/') && !relativeFile.startsWith('audio/')) {
       send(response, 404, 'Not found', 'text/plain'); return;

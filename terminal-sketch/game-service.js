@@ -120,8 +120,8 @@ function createGameService({ now = Date.now, storage = null } = {}) {
   function objective(g) {
     if (g.ending) return { phase: 3, text: 'SESSION COMPLETE' };
     if (!g.rootShares.medical) return { phase: 1, text: 'Recover medical access. Read /medical/doctor_note.txt and /medical/recovery_service.txt.' };
-    if (!g.rootShares.comms) return { phase: 2, text: 'Verify the blocked transmission. Compare the raw ledger and lock audit in /comms.' };
-    if (!g.cortexCodeIssued) return { phase: 3, text: 'Stop sedation. Run /medical/cortex_echo.app and match at least 15 of 20 signals.' };
+    if (!g.rootShares.comms) return { phase: 2, text: 'Restore the blocked link using the relay application in /comms.' };
+    if (!g.cortexCodeIssued) return { phase: 3, text: 'Stop sedation. Locate the independent response test in Medical.' };
     if (!g.rootShares.cortex) return { phase: 3, text: `Submit your verified response: auth cortex ${g.cortexCode}` };
     if (!g.rootRecovered) return { phase: 3, text: 'All three recovery shares are ready. Enter: root recover' };
     if (g.missionResolved) return { phase: 3, text: 'Earth transfer confirmed. Preparing the final report.' };
@@ -189,7 +189,17 @@ function createGameService({ now = Date.now, storage = null } = {}) {
     ensureActive(s); s.lastActivity = now();
     if (g.missionResolved && !['ending', 'hint', 'planner-commit'].includes(kind)) throw new GameError(409, 'EARTH TRANSFER ALREADY COMMITTED. Await the final report.');
     let result = { ok: true };
-    if (kind === 'authorize') {
+    if (kind === 'comms-start') {
+      if (g.access < 1 || g.rootShares.comms) throw new GameError(403, 'MEDICAL ACCESS REQUIRED; COMMUNICATIONS MUST STILL BE LOCKED');
+      s.link = { token: crypto.randomBytes(12).toString('hex'), targets: Array.from({length:3},()=>crypto.randomInt(4)) };
+      result.challenge = s.link;
+    } else if (kind === 'comms-submit') {
+      if (!s.link || input.token !== s.link.token || g.access < 1 || g.rootShares.comms) throw new GameError(409, 'STALE LINK CHALLENGE');
+      if (!Array.isArray(input.routes) || input.routes.length !== 3 || input.routes.some((v,i)=>v!==s.link.targets[i])) throw new GameError(400, 'SIGNAL BLOCKED. Match every relay to its destination.');
+      result = g.authorize('comms', 'F-184-2317');
+      s.link = null; g.sedationEndsAt = now() + 5*60*1000;
+      event(s,'comms-auth');event(s,'sedation-started');
+    } else if (kind === 'authorize') {
       if (typeof input.domain !== 'string' || typeof input.code !== 'string' || input.code.length > 80) throw new GameError(400, 'INVALID AUTHORIZATION');
       s.attempts = s.attempts.filter(time => now() - time < 10000);
       if (s.attempts.length >= 8) throw new GameError(429, 'AUTHORIZATION RATE LIMITED. Wait a few seconds.');
@@ -250,7 +260,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
       const level = Math.min(3, (s.hintCounts[stage] || 0) + 1); s.hintCounts[stage] = level;
       const details = {
         medical: ['Read /medical/doctor_note.txt and /medical/recovery_service.txt.', 'Use CHAMBER 07 and LAST MANUAL OVERRIDE 04/12 from doctor_note.txt. Enter: auth medical MR-07-0412'],
-        comms: ['Read /comms/raw_uplink_ledger.txt and /comms/lock_audit.txt.', 'Combine the UNSENT packet ID and BLOCK TIME using /comms/recovery_service.txt.'],
+        comms: ['Find the relay maintenance application in /comms.', 'Match each relay to its destination, then verify all three connections.'],
         cortex: ['Run /medical/cortex_echo.app while sedation is active.', 'Press the displayed A/S/K/L key once per signal. At least 15 of 20 must match; retries are allowed.'],
         root: ['All three shares have been accepted. Enter: root recover.', 'ROOT recovery stops sedation and opens the navigation archive. Enter: root recover.'],
         navigation: ['Read /command/navigation/legacy_flight_manual.txt and run its planner.', 'Place an early burn, adjust its vector and strength toward the blue ring, then use a second correction if needed. Hold Enter once capture is confirmed.']

@@ -77,3 +77,14 @@ test('bonus gallery requires verified optional cipher and relocks on reset',()=>
  const reset=f.service.operatorReset(f.id);f.service.action(reset.newId,{action:'start'});
  assert.equal(f.service.canRead(reset.newId,image),false);
 });
+
+test('relay challenge validates routes and starts sedation exactly once',()=>{
+ const f=fixture();assert.throws(()=>f.act('comms-start'),/MEDICAL/);medical(f);
+ const first=f.act('comms-start').challenge;
+ assert.throws(()=>f.act('comms-submit',{token:first.token,routes:[]}),/BLOCKED/);
+ const second=f.act('comms-start').challenge;
+ assert.throws(()=>f.act('comms-submit',{token:first.token,routes:first.targets}),/STALE/);
+ const win=f.act('comms-submit',{token:second.token,routes:second.targets});
+ assert.equal(win.state.access,2);assert.equal(win.state.sedationEndsAt,f.now()+300000);
+ assert.throws(()=>f.act('comms-submit',{token:second.token,routes:second.targets}),/STALE/);
+});

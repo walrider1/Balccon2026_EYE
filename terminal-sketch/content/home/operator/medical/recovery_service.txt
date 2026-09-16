@@ -6,3 +6,5 @@ Credential format: MR-<chamber>-<override MMDD>
 Keep the month and day together, without a slash. A valid credential releases the medical authorization and opens Communications.
 
 COMMAND REFERENCE: auth help
+
+PATIENT SAFETY: cortex_echo.app verifies conscious responses if a sleep order is active. A passing result provides a Cortex attestation. Authorize it, then combine the three ROOT shares to cancel the order.
