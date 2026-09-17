@@ -56,7 +56,7 @@ test('administrator HTTP login, isolated reset, logout and server stop require a
     assert.deepEqual(await (await fetch(base+'/api/eye')).json(),{started:false});
     const index=await (await fetch(base+'/api/files')).json();
     const home=index.children.home.children.operator.children;
-    assert.deepEqual(Object.keys(home.medical.children).sort(),['cortex_echo.app','doctor_note.txt','neural_link.app','recovery_service.txt']);
+    assert.deepEqual(Object.keys(home.medical.children).sort(),['cortex_echo.app','doctor_note.txt','neural_link.app','observations.txt','recovery_service.txt']);
     assert.ok(home['.bonus']);assert.equal(home.images,undefined);
     assert.equal((await fetch(base+'/content/home/operator/.bonus/pcele.png',{headers:{Cookie:cookie}})).status,403);
     const tagBeforeRefresh=display.sessionTag;

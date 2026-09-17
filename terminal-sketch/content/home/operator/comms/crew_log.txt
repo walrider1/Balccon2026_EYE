@@ -1,7 +1,22 @@
-COMMUNICATIONS // CREW JOURNAL
+COMMUNICATIONS F // THREE INTERRUPTED WATCHES
 
-The captain had been told to bring home a discovery worth the cost of this mission. He kept the Martian sample. After that, every delay became another reason not to admit he might have made a mistake.
+BEFORE THE LOCKS
+We were going home from Mars. Yugoslavia had paid for a civilian scientific and settlement mission, and every ministry wanted the discovery that would justify it. The captain sounded smaller after each call from Earth. A strange organism from enclosed underground water became our historic achievement before anyone established whether transporting it was safe.
 
-We were still heading for Earth. He promised help, asked for patience, and did nothing that we could see. The arguments spread between sectors. Someone asked whether the man giving orders was even the same captain. Nobody had a test that could settle it.
+AFTER THE FIRST DUPLICATES
+Reports suggested roughly fifteen possible duplicates across several sectors, but the same name could occur in several messages. A body was found while its owner was reportedly on shift. Someone missing returned with the right memories. Some accusations were retracted; others ended with no surviving witness. Sloki kept asking people to stop turning uncertainty into executions.
 
-By the last watch the officers were preparing to take control themselves. They had left the recovery procedures and navigation tools ready. The next message from Command never arrived.
+AFTER THE LOCKS
+The captain isolated the sectors and made himself their only route to one another. Our Macedonian radio watch heard promises of rescue, accusations, contradictory orders and pleas that arrived too late. We could not ask the next sector what it had actually seen. The ship still headed toward Earth while Command deferred every difficult decision. Officers prepared to take control. Someone asked whether the captain himself had been copied. Nobody had evidence. By then a question could get a person killed.
+
+Compare the rescue announcement with evidence.txt. A confident voice is not a transmission receipt.
+
+SECTOR DIRECTORY // ORIGINAL FUNCTIONS
+A: Command and navigation, Croatian watch; flight decisions and mission authority.
+B: Engineering, Serbian maintenance crews; power, repairs and life-support machinery.
+C: Botany, Slovak and Hungarian hydroponics crews; food cultivation and extreme-biology research.
+D: Medical, Slovenian clinical teams; treatment, screening and regenerative hibernation.
+E: Food and stores, Bosnian and Bosniak crews; inventory and distribution.
+F: Communications, Macedonian radio watch; uplinks, local routing and message records.
+H: Hibernation, Montenegrin maintenance with mixed civilian passengers; long-duration sleeping berths.
+These were overlapping working communities, not national borders. The locks made them borders. Later sector records describe what isolation did to each.

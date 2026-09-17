@@ -6,6 +6,8 @@ class RemoteKosmosGame {
     if (path.startsWith('/home/operator/comms')) return 1;
     if (path.startsWith('/home/operator/command') ||
         path.startsWith('/home/operator/engineering') ||
+        path.startsWith('/home/operator/botany') ||
+        path.startsWith('/home/operator/food') ||
         path.startsWith('/home/operator/hibernation')) return 2;
     return 0;
   }

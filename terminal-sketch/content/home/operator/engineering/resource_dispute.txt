@@ -1,9 +1,7 @@
-SECTOR B // MAINTENANCE HANDOVER
+ENGINEERING B // REPAIR AUTHORITY
 
-After isolation, the repair crews split over who could allocate supplies and authorize work on critical systems. One group sought to bring every repair under its control. Others refused to surrender their independent access.
+Our mostly Serbian maintenance crews initially shared tools, food and fault reports. Isolation turned a repair schedule into a border. One group controlled oxygen servicing; another held replacement power cells. Access to a valve became more useful than rank.
 
-The struggle for resources began before anyone could establish how many copies were present. Do not interpret every technical disagreement as evidence of infection.
+A technician was accused after refusing to surrender a key. His accusers later admitted that nobody had examined him. A second group used that admission to seize the workshop. We still could not count the copies, but we could count the doors welded shut by people.
 
-The independent recovery interlocks remain relevant: central authority and patient-safety authority are not interchangeable.
-
-Cross-reference: /engineering/interlock_status.txt.
+The recovery interlock was built to keep one frightened commander from owning every decision. Its independent shares survived our arguments. Read interlock_status.txt for the surviving system record.

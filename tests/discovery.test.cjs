@@ -40,3 +40,25 @@ test('HRTOK knows Sloki but keeps navigation and continuity undisclosed', () => 
     assert.doesNotMatch(localReply(character,turn), /copy|captain|solar/i);
   }
  });
+
+
+test('lore is disclosed by reading the matching record at its required access', () => {
+ const character=createCharacter();
+ assert.ok(character.facts.includes('mission'));
+ const paths=['/home/operator/medical/observations.txt','/home/operator/botany/private_letter.txt','/home/operator/command/navigation/origin_review.txt'];
+ const read=access=>prepareTurn(character,{kind:'message',text:'what do these records mean?',state:{access,readFiles:paths}});
+ read(0);assert.ok(character.facts.includes('identityLimits'));assert.ok(!character.facts.includes('personal'));assert.ok(!character.facts.includes('origin'));
+ read(2);assert.ok(character.facts.includes('personal'));assert.ok(!character.facts.includes('origin'));
+ read(3);assert.ok(character.facts.includes('origin'));
+});
+
+test('mission background works without an API and late sectors stay locked in the UI', () => {
+ const character=createCharacter();
+ const turn=prepareTurn(character,{kind:'message',text:'What is our mission?',state:{}});
+ assert.match(localReply(character,turn),/civilian mission to Mars.*Yugoslavia/i);
+ assert.doesNotMatch(localReply(character,turn),/addict|copy|duplicate/i);
+ const game=new RemoteKosmosGame();
+ for(const path of ['/home/operator/botany/private_letter.txt','/home/operator/food/quarantine_report.txt']) {
+ assert.equal(game.canAccessPath(path),false);game.access=2;assert.equal(game.canAccessPath(path),true);game.access=0;
+ }
+});

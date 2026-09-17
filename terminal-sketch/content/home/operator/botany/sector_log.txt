@@ -1,9 +1,9 @@
-SECTOR C // HYDROPONICS // RECOVERED SHIFT NOTES
+BOTANY C // WHAT HELD US TOGETHER
 
-Before the quarantine, Kovac kept this section working as one crew. After the dispute over his identity and his transfer to the medical regeneration chamber, every decision became a vote about who was still human.
+Slovak and Hungarian hydroponics crews worked alongside colleagues from across the ship. Sloki knew the plants, the arguments and whose bad joke could end a fight. Even after the first disappearances he argued against identifying copies by panic or personality alone. Whether that protected people or protected him is the question that broke us.
 
-Two groups now keep separate watches. Each accuses the other of protecting an imitation. Both use the same old staff roster as proof.
+Then two men claimed his name. Witnesses trusted the relaxed one; the desperate one shouted that he was about to be killed. Familiarity became our test, although familiarity was precisely what a copy could reproduce. The surviving account does not record an impartial examination.
 
-The roster establishes who worked here. It cannot establish who is standing in their place.
+People close to the survivor began noticing private habits performed openly. A friend tried to isolate him. The confrontation left one person dead and Sloki with catastrophic head trauma. He was moved to regenerative medical hibernation, not an ordinary passenger capsule. Treatment could take years. The note left for him is an apology, not an explanation of the blow.
 
-Cross-reference: /botany/sample_manifest.txt and /medical/identity_limits.txt.
+Without him we split into two camps, each certain the other sheltered the organism. We destroyed our shared food beds before we proved either claim. Whoever Sloki was, he had kept us talking.

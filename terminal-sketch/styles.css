@@ -312,3 +312,14 @@ input { color:#e8dfc8; caret-color:#d8a24d; }
 .relay-modal button { font: inherit; padding: 12px; margin: 8px; color: #fff; background: #234351; border: 2px solid #86b9c8; }
 
 .relay-modal input[type=range], .relay-modal progress { display:block; width:100%; margin:24px 0; height:32px; accent-color:#69e6da; }
+
+.radio-dial { width:150px; height:150px; border-radius:50%; margin:24px auto 8px; border:8px solid #47616b; background:radial-gradient(circle,#344e58,#0a171d); position:relative; cursor:ns-resize; touch-action:none; }
+.radio-dial::after { content:''; position:absolute; width:5px; height:58px; background:#ffcc77; left:calc(50% - 2px); top:12px; transform-origin:50% 63px; transform:rotate(var(--angle)); }
+.radio-dial:focus-visible { outline:3px solid #9fffee; outline-offset:6px; }
+.radio-readout,.wave-legend { text-align:center; font-size:18px; }
+.neural-wave { display:block; width:100%; background:#061014; border:1px solid #52717c; }
+.neural-wave path.reference-wave { fill:none; stroke:#ffbd68; stroke-width:4; }
+.neural-wave path.patient-wave { fill:none; stroke:#76e6e0; stroke-width:3; stroke-dasharray:8 5; }
+.wave-controls { display:grid; grid-template-columns:repeat(3,1fr); text-align:center; gap:10px; }
+.wave-controls output { display:block; font-size:24px; }
+@media(max-width:700px) { .relay-modal { inset:5% 3%; padding:16px; } .wave-controls { gap:0; } .relay-modal button { margin:4px; padding:10px; } }

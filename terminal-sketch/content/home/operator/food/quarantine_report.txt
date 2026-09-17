@@ -1,9 +1,7 @@
-SECTOR E // STORES // LOCAL QUARANTINE REPORT
+STORES E // LOCAL CONTAINMENT REPORT
 
-We restricted entry, accounted for supplies, and kept separate records of everyone crossing our boundary. Our team reported that most suspected intruders had been removed.
+Bosnian and Bosniak stores crews established paired entry checks, contact registers and restricted deliveries. Several intruders were isolated after incompatible location records, rather than a stranger's accent or a failed memory question. Our last local review found no further contradictions.
 
-That is our assessment. We do not possess a test that proves every remaining person is human. Neither does Command possess evidence that everyone here must be a copy.
+That is a claim of local success, not proof of perfect safety. We requested an independent review and renewed contact with other sectors. Central refused: a report could be written by the very thing it denied.
 
-Please distinguish "not certified safe" from "confirmed lost."
-
-Cross-reference: /food/appeal.txt and /hibernation/occupancy.txt.
+We may have solved the problem inside our doors and still lost the right to open them. The archive contains no verified final roll call. Do not turn silence into certainty that everyone here was dead, or infected.

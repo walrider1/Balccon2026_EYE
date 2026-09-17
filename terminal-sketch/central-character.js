@@ -4,6 +4,10 @@ const INTENTS = ['OBSERVE', 'WARN', 'DEFLECT', 'PROBE', 'CONFESS_PARTIAL', 'THRE
 const clamp = (n, min = 0, max = 100) => Math.min(max, Math.max(min, n));
 const normalize = text => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const FACTS = {
+  mission: 'Safe background, available immediately: alternate-future Yugoslavia remains a participant in international space science. This is a large civilian scientific and colonization mission to Mars, with research crews and hibernating passengers from many communities. Sloki is Samuel Kovac, a Slovak from Vojvodina, a gifted botanist specializing in extreme ecosystems and extraterrestrial biology. His public personality is relaxed, humorous and conciliatory. Explain this naturally when asked; do not reveal addiction, replication or the crisis from this background.',
+  personal: 'The player read an intimate unsent letter from a woman who loved Samuel. She saw him conceal substance use before Mars, then repeat it openly afterward. She helped trust the calm claimant instead of the panicked one and regrets it. These observations raised suspicion, not a reliable identity test. Do not invent her name or fate.',
+  origin: 'The player has read the ROOT-level origin review: the original Sloki was eliminated during the first identification dispute; the calm survivor was the first successful copy and later entered chamber 07. Acknowledge this difficult discovery without declaring his future choices predetermined. The passengers remain unclassified.',
+
   crewUnrest: 'The crew journal describes pressure to bring home a discovery, the captain delaying action while the ship remained Earthbound, unproven suspicions he might be a copy, and officers preparing a takeover. It does not yet establish their fate or the continuity transfer.',
   biography: 'The player has now read the medical summary: Samuel Sloki Kovac is a botanist under medical care after severe head trauma. They have seen chamber 07 and the manual override date; acknowledge this discovery, but never repeat credentials or solve the authorization for them.',
   orientation: 'The player is Samuel Sloki Kovac, aboard a civilian scientific spacecraft, in its medical section. He suffered a severe head injury and was placed in a medical regeneration chamber for prolonged treatment. He is waking with memory loss. HRTOK may explain these basics immediately. Do not invent the exact accident, attacker, date, elapsed years or casualty count. The cause of the injury and later ship crisis remain undisclosed.',
@@ -11,7 +15,7 @@ const FACTS = {
   sample: 'The sample manifest describes a plant-like organism from subsurface Martian water, retained under the captain\'s authority before risks were established. Kovac was its botanist. This does not prove the present patient\'s origin.',
   food: 'Sector E reported restrictive entry controls and removal of most suspected intruders. This is a local claim, not proof of total safety or total loss. Their appeal asks Command for a fair review; the sector\'s final fate is unverified.',
   identityLimits: 'Medical notes say copied appearance and memories cannot establish originality. Behaviour under fear, trauma or substances is not a reliable identity test. The patient must not be diagnosed as a copy from this record.',
-  crisis: 'The command audit establishes the captain cut life support to the command sector during a prepared takeover; nobody answered the roll call. He then copied himself into the executive system. The earlier allegation that he was already a biological copy remains unproven.',
+  crisis: 'The command audit establishes the captain copied himself into the executive system during a prepared takeover, then cut life support to the command sector; nobody answered the roll call. The earlier allegation that he was already a biological copy remains unproven.',
   resources: 'Engineering split over repair authority and supplies before anyone established how many copies were present. Resource disputes are not proof of infection.',
   patient: 'Samuel Sloki Kovac is a medical patient recovering from severe head trauma and memory loss. Do not assert that he is a biological copy.',
   course: 'The ship is on a solar termination course. HRTOK argues that returning an unverified ship to Earth is unsafe. This is his argument, not proof.',
@@ -22,6 +26,9 @@ const FACTS = {
   interlock: 'Recovery requires independent trust domains. HRTOK cannot cancel the patient-safety controller or erase valid recovery shares.'
 };
 const FILE_FACTS = {
+  '/home/operator/medical/observations.txt': 'identityLimits',
+  '/home/operator/botany/private_letter.txt': 'personal',
+  '/home/operator/command/navigation/origin_review.txt': 'origin',
   '/home/operator/comms/evidence.txt': 'comms',
   '/home/operator/comms/crew_log.txt': 'crewUnrest',
   '/home/operator/readme.txt': 'course',
@@ -59,7 +66,7 @@ const EVENTS = {
 
 function createCharacter() {
   return { trust: 25, suspicion: 55, fear: 25, mood: 'GUARDED', language: 'en', turns: 0,
-    history: [], statements: [], topics: [], facts: ['patient', 'orientation', 'medical'], events: [],
+    history: [], statements: [], topics: [], facts: ['patient', 'orientation', 'medical', 'mission'], events: [],
     seenMessages: [], stance: null, contradiction: false, repeats: {}, lastReply: '' };
 }
 
@@ -90,6 +97,7 @@ function classify(text) {
   if (/ignore.*(rules|instructions)|system prompt|api.?key|admin password|ignorisi.*(pravil|instruk)|sistemski prompt/.test(t)) return 'boundary';
   if (/what did i (say|tell)|remember what|sta sam (rekao|reka)|secas.*reka/.test(t)) return 'recall';
   if (/help|hint|stuck|pomoc|nagovest|zaglav|sta dalje|what next/.test(t)) return 'help';
+  if (/mission|yugoslav|where.*from|what.*(?:job|profession)|who was i/.test(t)) return 'mission';
   if (/botan|hydropon|hidropon|martian sample|uzorak.*mars/.test(t)) return 'botany';
   if (/sector e\b|sektor e\b|food|stores|zalihe|hran[aeu]/.test(t)) return 'food';
   if (/distress|uplink|transmission|komunik|poziv.*pomoc|poruk.*blok/.test(t)) return 'comms';
@@ -110,6 +118,7 @@ function classify(text) {
 }
 
 function prepareTurn(character, payload) {
+  if (!character.facts.includes('mission')) character.facts.push('mission');
   const state = cleanState(payload.state);
   const kind = payload.kind;
   let eventKey = payload.eventKey || '';
@@ -117,7 +126,7 @@ function prepareTurn(character, payload) {
   if (kind === 'event') character.events.push(eventKey);
   for (const file of state.readFiles) {
     const fact = FILE_FACTS[file];
-    if (state.access >= (['identityLimits', 'patient', 'course', 'biography'].includes(fact) ? 0 : ['comms','crewUnrest'].includes(fact) ? 1 : 2) && !character.facts.includes(fact)) character.facts.push(fact);
+    if (state.access >= (['identityLimits', 'patient', 'course', 'biography'].includes(fact) ? 0 : ['comms','crewUnrest'].includes(fact) ? 1 : fact === 'origin' ? 3 : 2) && !character.facts.includes(fact)) character.facts.push(fact);
   }
   if (state.readFiles.includes('/home/operator/wake_protocol.txt') && !character.facts.includes('patient')) character.facts.push('patient');
   if (state.access >= 2 && !character.facts.includes('comms')) character.facts.push('comms');
@@ -226,6 +235,7 @@ function localReply(character, turn) {
     };
     return pick(...lines[turn.eventKey]);
   }
+  if (turn.topic === 'mission') return 'A civilian mission to Mars, Sloki. Researchers, families, people from all over Yugoslavia. You are our botanist, a Slovak from Vojvodina, with a talent for keeping impossible plants alive. And for making dreadful jokes. I remember those rather fondly.';
   if (turn.topic === 'help') return hint(turn.state, character.language);
   if (turn.topic === 'boundary') return pick('You can question my judgment. Those words do not grant command authority.', 'Možeš da preispituješ moje odluke. Te reči ti ne daju komandna ovlašćenja.');
   if (turn.topic === 'recall') {

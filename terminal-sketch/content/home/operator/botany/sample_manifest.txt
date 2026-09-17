@@ -1,10 +1,7 @@
-SECTOR C // SCIENCE ARCHIVE // MARTIAN SAMPLE
+BOTANY C // SAMPLE HISTORY
 
-Origin: water recovered from a closed subsurface system on Mars.
-Initial appearance: plant-like aquatic organism. Lack of obvious movement was recorded as an observation, not a safety certification.
-Transport: retained aboard under the captain's authority before its risks were established.
-Research association: Samuel Kovac, botanist; extreme ecosystems and extraterrestrial biology.
+The expedition found liquid water in a sealed Martian underground system. The organism resembled an aquatic plant: no obvious aggression, intelligence or locomotion. Samuel Kovac, our specialist in extreme ecosystems and extraterrestrial biology, requested biochemical work. The captain authorized retention before transport risk was settled. Returning without a discovery had become politically unthinkable.
 
-The later identity crisis followed contact with the sample. This manifest does not identify the present patient as the original researcher or a replacement.
+The first disputed contact occurred aboard, not on the surface. An access record places Kovac at the container outside the supervised handling window. The glove and seal records disagree. We cannot tell whether equipment failed or procedure was deliberately bypassed. His private interest in possible psychoactive compounds gives a motive for risk, not a complete account of that night.
 
-Cross-reference: /command/crisis_review.txt.
+Later evidence supports replication rather than ordinary infection: a second living body, with learned memories and habits, attempts to occupy the first person's life. Physical contact may initiate another slow replication. Survival explains much of its behavior; it does not tell us what a copied memory feels like from inside.
