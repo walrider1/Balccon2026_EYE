@@ -14,6 +14,16 @@ const savedFields = ['sessionNumber', 'access', 'rootRecovered', 'ending', 'neur
   'missionDuration', 'missionEndsAt', 'missionRemaining', 'missionPaused', 'missionResolved', 'course',
   'cortexCodeIssued', 'cortexCodeAuthorized', 'rootShares', 'cortexCode'];
 
+function newCredentials(previous) {
+  let c;
+  do {
+    const pad=n=>String(n).padStart(2,'0');
+    c={chamber:pad(crypto.randomInt(10,100)),month:pad(crypto.randomInt(1,13)),day:pad(crypto.randomInt(1,29)),packet:String(crypto.randomInt(200,1000)),hour:pad(crypto.randomInt(0,24)),minute:pad(crypto.randomInt(0,60))};
+    c.medical=`MR-${c.chamber}-${c.month}${c.day}`;c.comms=`F-${c.packet}-${c.hour}${c.minute}`;
+  } while(previous&&(c.medical===previous.medical||c.comms===previous.comms));
+  return c;
+}
+
 function createGameService({ now = Date.now, storage = null } = {}) {
   const sessions = new Map();
   let completedRuns = [];
@@ -63,7 +73,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
     const choices = variants.filter(v=>v.id!==previousVariant);
     const replayVariant = choices[crypto.randomInt(choices.length)].id;
     game.cortexCode = `CORTEX-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-    const s = { game, replayVariant, runId: crypto.randomUUID(), createdAt: now(), lastActivity: now(), started: false, endingKind: null, endedAt: null,
+    const s = { credentials:newCredentials(sessions.get(replacingId)?.credentials), game, replayVariant, runId: crypto.randomUUID(), createdAt: now(), lastActivity: now(), started: false, endingKind: null, endedAt: null,
       readFiles: [], events: [], attempts: [], cortex: null, planner: null, revision: 0, hintCounts: {}, ctf: null };
     sessions.set(id, s);
     if (replacingId && sessions.has(replacingId)) { archive(sessions.get(replacingId), 'abandoned', now()); sessions.delete(replacingId); }
@@ -98,6 +108,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
   function get(id) {
     const s = sessions.get(id);
     if (!s) throw new GameError(401, 'SESSION REQUIRED. Reload the terminal.');
+    if(!s.credentials){s.credentials=newCredentials();persist();}
     if (!s.game.ending && s.started) {
       if (s.game.missionResolved && s.earthEndingAt && now() >= s.earthEndingAt) {
         finish(s, 'earth', s.earthEndingAt); persist();
@@ -115,7 +126,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
       cortexCode: g.cortexCodeIssued ? g.cortexCode : null, serverNow: now(), started: s.started,
       endingKind: s.endingKind, resetAt: s.endedAt === null ? null : s.endedAt + 60000,
       sessionTag: crypto.createHash('sha256').update(id).digest('hex').slice(0, 16),
-      revision: s.revision, objective: objective(g), readFiles: [...s.readFiles], ctf: s.ctf ? { endsAt: s.ctf.endsAt, completed: s.ctf.completed, expired: !s.ctf.completed && now() >= s.ctf.endsAt } : null };
+      revision: s.revision, objective: s.medicalCredential&&!g.rootShares.medical ? {phase:1,text:"Medical credential accepted. Complete /medical/neural_link.app to restore access."} : objective(g), readFiles: [...s.readFiles], ctf: s.ctf ? { endsAt: s.ctf.endsAt, completed: s.ctf.completed, expired: !s.ctf.completed && now() >= s.ctf.endsAt } : null };
   }
   function objective(g) {
     if (g.ending) return { phase: 3, text: 'SESSION COMPLETE' };
@@ -189,7 +200,15 @@ function createGameService({ now = Date.now, storage = null } = {}) {
     ensureActive(s); s.lastActivity = now();
     if (g.missionResolved && !['ending', 'hint', 'planner-commit'].includes(kind)) throw new GameError(409, 'EARTH TRANSFER ALREADY COMMITTED. Await the final report.');
     let result = { ok: true };
-    if (kind === 'comms-start') {
+    if(kind==='medical-start') {
+      if(!s.medicalCredential||g.rootShares.medical)throw new GameError(403,'AUTHORIZE MEDICAL BEFORE NEURAL LINK');
+      if(!s.neural)s.neural={token:crypto.randomBytes(12).toString('hex'),target:[crypto.randomInt(3,6),crypto.randomInt(2,7),crypto.randomInt(3,6)]};
+      result.challenge={token:s.neural.token,target:[...s.neural.target]};
+    } else if(kind==='medical-submit') {
+      if(!s.medicalCredential||!s.neural||input.token!==s.neural.token||g.rootShares.medical)throw new GameError(409,'STALE NEURAL CHALLENGE');
+      if(!Array.isArray(input.values)||input.values.length!==3||!input.values.every((v,i)=>Number.isInteger(v)&&v===s.neural.target[i]))throw new GameError(400,'LOCK REJECTED // The waveforms differ. Adjust and try again.');
+      result={...g.authorize('medical','MR-07-0412'),complete:true};s.neural=null;event(s,'medical-auth');
+    } else if (kind === 'comms-start') {
       if (!s.commsCredential || g.access < 1 || g.rootShares.comms) throw new GameError(403, 'AUTH COMMS REQUIRED BEFORE LINK CALIBRATION');
       s.link = { token: crypto.randomBytes(12).toString('hex'), target: crypto.randomInt(25,76), stableSince: null };
       result.challenge = {token:s.link.token};
@@ -211,11 +230,14 @@ function createGameService({ now = Date.now, storage = null } = {}) {
       s.attempts = s.attempts.filter(time => now() - time < 10000);
       if (s.attempts.length >= 8) throw new GameError(429, 'AUTHORIZATION RATE LIMITED. Wait a few seconds.');
       s.attempts.push(now());
-      if(input.domain.toLowerCase()==='comms' && g.access>=1 && !g.rootShares.comms && input.code.toUpperCase()==='F-184-2317') {
-        s.commsCredential=true;result={ok:true,linkRequired:true,message:'CREDENTIAL ACCEPTED // Establish a stable carrier to release Communications access.'};
-      } else result = g.authorize(input.domain, input.code);
-      if (result.ok && input.domain.toLowerCase() === 'medical') event(s, 'medical-auth');
-      if (result.ok && !result.linkRequired && input.domain.toLowerCase() === 'comms') { g.sedationEndsAt = now() + 5 * 60 * 1000; event(s, 'comms-auth'); event(s, 'sedation-started'); }
+      const domain=input.domain.toLowerCase();
+      if(domain==='medical'||domain==='comms') {
+        if(g.rootShares[domain])result={ok:false,message:'ACCESS ALREADY RESTORED.'};
+        else if(domain==='comms'&&g.access<1)result={ok:false,message:'MEDICAL ACCESS REQUIRED.'};
+        else if(input.code.toUpperCase()!==s.credentials[domain])result={ok:false,message:'AUTHORIZATION REJECTED // Check the values in this session records.'};
+        else if(domain==='medical'){s.medicalCredential=true;result={ok:true,neuralRequired:true,message:'CREDENTIAL ACCEPTED // Complete Neural Link to restore medical access.'};}
+        else {s.commsCredential=true;result={ok:true,linkRequired:true,message:'CREDENTIAL ACCEPTED // Establish a stable carrier to release Communications access.'};}
+      } else result=g.authorize(input.domain,input.code);
     } else if (kind === 'root') {
       result = g.recoverRoot(); if (result.ok) event(s, 'root-recover');
     } else if (kind === 'cortex-start') {
@@ -268,8 +290,8 @@ function createGameService({ now = Date.now, storage = null } = {}) {
       const stage = !g.rootShares.medical ? 'medical' : !g.rootShares.comms ? 'comms' : !g.rootShares.cortex ? 'cortex' : !g.rootRecovered ? 'root' : 'navigation';
       const level = Math.min(3, (s.hintCounts[stage] || 0) + 1); s.hintCounts[stage] = level;
       const details = {
-        medical: ['Read /medical/doctor_note.txt and /medical/recovery_service.txt.', 'Use CHAMBER 07 and LAST MANUAL OVERRIDE 04/12 from doctor_note.txt. Enter: auth medical MR-07-0412'],
-        comms: ['Find the relay maintenance application in /comms.', 'Match each relay to its destination, then verify all three connections.'],
+        medical: ['Read /medical/doctor_note.txt and /medical/recovery_service.txt.', `Use CHAMBER ${s.credentials.chamber} and LAST MANUAL OVERRIDE ${s.credentials.month}/${s.credentials.day} from doctor_note.txt. Authorize medical, then complete Neural Link.`],
+        comms: ['Read the packet ID and block time in /comms/evidence.txt.', 'Authorize comms with those values, then tune the radio carrier above 88% for six seconds.'],
         cortex: ['Run /medical/cortex_echo.app while sedation is active.', 'Press the displayed A/S/K/L key once per signal. At least 15 of 20 must match; retries are allowed.'],
         root: ['All three shares have been accepted. Enter: root recover.', 'ROOT recovery stops sedation and opens the navigation archive. Enter: root recover.'],
         navigation: ['Read /command/navigation/legacy_flight_manual.txt and run its planner.', 'Place an early burn, adjust its vector and strength toward the blue ring, then use a second correction if needed. Hold Enter once capture is confirmed.']
@@ -287,7 +309,15 @@ function createGameService({ now = Date.now, storage = null } = {}) {
     } else throw new GameError(400, 'UNKNOWN ACTION');
     s.revision++; persist(); return { ...result, state: snapshot(id) };
   }
-  return { create, has, snapshot, action, canRead, recordRead, narrative, authorizeEvent, history,
+  function renderArchive(id,file,text) {
+    if(!canRead(id,file))throw new GameError(403,'Archive access denied');
+    const c=get(id).credentials;
+    return text.replace(/MR-07-0412/g,c.medical).replace(/F-184-2317/g,c.comms)
+      .replace(/04\/12/g,`${c.month}/${c.day}`).replace(/0412/g,`${c.month}${c.day}`)
+      .replace(/23:17/g,`${c.hour}:${c.minute}`).replace(/2317/g,`${c.hour}${c.minute}`)
+      .replace(/\b184\b/g,c.packet).replace(/(CHAMBER[: ]+|chamber[: ]+)07/g,`$1${c.chamber}`);
+  }
+  return { renderArchive, create, has, snapshot, action, canRead, recordRead, narrative, authorizeEvent, history,
     replayMemo: id => replay(get(id).replayVariant).memo,
     operatorReset: id => { const next = create(has(id) ? id : null); return { newId: next, state: snapshot(next) }; } };
 }

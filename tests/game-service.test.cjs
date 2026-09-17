@@ -2,14 +2,15 @@ const test=require('node:test'), assert=require('node:assert/strict'), fs=requir
 const {createGameService}=require('../terminal-sketch/game-service');
 const {createPlannerPhysics}=require('../terminal-sketch/planner-physics');
 function fixture(storage) { let time=1000000; const service=createGameService({now:()=>time,storage}); const id=service.create(); const act=(action,data={})=>service.action(id,{action,...data}); act('start'); return {service,id,act,advance:n=>time+=n,now:()=>time}; }
-function medical(f) { assert.equal(f.act('authorize',{domain:'medical',code:'MR-07-0412'}).ok,true); }
+function credential(f,domain) { return f.service.renderArchive(f.id,domain==='medical'?'/home/operator/medical/doctor_note.txt':'/home/operator/comms/evidence.txt',domain==='medical'?'MR-07-0412':'F-184-2317'); }
+function medical(f) { const r=f.act('authorize',{domain:'medical',code:credential(f,'medical')});assert.equal(r.neuralRequired,true);assert.equal(r.state.access,0);const c=f.act('medical-start').challenge;assert.equal(f.act('medical-submit',{token:c.token,values:c.target}).state.access,1); }
 function link(f) {
  const c=f.act('comms-start').challenge;let frequency=0;
  for(;frequency<=100;frequency++){if(f.act('comms-submit',{token:c.token,frequency}).quality===100)break;}
  let result;for(let i=0;i<13;i++){f.advance(500);result=f.act('comms-submit',{token:c.token,frequency});if(result.complete)break;}
  return result;
 }
-function comms(f) {medical(f);f.act('authorize',{domain:'comms',code:'F-184-2317'});link(f);}
+function comms(f) {medical(f);f.act('authorize',{domain:'comms',code:credential(f,'comms')});link(f);}
 function cortex(f) {let r=f.act('cortex-start'); for(let i=0;i<20;i++) {f.advance(Math.max(0,r.challenge.issuedAt-f.now())); r=f.act('cortex-answer',{token:r.challenge.token,key:r.challenge.target});} assert.equal(r.success,true);return r.state.cortexCode;}
 function root(f) {comms(f);f.act('authorize',{domain:'cortex',code:cortex(f)});assert.equal(f.act('root').ok,true);}
 test('server rejects skipped steps and hides attestation; ignores forged state',()=>{ const f=fixture();assert.equal(f.service.snapshot(f.id).cortexCode,null); assert.equal(f.act('root',{access:3}).ok,false);assert.throws(()=>f.act('ending',{kind:'shutdown'}),/ROOT/);assert.throws(()=>f.act('cortex-start'),/SEDATION/);assert.throws(()=>f.act('planner-start'),/ROOT/);assert.equal(f.service.canRead(f.id,'/home/operator/comms/raw_uplink_ledger.txt'),false); medical(f);assert.equal(f.service.canRead(f.id,'/home/operator/comms/raw_uplink_ledger.txt'),true);assert.equal(f.service.canRead(f.id,'/home/operator/command/navigation/legacy_flight_manual.txt'),false);});
@@ -31,7 +32,7 @@ test('mission failure, idle reset and planner pause use server deadlines',()=>{
  const p=fixture();root(p);const remaining=p.act('planner-start').state.missionRemaining;p.advance(950000);assert.equal(p.service.snapshot(p.id).ending,false);const resumed=p.act('planner-exit').state;assert.equal(resumed.missionEndsAt,p.now()+remaining);p.advance(remaining+1);assert.equal(p.service.snapshot(p.id).endingKind,'mission');
 });
 test('hint and objective follow the attestation and ROOT transitions',()=>{
- const f=fixture();assert.equal(f.service.snapshot(f.id).objective.phase,1);medical(f);assert.equal(f.service.snapshot(f.id).objective.phase,2);f.act('authorize',{domain:'comms',code:'F-184-2317'});link(f);assert.equal(f.service.snapshot(f.id).objective.phase,3);const code=cortex(f);assert.ok(f.act('hint').message.includes(code));f.act('authorize',{domain:'cortex',code});assert.match(f.act('hint').message,/root recover/);f.act('root');assert.match(f.service.snapshot(f.id).objective.text,/decision_brief/);
+ const f=fixture();assert.equal(f.service.snapshot(f.id).objective.phase,1);medical(f);assert.equal(f.service.snapshot(f.id).objective.phase,2);f.act('authorize',{domain:'comms',code:credential(f,'comms')});link(f);assert.equal(f.service.snapshot(f.id).objective.phase,3);const code=cortex(f);assert.ok(f.act('hint').message.includes(code));f.act('authorize',{domain:'cortex',code});assert.match(f.act('hint').message,/root recover/);f.act('root');assert.match(f.service.snapshot(f.id).objective.text,/decision_brief/);
 });
 test('Cortex can resume the current signal without erasing score',()=>{
  const f=fixture();comms(f);const first=f.act('cortex-start').challenge;f.act('cortex-answer',{token:first.token,key:first.target});const restored=f.act('cortex-start').challenge;assert.equal(restored.index,1);assert.equal(restored.hits,1);assert.notEqual(restored.token,first.token);
@@ -87,7 +88,7 @@ test('bonus gallery requires verified optional cipher and relocks on reset',()=>
 test('signal challenge requires credentials, rejects stale samples and grants access only after stability',()=>{
  const f=fixture();assert.throws(()=>f.act('comms-start'),/AUTH COMMS/);medical(f);
  assert.throws(()=>f.act('comms-start'),/AUTH COMMS/);
- const auth=f.act('authorize',{domain:'comms',code:'F-184-2317'});assert.equal(auth.state.access,1);assert.equal(auth.state.sedationEndsAt,null);
+ const auth=f.act('authorize',{domain:'comms',code:credential(f,'comms')});assert.equal(auth.state.access,1);assert.equal(auth.state.sedationEndsAt,null);
  const old=f.act('comms-start').challenge;f.act('comms-start');
  assert.throws(()=>f.act('comms-submit',{token:old.token,frequency:50}),/STALE/);
  const win=link(f);assert.equal(win.state.access,2);assert.equal(win.state.sedationEndsAt,f.now()+300000);
@@ -99,4 +100,28 @@ test('Cortex accelerates and a failed attempt can restart at initial speed',()=>
  f.act('cortex-answer',{token:r.challenge.token,key:r.challenge.target});
  r=f.act('cortex-start');assert.ok(r.challenge.expiresAt-r.challenge.issuedAt<initial);
  f.act('cortex-cancel');r=f.act('cortex-start');assert.equal(r.challenge.expiresAt-r.challenge.issuedAt,initial);
+});
+
+test('medical needs both session credential and waveform, and cannot replay a solved challenge',()=>{
+ const f=fixture();assert.throws(()=>f.act('medical-start'),/AUTHORIZE MEDICAL/);
+ assert.equal(f.act('authorize',{domain:'medical',code:'MR-07-0412'}).ok,false);
+ const code=credential(f,'medical');f.act('authorize',{domain:'medical',code});
+ const c=f.act('medical-start').challenge;assert.deepEqual(f.act('medical-start').challenge,c);
+ assert.throws(()=>f.act('medical-submit',{token:c.token,values:[1,0,1]}),/LOCK REJECTED/);
+ assert.equal(f.service.snapshot(f.id).access,0);
+ assert.equal(f.act('medical-submit',{token:c.token,values:c.target}).state.access,1);
+ assert.throws(()=>f.act('medical-submit',{token:c.token,values:c.target}),/STALE/);
+});
+
+test('session clues survive reload, differ after reset and old credentials fail',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'eye-clues-'));
+ try { const storage=path.join(dir,'state.json'),f=fixture(storage);const code=credential(f,'medical');
+ const template='CHAMBER: 07 / 04/12 / MR-07-0412';const file='/home/operator/medical/doctor_note.txt';
+ const text=f.service.renderArchive(f.id,file,template);assert.ok(text.includes(code));
+ const restored=createGameService({now:f.now,storage});assert.equal(restored.renderArchive(f.id,file,template),text);
+ const next=restored.operatorReset(f.id).newId;restored.action(next,{action:'start'});
+ assert.notEqual(restored.renderArchive(next,file,template),text);
+ assert.equal(restored.action(next,{action:'authorize',domain:'medical',code}).ok,false);
+ assert.ok(!JSON.stringify(restored.snapshot(next)).includes('credentials'));
+ } finally { fs.rmSync(dir,{recursive:true}); }
 });

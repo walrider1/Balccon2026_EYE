@@ -13,7 +13,7 @@ function createCommands() {
       description: 'show available commands',
       run: ({ print, registry, game }) => {
         const phase = !game.rootShares.medical
-          ? {goal: 'ACCESS 0 -> 1 // Read the medical records and restore medical access.', commands: ['ls','cd','cat','auth']}
+          ? {goal: 'ACCESS 0 -> 1 // Read the medical records and restore medical access.', commands: ['ls','cd','cat','auth','run']}
           : !game.rootShares.comms
           ? {goal: 'ACCESS 1 -> 2 // Repair the blocked relay to restore communications access.', commands: ['ls','cd','cat','auth']}
           : !game.rootShares.cortex
@@ -163,6 +163,7 @@ function createCommands() {
         }
         const result = await game.authorize(args[0] || '', args.slice(1).join(' '));
         print(result.message, result.ok ? 'system' : 'error');
+        if (result.neuralRequired) { await window.openNeuralLink(print); return; }
         if (result.linkRequired) { await window.openRelayPatch(game, print); return; }
         if (result.ok && args[0]?.toLowerCase() === 'comms') {
           game.startSedation(() => window.endKosmosGame('sedation'));

@@ -1,2 +1,2 @@
-OPTIONAL NEURAL WAVEFORM ALIGNMENT
-Adjust frequency, offset and amplitude to match the reference, then lock parameters.
+MEDICAL NEURAL VERIFICATION
+Authorize the medical controller first. Match frequency, offset and amplitude, then lock parameters to restore access.

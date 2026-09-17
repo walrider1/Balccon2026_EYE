@@ -9,4 +9,4 @@ CHAMBER: 07
 LAST MANUAL OVERRIDE: 04/12
 Use these two values with the format in recovery_service.txt.
 
-An optional neural_link.app exercise can help orient you before recovering access.
+Accepted credentials open neural_link.app. Align the patient waveform to release medical access. If interrupted, launch the application again.

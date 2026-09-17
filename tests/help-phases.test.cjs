@@ -9,7 +9,7 @@ test('help highlights phase-specific usages in the full list without solved comm
  const registry={commands:new Map(commands.map(c=>[c.name,c]))};
  const help=commands.find(c=>c.name==='help');
  for(const [medical,comms,cortex,root,expected] of [
-  [false,false,false,false,['hint','ls','cd','cat','auth']],
+  [false,false,false,false,['hint','ls','cd','cat','auth','run']],
   [true,false,false,false,['hint','ls','cd','cat','auth']],
   [true,true,false,false,['hint','run','auth']],
   [true,true,true,false,['hint','root']],

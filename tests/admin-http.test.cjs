@@ -54,6 +54,10 @@ test('administrator HTTP login, isolated reset, logout and server stop require a
     assert.equal(display.started,true);
     assert.equal(display.sessionTag,oldState.sessionTag+':1');
     assert.deepEqual(await (await fetch(base+'/api/eye')).json(),{started:false});
+    const record=await fetch(base+'/content/home/operator/medical/doctor_note.txt',{headers:{Cookie:cookie}});
+    assert.equal(record.headers.get('cache-control'),'no-store');
+    const recordText=await record.text();assert.match(recordText,/CHAMBER: [1-9][0-9]/);assert.doesNotMatch(recordText,/CHAMBER: 07/);
+    assert.equal(await (await fetch(base+'/content/home/operator/medical/doctor_note.txt',{headers:{Cookie:cookie}})).text(),recordText);
     const index=await (await fetch(base+'/api/files')).json();
     const home=index.children.home.children.operator.children;
     assert.deepEqual(Object.keys(home.medical.children).sort(),['cortex_echo.app','doctor_note.txt','neural_link.app','observations.txt','recovery_service.txt']);

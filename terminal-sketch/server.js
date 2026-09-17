@@ -279,6 +279,13 @@ const server = http.createServer(async (request, response) => {
     if (!realPath.toLowerCase().startsWith(`${staticRoot}${path.sep}`.toLowerCase())) throw new Error('outside_root');
     const stat = await fs.promises.stat(realPath);
     if (!stat.isFile()) { send(response, 404, 'Not found', 'text/plain'); return; }
+    if(virtualPath && virtualPath.endsWith('.txt')) {
+      const text=games.renderArchive(id,virtualPath,await fs.promises.readFile(realPath,'utf8'));
+      if(request.method==='GET')games.recordRead(id,virtualPath);
+      response.setHeader('Cache-Control','no-store');
+      response.setHeader('Content-Length',Buffer.byteLength(text));
+      send(response,200,request.method==='HEAD'?'':text,'text/plain; charset=utf-8');return;
+    }
     const range = request.method === 'HEAD' ? null : parseRange(request.headers.range, stat.size);
     if (range === false) {
       response.setHeader('Content-Range', `bytes */${stat.size}`);

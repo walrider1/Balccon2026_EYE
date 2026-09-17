@@ -9,7 +9,10 @@ test('replay changes emphasis on reset while keeping puzzle authority unchanged'
  assert.equal(game.history().runs[0].replayVariant,first);
  assert.equal(game.canRead(id,'/home/operator/command/recovered_review.txt'),false);
  game.action(id,{action:'start'});
- assert.equal(game.action(id,{action:'authorize',domain:'medical',code:'MR-07-0412'}).state.access,1);
+ const code=game.renderArchive(id,'/home/operator/medical/doctor_note.txt','MR-07-0412');
+ assert.equal(game.action(id,{action:'authorize',domain:'medical',code}).state.access,0);
+ const c=game.action(id,{action:'medical-start'}).challenge;
+ assert.equal(game.action(id,{action:'medical-submit',token:c.token,values:c.target}).state.access,1);
 });
 test('simulated 72-hour schedule keeps replay, session cleanup and history bounded',()=>{
  let now=1000;const game=createGameService({now:()=>now});let id=game.create();

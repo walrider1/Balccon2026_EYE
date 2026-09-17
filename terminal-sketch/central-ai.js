@@ -51,7 +51,7 @@ function parseReply(raw) {
       Object.keys(reply).some(k => !['message', 'intent'].includes(k)) ||
       !INTENTS.includes(reply.intent) || typeof reply.message !== 'string' || !reply.message.trim() ||
       reply.message.length > 600 || reply.message.trim().split(/\s+/).length > 75 ||
-      /MR-07-0412|F-184-2317|CORTEX-[A-Z0-9]+|sk-[a-zA-Z0-9_-]+|"message"\s*:|<\/?script|```/i.test(reply.message)) throw new Error('invalid_response');
+      /MR-\d{2}-\d{4}|F-\d{3}-\d{4}|CORTEX-[A-Z0-9]+|sk-[a-zA-Z0-9_-]+|"message"\s*:|<\/?script|```/i.test(reply.message)) throw new Error('invalid_response');
   return { message: reply.message.trim().replace(/[\u2014\u2013]/g, ','), intent: reply.intent };
 }
 
