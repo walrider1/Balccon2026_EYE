@@ -48,7 +48,7 @@ Ovaj panel ne zaključava operativni sistem i ne sprečava fizičko gašenje ra�
 
 Napredak se čuva u `.runtime/game-sessions.json`. Koristi jednu serversku instancu po skladištu. Folder nije deo Git-a.
 Osvežavanje browsera i restart servera zadržavaju napredak i rokove. AI razgovor je trenutno u RAM-u i ne preživljava restart servera.
-Posle završetka nova partija se otvara automatski nakon 60 sekundi. Pet minuta bez aktivnosti vraća aktivnu partiju na početak. Reset pri prekidu veze ponavlja povezivanje; igrač ne dobija novu sesiju samo zbog neuspelog HTTP zahteva.
+Posle završetka nova partija se otvara automatski nakon 60 sekundi. Tri minuta bez aktivnosti vraća aktivnu partiju na početak. Reset pri prekidu veze ponavlja povezivanje; igrač ne dobija novu sesiju samo zbog neuspelog HTTP zahteva.
 Ako disk nije dostupan, server javlja `SESSION STORAGE UNAVAILABLE`. Pre dalje upotrebe proveri slobodan prostor/dozvole i lokalnu sinhronizaciju foldera. Za događaj je poželjna lokalna instalacija van OneDrive sinhronizacije.
 
 ## Provera pre događaja

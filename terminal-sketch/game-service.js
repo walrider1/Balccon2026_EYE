@@ -124,7 +124,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
     const s = get(id), g = s.game;
     const publicFields = savedFields.filter(k => !['cortexCode', 'sessionNumber'].includes(k));
     return { ...Object.fromEntries(publicFields.map(k => [k, g[k]])), rootShares: { ...g.rootShares },
-      cortexCode: g.cortexCodeIssued ? g.cortexCode : null, serverNow: now(), started: s.started,
+      cortexCode: g.cortexCodeIssued ? g.cortexCode : null, serverNow: now(), started: s.started, idleResetAt: s.lastActivity + 3 * 60 * 1000,
       endingKind: s.endingKind, resetAt: s.endedAt === null ? null : s.endedAt + 60000,
       sessionTag: crypto.createHash('sha256').update(id).digest('hex').slice(0, 16),
       aiOffline:Boolean(s.aiOffline), shutdownActive:Boolean(s.shutdown), revision: s.revision, objective: s.medicalCredential&&!g.rootShares.medical ? {phase:1,text:"Medical credential accepted. Complete /medical/neural_link.app to restore access."} : objective(g), readFiles: [...s.readFiles], ctf: s.ctf ? { endsAt: s.ctf.endsAt, completed: s.ctf.completed, expired: !s.ctf.completed && now() >= s.ctf.endsAt } : null };
@@ -188,7 +188,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
     if (!input || typeof input !== 'object' || typeof input.action !== 'string') throw new GameError(400, 'INVALID ACTION');
     const kind = input.action;
     if (kind === 'reset') {
-      const eligible = s.endedAt !== null ? now() >= s.endedAt + 60000 : now() - s.lastActivity >= 5 * 60 * 1000;
+      const eligible = s.endedAt !== null ? now() >= s.endedAt + 60000 : now() - s.lastActivity >= 3 * 60 * 1000;
       if (!eligible) throw new GameError(403, 'RESET IS NOT YET AVAILABLE');
       const next = create(id); return { newId: next, state: snapshot(next) };
     }

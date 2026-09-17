@@ -223,3 +223,10 @@ test('Medical and Comms use independent server RNG targets and retain an unfinis
   assert.equal(sample.carrier,100);assert.equal(sample.alignment,100);
  }
 });
+
+test('refresh preserves the session and inactivity deadline; reset unlocks at three minutes',()=>{
+ const f=fixture();const initial=f.service.snapshot(f.id);f.advance(179999);
+ const refreshed=f.service.snapshot(f.id);assert.equal(refreshed.sessionTag,initial.sessionTag);assert.equal(refreshed.idleResetAt,initial.idleResetAt);
+ assert.throws(()=>f.act('reset'),/NOT YET/);f.advance(1);
+ const reset=f.act('reset');assert.notEqual(reset.state.sessionTag,initial.sessionTag);assert.equal(reset.state.started,false);assert.equal(reset.state.access,0);
+});

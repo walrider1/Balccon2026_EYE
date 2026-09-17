@@ -56,7 +56,7 @@ class RemoteKosmosGame {
    if (state.revision < this.revision) return;
    this.clockOffset=Date.now()-state.serverNow;
    Object.assign(this,state);
-   for(const field of ['sedationEndsAt','missionEndsAt','resetAt']) if(this[field]!==null) this[field]+=this.clockOffset;
+   for(const field of ['sedationEndsAt','missionEndsAt','resetAt','idleResetAt']) if(this[field]!==null) this[field]+=this.clockOffset;
  }
  async request(url, body) {
    const response=await fetch(url,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(10000)});

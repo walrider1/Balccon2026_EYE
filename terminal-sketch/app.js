@@ -121,7 +121,7 @@ let centralMessagePending = false;
 centralInput.maxLength = 1200;
 const BOOT_SEQUENCE_MS = 5000;
 const RESET_DELAY_MS = 60000;
-const IDLE_RESET_MS = 5 * 60 * 1000;
+const IDLE_RESET_MS = 3 * 60 * 1000;
 const sfx = {
   files: {
     ambientShip: 'audio/sfx/ambient_ship_loop.wav',
@@ -865,10 +865,10 @@ function playCrtTransition(mode, onComplete) {
   }, duration);
 }
 
-function armIdleReset() {
+function armIdleReset(delay = IDLE_RESET_MS) {
   window.clearTimeout(idleResetTimer);
-  if (gameState.ending || game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
-  idleResetTimer = window.setTimeout(resetToStartScreen, IDLE_RESET_MS);
+  if (gameState.ending || !gameState.started || !failureScreen.classList.contains('hidden')) return;
+  idleResetTimer = window.setTimeout(resetToStartScreen, delay);
 }
 
 let lastReportedActivity = 0;
@@ -1113,6 +1113,8 @@ async function loadFilesystem() {
     fs = new VirtualFileSystem(await response.json());
     mountStatus.textContent = 'SHIP ARCHIVE: READY';
     mountStatus.classList.add('mounted');
+    if (gameState.started && !gameState.ending) armIdleReset(Math.max(0, gameState.idleResetAt - Date.now()));
+    else if (gameState.ending) idleResetTimer = window.setTimeout(resetToStartScreen, Math.max(0, gameState.resetAt - Date.now()));
   } catch {
     mountStatus.textContent = 'CONTENT OFFLINE // RETRYING CONNECTION';
     window.setTimeout(loadFilesystem, 3000);
