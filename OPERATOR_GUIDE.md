@@ -11,7 +11,7 @@ node terminal-sketch/server.js
 
 Igra: http://localhost:5173
 
-Otvori stranicu; sistem se pokreće automatski. `objective` pokazuje sledeći korak, `hint` daje postepenu pomoć, a `status` prikazuje tajmere i napredak.
+Otvori stranicu i unesi `start system`. `objective` pokazuje sledeći korak, `hint` daje postepenu pomoć, a `status` prikazuje tajmere i napredak.
 
 ## Tri faze
 

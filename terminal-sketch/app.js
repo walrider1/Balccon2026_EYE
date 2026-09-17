@@ -1113,7 +1113,6 @@ async function loadFilesystem() {
     fs = new VirtualFileSystem(await response.json());
     mountStatus.textContent = 'SHIP ARCHIVE: READY';
     mountStatus.classList.add('mounted');
-    startGame();
   } catch {
     mountStatus.textContent = 'CONTENT OFFLINE // RETRYING CONNECTION';
     window.setTimeout(loadFilesystem, 3000);
@@ -1900,6 +1899,11 @@ function startGame() {
   }
 
 
+  if (bootInput.value.trim().toLowerCase() !== 'start system') {
+    bootInput.value = '';
+    bootInput.placeholder = 'COMMAND NOT RECOGNIZED';
+    return;
+  }
   bootInput.disabled = true;
   bootForm.classList.add('boot-accepted');
   bootScreen.classList.add('boot-accepted');

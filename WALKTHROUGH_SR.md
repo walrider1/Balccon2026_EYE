@@ -1,6 +1,6 @@
 # Uputstvo za prolazak (spoileri)
 
-Pokreni `node server.js`, otvori http://localhost:5173/ ; sistem se pokreće automatski.
+Pokreni `node server.js`, otvori http://localhost:5173/ i unesi `start system`.
 Ako server već radi, restartuj ga nakon izmene fajlova. Reload ne resetuje partiju.
 Kodovi Medical i Comms generišu se za svaku partiju; stari primeri nisu rešenja.
 
