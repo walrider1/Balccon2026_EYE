@@ -4,7 +4,6 @@ The controller needs the blocked distress packet number and the time its request
 Credential: F-<packet>-<HHMM>. Remove the colon from the time.
 Use the comms authorization domain. Command reference: auth help.
 
-Once accepted, the carrier tuner opens automatically. Fine-tune frequency and polarization until both locks are at least 92%, then hold the signal for eight seconds. Only a stable link releases Access 2.
-If you leave the tuner, relay_patch.app can reopen it after authorization.
+Receiver acceptance threshold: frequency and polarization locks at 92% or higher for eight continuous seconds. Both are required for a stable link.
 
 The receiver separates carrier strength from frequency lock. Find the incoming carrier, refine its frequency, then align polarization. Interrupted decoding starts again; both locks must hold together. Select a dial with 1 or 2, use Left/Right, and hold Shift for fine steps.

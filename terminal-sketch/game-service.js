@@ -220,7 +220,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
       s.shutdown=null;
     } else if(kind==='medical-start') {
       if(g.rootShares.medical)throw new GameError(409,'NEURAL LINK ALREADY COMPLETED // Medical access remains verified.');
-      if(!s.medicalCredential)throw new GameError(403,'MEDICAL CREDENTIAL REQUIRED // Neural Link opens automatically after authorization.');
+      if(!s.medicalCredential)throw new GameError(403,'MEDICAL CREDENTIAL REQUIRED.');
       if(!s.neural)s.neural={token:crypto.randomBytes(12).toString('hex'),target:[crypto.randomInt(3,6),crypto.randomInt(2,7),crypto.randomInt(3,6)]};
       result.challenge={token:s.neural.token,target:[...s.neural.target]};
     } else if(kind==='medical-submit') {

@@ -10,4 +10,4 @@ Ward placement is filed in patient_intake.txt. Signed interventions are retained
 VOID: TRANSFER TO CHAMBER 03 // provisional placement cancelled.
 Records office: red ink marks voided entries retained for audit; these entries carry no controller authority.
 
-Accepted credentials open neural_link.app. Align the patient waveform to release medical access. If interrupted, launch the application again.
+The patient waveform remains under observation. Clearance requires a stable match against the recorded reference.

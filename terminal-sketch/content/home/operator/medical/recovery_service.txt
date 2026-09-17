@@ -3,10 +3,9 @@ MEDICAL // RECOVERY SERVICE
 The chamber controller accepts the occupied chamber number and the date of its last signed manual override as proof of access. Ward placement and interventions are held by separate records desks. Admission, automated procedures and unsigned requests carry no override authority.
 
 Credential format: MR-<chamber>-<override MMDD>
-Keep the month and day together, without a slash. A valid credential opens Neural Link verification. Successful waveform alignment releases medical access and opens Communications.
+Keep the month and day together, without a slash. Medical clearance requires a verified patient waveform.
 
 COMMAND REFERENCE: auth help
 
 PATIENT SAFETY: cortex_echo.app verifies conscious responses if a sleep order is active. A passing result provides a Cortex attestation. Authorize it, then combine the three ROOT shares to cancel the order.
 
-A valid credential begins Neural Link verification; it does not release access alone. Match the reference waveform and lock the parameters. Interrupted verification can be resumed with the neural_link.app application.
