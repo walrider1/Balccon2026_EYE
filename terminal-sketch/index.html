@@ -21,9 +21,8 @@
             </div>
           </div>
           <div class="boot-rule"></div>
-          <p class="boot-command">TYPE <strong>start system</strong> AND PRESS <kbd>ENTER</kbd></p>
           <p id="mount-status" class="mount-status">LOADING ARCHIVE...</p>
-          <form id="boot-form"><span class="boot-prompt">KOSMOS:&gt;</span><input id="boot-input" aria-label="Start system" placeholder="start system" autocomplete="off" autofocus spellcheck="false" /></form>
+          <form id="boot-form" hidden><span class="boot-prompt">KOSMOS:&gt;</span><input id="boot-input" aria-label="Start system" placeholder="start system" autocomplete="off" spellcheck="false" /></form>
           <div class="boot-card-footer"><span>© 1987 YUGOSLAV SPACE AGENCY</span></div>
         </div>
       </div>
@@ -114,6 +113,7 @@
         <header><span><b>NAVIGATION</b> // ORBITAL BURN PLANNER</span><span id="planner-intercept">INTERCEPT: NONE</span></header>
         <div class="planner-map-wrap">
           <svg id="planner-map" class="planner-map" viewBox="0 0 820 500" role="img" aria-label="Earth transfer planning map">
+            <defs><marker id="planner-thrust-head" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L11 6 L1 11 Z" fill="#d9f7f3" /></marker></defs>
             <path class="planner-grid" d="M20 100H800M20 200H800M20 300H800M20 400H800M120 20V480M260 20V480M400 20V480M540 20V480M680 20V480" />
             <circle class="planner-sun" cx="420" cy="390" r="38" />
             <text class="planner-label" x="420" y="455">SUN</text>
@@ -130,7 +130,7 @@
         </div>
         <div class="planner-readout"><span id="planner-node-count">BURN NODES: 0/2</span><span id="planner-dv">DELTA-V: 0 / 600 m/s</span><span id="planner-selected">CURSOR: 30%</span></div>
         <p id="planner-status" class="planner-status" aria-live="polite"></p>
-        <p class="planner-controls"><kbd>A</kbd><kbd>D</kbd> NODE TIME &nbsp; <kbd>W</kbd><kbd>S</kbd> DELTA-V &nbsp; <kbd>←</kbd><kbd>→</kbd> VECTOR &nbsp; <kbd>ENTER</kbd> PLACE/SELECT &nbsp; HOLD <kbd>ENTER</kbd> EXECUTE &nbsp; <kbd>1</kbd><kbd>2</kbd> SELECT &nbsp; <kbd>BACKSPACE</kbd> DELETE &nbsp; <kbd>R</kbd> RESET &nbsp; <kbd>ESC</kbd> ABORT</p>
+        <p class="planner-controls"><kbd>A</kbd><kbd>D</kbd> BURN TIME &nbsp; <kbd>↑</kbd><kbd>↓</kbd> THRUST &nbsp; <kbd>←</kbd><kbd>→</kbd> DIRECTION &nbsp; <kbd>SHIFT</kbd> FINE<br><kbd>ENTER</kbd> PLACE / SELECT · HOLD TO ARM VERIFIED ROUTE &nbsp; <kbd>1</kbd><kbd>2</kbd> SELECT &nbsp; <kbd>BACKSPACE</kbd> DELETE &nbsp; <kbd>R</kbd> RESET &nbsp; <kbd>ESC</kbd> CLOSE</p>
       </div>
     </section>
     <section id="dev-menu-overlay" class="dev-menu-overlay hidden" role="dialog" aria-modal="true" aria-label="Developer app test launcher">

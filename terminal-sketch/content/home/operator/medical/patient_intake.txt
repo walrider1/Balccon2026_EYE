@@ -3,10 +3,11 @@ MEDICAL / PATIENT INTAKE
 PATIENT: SAMUEL "SLOKI" KOVAC
 STATUS: REGENERATION INCOMPLETE
 HEAD TRAUMA: SEVERE
+UNSIGNED MARGIN NOTE: "probably retarded" // unverified remark, not a clinical finding.
 MEMORY DAMAGE: POSSIBLE
 
 REGENERATION CHAMBER: 07
-ADMISSION DATE: 04/10
-LAST NEURAL SCAN: 04/14
+PLACEMENT: CONFIRMED // patient remains in this chamber.
+VOID: ADMISSION DATE 06/21 // copied from an unsigned transfer slip.
 
 Several attachments remain restricted pending recovery authentication.

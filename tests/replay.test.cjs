@@ -14,10 +14,10 @@ test('replay changes emphasis on reset while keeping puzzle authority unchanged'
  const c=game.action(id,{action:'medical-start'}).challenge;
  assert.equal(game.action(id,{action:'medical-submit',token:c.token,values:c.target}).state.access,1);
 });
-test('simulated 72-hour schedule keeps replay, session cleanup and history bounded',()=>{
+test('simulated multi-day schedule keeps replay, session cleanup and history bounded',()=>{
  let now=1000;const game=createGameService({now:()=>now});let id=game.create();
  for(let i=0;i<270;i++){
-  game.action(id,{action:'start'});now+=16*60000;game.snapshot(id);
+  game.action(id,{action:'start'});now+=21*60000;game.snapshot(id);
   id=game.operatorReset(id).newId;
  }
  assert.equal(game.history().total,270);assert.equal(game.history().outcomes.mission,270);

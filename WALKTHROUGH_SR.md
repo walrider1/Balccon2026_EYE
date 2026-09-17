@@ -1,28 +1,10 @@
-# Prvi prolaz — sva rešenja (spoileri)
+# Uputstvo za prolazak (spoileri)
 
-## Pokretanje i ekrani
+Pokreni `node server.js`, otvori http://localhost:5173/ ; sistem se pokreće automatski.
+Ako server već radi, restartuj ga nakon izmene fajlova. Reload ne resetuje partiju.
+Kodovi Medical i Comms generišu se za svaku partiju; stari primeri nisu rešenja.
 
-U folderu projekta: `git pull --ff-only`, zatim `node server.js`.
-Ako server već radi, zaustavi taj proces sa Ctrl+C pa ga pokreni ponovo.
-Običan monitor: `http://localhost:5173/` — KOSMOS levo, HRTOK i putanja desno.
-CRT: `http://localhost:5173/eye.html` u drugom prozoru ISTOG browser profila.
-Ne koristiti incognito niti mešati localhost i 127.0.0.1.
-
-Za novu partiju koristiti /admin.html i administratorsko resetovanje.
-Reload ne resetuje postojeću partiju ni tajmere.
-
-## Najkraći kompletan prolaz — SILENT BRIDGE
-
-Komande ispod unosi pojedinačno, uz Enter, u KOSMOS, ne u AI razgovor.
-Na početnom ekranu unesi:
-
-```text
-start system
-```
-
-### 1. Medical
-
-Za čitanje tragova (opciono ako samo testiraš prolaz):
+## 1. Medical — karton i potpisana intervencija
 
 ```text
 cat /medical/doctor_note.txt
@@ -31,97 +13,88 @@ cat /medical/patient_intake.txt
 cat /medical/medbay_audit.txt
 ```
 
-Tačno rešenje — komora 07 i ručna intervencija 12. aprila:
+Iz patient_intake uzmi potvrđeni REGENERATION CHAMBER. Iz medbay_audit uzmi datum
+potpisanog MANUAL OVERRIDE. Datum je MM/DD; ukloni kosu crtu.
+Sastavi `auth medical MR-<komora>-<MMDD>` sa stvarnim vrednostima, bez zagrada.
+VOID označava poništen unos: crvena arhivska stavka nije ovlašćenje kontrolera.
+
+Prihvaćen kod otvara Neural Link. Uskladi talas sa referencom i potvrdi parametre.
+Tek uspešna verifikacija daje Access 1. Ako zatvoriš prozor:
+`run /medical/neural_link.app`.
+
+## 2. Comms — povezivanje dva registra
 
 ```text
-auth medical MR-07-0412
-```
-
-### 2. Communications
-
-Tragovi:
-
-```text
-cat /comms/crew_announcement.txt
+cat /comms/evidence.txt
+cat /comms/recovery_service.txt
 cat /comms/raw_uplink_ledger.txt
 cat /comms/lock_audit.txt
 ```
 
-Tačno rešenje — paket 184, blokiran u 23:17:
+U raw_uplink_ledger pronađi DISTRESS PRIORITY: uzmi broj paketa i REQUEST oznaku.
+U lock_audit pronađi BLOCKED red sa istom REQUEST oznakom i uzmi vreme blokade.
+Vreme emitovanja obećanja o spasavanju i VOID predlog deblokade nisu vreme blokade.
+Sastavi `auth comms F-<paket>-<HHMM>`; ukloni dvotačku iz vremena.
 
-```text
-auth comms F-184-2317
-```
+Otvara se prijemnik. Tasterima 1/2 biraj frekvenciju ili polarizaciju, strelicama
+levo/desno podešavaj, a Shift koristi za fine korake. Pronađi signal, precizno
+podesi frekvenciju i polarizaciju. Oba lock indikatora moraju biti najmanje 92%
+neprekidno osam sekundi. Ponovno otvaranje: `run /comms/relay_patch.app`.
+Uspeh daje Access 2 i pokreće petominutnu sedaciju.
 
-Ovo pokreće petominutnu sedaciju. Odmah nastavi na Cortex.
+## 3. Cortex access i ROOT
 
-### 3. Cortex i ROOT
+Cortex je dostupan dok traje sedacija, pre oporavka ROOT-a:
 
 ```text
 run /medical/cortex_echo.app
 ```
 
-Pritiskaj prikazano slovo A, S, K ili L dok je signal aktivan.
-Potrebno je najmanje 15 pogodaka od 20, u roku od 40 sekundi.
-Ne pritiskaj nasumično više tastera. Ako ne uspeš, ponovi run dok sedacija traje.
+Pritisni prikazano A, S, K ili L čim se pojavi. Ne čekaš da stigne do vertikalne
+linije: odgovor se prihvata tokom aktivnog signala. Prvi signal traje 2,1 s,
+a dvadeseti 0,865 s. Svaki naredni skraćuje prozor za 65 ms.
+Prvi pritisnuti A/S/K/L završava taj signal; pogrešan taster ili propušten signal
+računa se kao greška. Držanje tastera ne daje dodatne odgovore.
 
-Po uspehu ekran izdaje kod `CORTEX-...`. Prepiši BAŠ taj kod:
+Potrebno je najmanje 15 pogodaka u 20 signala, unutar ukupno 60 sekundi.
+Šesta greška prekida pokušaj jer prolaz više nije moguć. Ako ne uspeš,
+ponovo pokreni aplikaciju dok sedacija još traje; pokušaj ne resetuje sedaciju.
+
+Po završetku prepiši stvarni prikazani CORTEX kod:
 
 ```text
 auth cortex CORTEX-KOD_KOJI_SI_DOBIO
 root recover
 ```
 
-`CORTEX-KOD_KOJI_SI_DOBIO` je oznaka mesta za stvarni kod, nije važeći kod.
-ROOT zaustavlja sedaciju. Glavni tajmer misije nastavlja da radi.
+Oznaka KOD_KOJI_SI_DOBIO nije doslovan kod. Kod je nasumičan za partiju.
+`auth cortex` potvrđuje treći ROOT share; tek `root recover` spaja sva tri
+(Medical, Comms, Cortex), zaustavlja sedaciju i otključava navigaciju.
+Glavni tajmer misije nastavlja da radi.
 
-### 4. Završetak
+### Gde je ovo u kodu
 
-```text
-central shutdown
-```
+- `terminal-sketch/game-engine.js`: `canStartCortex`, `authorize`, `recoverRoot` — uslovi pristupa i ROOT shares.
+- `terminal-sketch/game-service.js`: `cortexSignal`, akcije `cortex-start` i `cortex-answer` — nasumični tasteri, vreme, bodovanje i izdavanje koda.
+- `terminal-sketch/app.js`: `cortexGame.handleKey` i `resolve` — unos i prikaz odgovora.
 
-To završava priču kao **SILENT BRIDGE**; ne zaustavlja Node server.
-Sačekaj završni ekran. Time si završio jednu celu partiju.
+## Posle ROOT-a
 
-## Drugi završeci — izaberi jedan umesto central shutdown
+- `course sun confirm`: ostani na solarnoj putanji.
+- `cat /command/neural_transfer.txt`, zatim `neural transfer --source sloki --target central-ai`: prenos svesti.
+- `cat /command/navigation/last_watch.txt`, zatim `run /command/navigation/orbital_burn_planner.app`: povratak na Zemlju kroz orbitalni planer.
+- `central shutdown`: otvara sekvencu gašenja AI-ja; prati prikazane kontrole.
 
-- **QUARANTINE:** posle ROOT-a unesi `course sun confirm`.
-- **CONTINUITY ERROR:** prvo `cat /command/neural_transfer.txt`, zatim
-  `neural transfer --source sloki --target central-ai`.
-- **RETURN VECTOR:** posle ROOT-a pročitaj `cat /command/navigation/decision_brief.txt`
-  i pokreni `run /command/navigation/orbital_burn_planner.app`.
-  A/D pomeraju vreme čvora, W/S menjaju delta-v, levo/desno pravac,
-  Enter postavlja/bira čvor, 1/2 biraju čvorove, Backspace briše, R resetuje.
-  Napravi putanju koja ulazi u Zemljin prsten, zatim drži Enter za izvršenje.
-  Konkretne vrednosti zavise od trenutka ulaska u planer; nema jednog fiksnog koda.
-  Misija je pauzirana u planeru, Escape ga zatvara i nastavlja tajmer.
+`status`, `objective`, `hint` i `help` pokazuju stanje i dostupne korake.
 
-## Prečice
+## Kontrole posle ROOT-a
 
-- Ctrl+Right: razgovor sa HRTOK-om; Ctrl+Left: KOSMOS.
-- Tab u KOSMOS unosu dopunjava komandu; Shift+Tab menja kanal.
-- PageUp/PageDown: skrol aktivnog kanala.
-- Desni Ctrl: beleške.
-- `status`, `objective`, `hint`, `help`: stanje, cilj, pomoć, komande.
+Planer: A/D pomera vreme manevra, gore/dole menja potisak (W/S takođe radi),
+levo/desno menja smer, Shift pravi manje korake. Enter postavlja/bira čvor dok
+putanja nije potvrđena; 1/2 biraju postojeći čvor. Potvrđena putanja se naoružava
+držanjem Enter, pa se odredište zasebno potvrđuje. Status na panelu prati podešavanje bez popup prekida. Završna potvrda
+odredišta ostaje pre izvršenja manevra.
 
-Nema potrebe za razgovorom sa AI-jem da bi kodovi radili. Za test ličnosti
-slobodno razgovaraj između faza, ali tajmeri nastavljaju da teku.
-
-
-## Kraći uvod i bonus galerija
-Medical sada prikazuje doctor_note.txt (identitet i dve vrednosti za autorizaciju), recovery_service.txt (format i Cortex pravila) i Cortex aplikaciju. Stari URL-ovi zapisa ostaju dostupni za postojeće sesije.
-Komande i zapisi se prikazuju odmah. Crveni redovi označavaju tragove, a poslednja tri minuta misije ili poslednjih 90 sekundi sedacije uključuju crveno upozorenje sa ciljem. Tajmer je vidljiv i pre otkrivanja destinacije.
-Bonus: `ls -a` otkriva `.bonus`. Posle Communications autorizacije pokreni `ctf`, pročitaj tri forensic_fragment.txt zapisa i predaj `flag EYE{SIGNAL_WITNESS_CONTINUITY}`. Zatim `cd /home/operator/.bonus`, `ls` i `display pcele.png` ili `display IMG_2406.JPG`. Bonus nije uslov za završetak.
-Oko prati ponovni ulazak u terminal i reset partije; običan refresh ne resetuje rok misije.
-
-
-## Communications minigra
-Posle Medical autorizacije: `run /comms/relay_patch.app`. Klikom ili Tab/Enter promeni oznaku svakog releja da odgovara odredištu, pa VERIFY LINK. Uspeh daje Access 2 i pokreće sedaciju. Stari auth comms kod ostaje kompatibilan za ranije testove i prolaze; novi tok igre koristi releje.
-
-
-## Novi tok Communications (17. septembar)
-Pročitaj tri glavna zapisa: crew_log.txt, evidence.txt i recovery_service.txt.
-`auth comms F-184-2317` sada samo potvrđuje dokaz i automatski otvara podešavanje signala. Pristup ostaje na nivou 1 dok jačina signala ne ostane najmanje 88% tokom šest sekundi. Podesi klizač prema indikatoru. Tek stabilna veza daje Access 2 i pokreće sedaciju. Posle zatvaranja prozora možeš nastaviti sa `run /comms/relay_patch.app`.
-Medical dodatak: `run /medical/neural_link.app` pokreće opcionu vežbu spajanja čvorova 1–6. Ne menja dozvole.
-Cortex prozor za odgovor se postepeno smanjuje sa 1,7 s na 0,75 s; neuspešan pokušaj može da se ponovi dok sedacija ne istekne.
+Gašenje: drži prikazano dole/gore dve sekunde. Ukupno ima osam linkova. Posle prvih
+sedam linkova Enter otvara sledeći korak. Esc zatvara panel. Poslednji link trajno
+gasi HRTOK za tu partiju, ali ne završava navigaciju.

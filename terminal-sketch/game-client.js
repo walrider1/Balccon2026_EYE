@@ -1,6 +1,6 @@
 // Display helpers contain no authority: every state change is verified by the server.
 class RemoteKosmosGame {
- constructor() { this.access=0; this.rootShares={medical:false,comms:false,cortex:false}; this.course='sun'; this.missionDuration=900000; this.missionRemaining=900000; this.revision=-1; this.queue=Promise.resolve(); }
+ constructor() { this.access=0; this.rootShares={medical:false,comms:false,cortex:false}; this.course='sun'; this.missionDuration=1200000; this.missionRemaining=1200000; this.revision=-1; this.queue=Promise.resolve(); }
   requiredAccess(path) {
     if (path.startsWith('/home/operator/command/navigation')) return 3;
     if (path.startsWith('/home/operator/comms')) return 1;

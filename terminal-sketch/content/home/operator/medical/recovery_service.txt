@@ -1,6 +1,6 @@
 MEDICAL // RECOVERY SERVICE
 
-The chamber controller accepts the chamber number and the date of the last manual override as proof of access. Both are recorded in the clinical note; admission and scan dates are not valid.
+The chamber controller accepts the occupied chamber number and the date of its last signed manual override as proof of access. Ward placement and interventions are held by separate records desks. Admission, automated procedures and unsigned requests carry no override authority.
 
 Credential format: MR-<chamber>-<override MMDD>
 Keep the month and day together, without a slash. A valid credential opens Neural Link verification. Successful waveform alignment releases medical access and opens Communications.

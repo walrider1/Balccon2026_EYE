@@ -137,7 +137,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
     if (!g.rootShares.cortex) return { phase: 3, text: `Submit your verified response: auth cortex ${g.cortexCode}` };
     if (!g.rootRecovered) return { phase: 3, text: 'All three recovery shares are ready. Enter: root recover' };
     if (g.missionResolved) return { phase: 3, text: 'Earth transfer confirmed. Preparing the final report.' };
-    return { phase: 3, text: 'Choose the outcome. Read /command/navigation/decision_brief.txt; use the orbital planner to return to Earth.' };
+    return { phase: 3, text: 'Navigation archive unsealed. Personal effects recovered from the last bridge watch: /command/navigation.' };
   }
   function canRead(id, file) {
     const s = get(id);
@@ -203,22 +203,24 @@ function createGameService({ now = Date.now, storage = null } = {}) {
     let result = { ok: true };
     if(kind==='shutdown-start') {
       if(!g.rootRecovered||s.aiOffline)throw new GameError(403,'ROOT REQUIRED / EXECUTIVE ALREADY OFFLINE');
-      if(!s.shutdown)s.shutdown={index:0,token:crypto.randomBytes(12).toString('hex'),key:['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'][crypto.randomInt(4)],armedAt:null};
+      if(!s.shutdown)s.shutdown={index:0,token:crypto.randomBytes(12).toString('hex'),key:'ArrowDown',armedAt:null};
+      if(!['ArrowUp','ArrowDown'].includes(s.shutdown.key)){s.shutdown.key=s.shutdown.index%2?'ArrowUp':'ArrowDown';s.shutdown.armedAt=null;}
       result.challenge={index:s.shutdown.index,token:s.shutdown.token,key:s.shutdown.key};
     } else if(kind==='shutdown-arm') {
       const c=s.shutdown;if(!c||input.token!==c.token||input.key!==c.key)throw new GameError(409,'INVALID ISOLATION CONTROL');
       if(c.armedAt===null)c.armedAt=now();
     } else if(kind==='shutdown-step') {
-      const c=s.shutdown;if(!c||input.token!==c.token||c.armedAt===null||now()-c.armedAt<4000)throw new GameError(409,'ISOLATION HOLD INCOMPLETE');
+      const c=s.shutdown;if(!c||input.token!==c.token||c.armedAt===null||now()-c.armedAt<2000)throw new GameError(409,'ISOLATION HOLD INCOMPLETE');
       c.index++;
-      if(c.index===4){s.aiOffline=true;s.shutdown=null;result.complete=true;result.message='HRTOK OFFLINE // Navigation remains under your control.';}
-      else{c.token=crypto.randomBytes(12).toString('hex');c.key=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'][crypto.randomInt(4)];c.armedAt=null;result.challenge={index:c.index,token:c.token,key:c.key};}
+      if(c.index===8){s.aiOffline=true;s.shutdown=null;result.complete=true;result.message='HRTOK OFFLINE // Navigation remains under your control.';}
+      else{c.token=crypto.randomBytes(12).toString('hex');c.key=c.index%2?'ArrowUp':'ArrowDown';c.armedAt=null;result.challenge={index:c.index,token:c.token,key:c.key};}
     } else if(kind==='shutdown-release') {
       if(s.shutdown)s.shutdown.armedAt=null;
     } else if(kind==='shutdown-cancel') {
       s.shutdown=null;
     } else if(kind==='medical-start') {
-      if(!s.medicalCredential||g.rootShares.medical)throw new GameError(403,'AUTHORIZE MEDICAL BEFORE NEURAL LINK');
+      if(g.rootShares.medical)throw new GameError(409,'NEURAL LINK ALREADY COMPLETED // Medical access remains verified.');
+      if(!s.medicalCredential)throw new GameError(403,'MEDICAL CREDENTIAL REQUIRED // Neural Link opens automatically after authorization.');
       if(!s.neural)s.neural={token:crypto.randomBytes(12).toString('hex'),target:[crypto.randomInt(3,6),crypto.randomInt(2,7),crypto.randomInt(3,6)]};
       result.challenge={token:s.neural.token,target:[...s.neural.target]};
     } else if(kind==='medical-submit') {

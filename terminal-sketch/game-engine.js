@@ -16,7 +16,7 @@ class KosmosGame {
     this.neuralTransferDiscovered = false;
     this.sedationEndsAt = null;
     this.sedationTimeout = null;
-    this.missionDuration = 15 * 60 * 1000;
+    this.missionDuration = 20 * 60 * 1000;
     this.missionEndsAt = null;
     this.missionTimeout = null;
     this.missionRemaining = this.missionDuration;

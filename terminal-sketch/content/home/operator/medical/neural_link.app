@@ -1,2 +1,3 @@
 MEDICAL NEURAL VERIFICATION
-Authorize the medical controller first. Match frequency, offset and amplitude, then lock parameters to restore access.
+Starts automatically after the Medical credential is accepted. Successful verification grants Access 1.
+An interrupted verification can be reopened here. A completed verification stays recorded.

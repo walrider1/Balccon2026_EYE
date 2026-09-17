@@ -54,13 +54,14 @@ test('administrator HTTP login, isolated reset, logout and server stop require a
     assert.equal(display.started,true);
     assert.equal(display.sessionTag,oldState.sessionTag+':1');
     assert.deepEqual(await (await fetch(base+'/api/eye')).json(),{started:false});
-    const record=await fetch(base+'/content/home/operator/medical/doctor_note.txt',{headers:{Cookie:cookie}});
+    const record=await fetch(base+'/content/home/operator/medical/patient_intake.txt',{headers:{Cookie:cookie}});
     assert.equal(record.headers.get('cache-control'),'no-store');
     const recordText=await record.text();assert.match(recordText,/CHAMBER: [1-9][0-9]/);assert.doesNotMatch(recordText,/CHAMBER: 07/);
-    assert.equal(await (await fetch(base+'/content/home/operator/medical/doctor_note.txt',{headers:{Cookie:cookie}})).text(),recordText);
+    assert.equal(await (await fetch(base+'/content/home/operator/medical/patient_intake.txt',{headers:{Cookie:cookie}})).text(),recordText);
     const index=await (await fetch(base+'/api/files')).json();
     const home=index.children.home.children.operator.children;
-    assert.deepEqual(Object.keys(home.medical.children).sort(),['cortex_echo.app','doctor_note.txt','neural_link.app','observations.txt','recovery_service.txt']);
+    assert.deepEqual(Object.keys(home.medical.children).sort(),['cortex_echo.app','doctor_note.txt','medbay_audit.txt','neural_link.app','observations.txt','patient_intake.txt','recovery_service.txt']);
+    for (const file of ['raw_uplink_ledger.txt','lock_audit.txt','crew_announcement.txt']) assert.ok(home.comms.children[file]);
     assert.ok(home['.bonus']);assert.equal(home.images,undefined);
     assert.equal((await fetch(base+'/content/home/operator/.bonus/pcele.png',{headers:{Cookie:cookie}})).status,403);
     const tagBeforeRefresh=display.sessionTag;

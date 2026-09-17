@@ -1,8 +1,0 @@
-KOSMOS FLIGHT HANDBOOK // MANUAL TRANSFER PROCEDURE
-
-When executive course control is unavailable, Navigation officers use the local orbital burn planner.
-Launch installed planners from their directory with the RUN command.
-
-An emergency departure burn should be made before the vessel falls too deeply toward the primary. A later correction burn is standard practice; it costs less than trying to force one perfect maneuver.
-
-Flight policy limits a manual transfer plan to two nodes and the reserve delta-v shown by the planner. Earth capture is confirmed only when the predicted line enters the blue capture ring.

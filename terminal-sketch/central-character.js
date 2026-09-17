@@ -37,7 +37,7 @@ const FILE_FACTS = {
   '/home/operator/medical/doctor_note.txt': 'biography',
   '/home/operator/medical/patient_intake.txt': 'patient',
   '/home/operator/wake_protocol.txt': 'course',
-  '/home/operator/command/navigation/decision_brief.txt': 'course',
+  '/home/operator/command/navigation/last_watch.txt': 'course',
   '/home/operator/botany/sector_log.txt': 'botany',
   '/home/operator/botany/sample_manifest.txt': 'sample',
   '/home/operator/food/quarantine_report.txt': 'food',

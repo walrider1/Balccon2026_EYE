@@ -1,7 +1,7 @@
-OPTIONAL // THE MISSING GALLERY
+PETAR // PHOTOGRAPHS
 
-Some directories do not announce themselves. Try ls -a.
-Three fragments describe one chain of evidence.
-After restoring Communications access, type ctf to begin the optional cipher hunt.
-Read its three fragments and submit flag EYE{...} to unlock .bonus.
-The gallery is a bonus, never a requirement for finishing the story.
+I hid the photographs when the searches began. A dot before the directory name was enough to keep them off an ordinary listing. I still remember typing ls -a with someone standing behind my chair.
+
+The forensic clerk split the archive seal across three desks. Communications had the first piece. He called his little verification service ctf; the submission form expected flag EYE{...}. I thought it was excessive for a few pictures of us before all this.
+
+I would like someone to see them again.

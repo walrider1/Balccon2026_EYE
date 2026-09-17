@@ -20,7 +20,7 @@ function createCommands() {
           ? {goal: 'ACCESS 2 -> 3 // Complete the response challenge and verify its result to stop sedation.', commands: ['run','auth']}
           : !game.rootRecovered
           ? {goal: 'ACCESS 2 -> 3 // Combine the recovered authorizations to regain control.', commands: ['root']}
-          : {goal: 'ACCESS 3 // Review navigation and plan the return to Earth.', commands: ['cat','run','central','course']};
+          : {goal: 'ACCESS 3 // Navigation authority restored. Bridge archive available.', commands: ['ls','cat','run','central','course']};
         print('RELEVANT NOW // ' + phase.goal, 'progression-help');
         print('ALL COMMANDS');
         const relevant = new Set(phase.commands);
@@ -72,7 +72,10 @@ function createCommands() {
           return;
         }
         const entries = (fs.list(path) || []).filter(({name}) => (showHidden || (!name.startsWith('.') && name !== 'forensic_fragment.txt')) && (name === '.bonus' || game.canAccessPath(`${path}/${name}`)));
-        print(entries.length ? entries.map(({ name, type }) => type === 'dir' ? `${name}/` : name).join('    ') : '[empty]');
+        print(entries.length ? entries.map(({ name, type }) => {
+          if (name === 'neural_link.app') return `${name} [${game.rootShares.medical ? 'COMPLETED // ACCESS 1 VERIFIED' : 'AUTO AFTER MEDICAL AUTH // RESUME IF INTERRUPTED'}]`;
+          return type === 'dir' ? `${name}/` : name;
+        }).join('    ') : '[empty]');
       }
     },
     {
@@ -185,7 +188,10 @@ function createCommands() {
           print(`run: ${arg}: not an executable app`, 'error');
           return;
         }
-        if (path === '/home/operator/medical/neural_link.app') return window.openNeuralLink(print);
+        if (path === '/home/operator/medical/neural_link.app') {
+          if (game.rootShares.medical) { print('NEURAL LINK ALREADY COMPLETED // Medical access remains verified.'); return; }
+          return window.openNeuralLink(print);
+        }
         if (path === '/home/operator/comms/relay_patch.app') return window.openRelayPatch(game, print);
         if (path === '/home/operator/medical/cortex_echo.app') {
           return startCortexEcho();
@@ -228,7 +234,7 @@ function createCommands() {
     {
       name: 'central',
       usage: 'central shutdown',
-      description: 'ROOT: optional HRTOK isolation before the final course',
+      description: 'ROOT: open the executive continuity isolation panel',
       run: ({ game, print, arg, endGame }) => {
         if (isTerminated({ game, print })) return;
         if (!game.rootRecovered) {
@@ -263,7 +269,8 @@ function createCommands() {
       usage: 'anomaly <message>',
       description: 'address CENTRAL directly',
       showInHelp: false,
-      run: ({ print, arg }) => {
+      run: ({ print, arg, game }) => {
+        if (game.aiOffline) return;
         if (!arg) {
           print('usage: anomaly <message>', 'error');
           return;

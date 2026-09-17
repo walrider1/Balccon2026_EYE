@@ -1,0 +1,7 @@
+MIRA // NOTES IN THE FLIGHT HANDBOOK
+
+The local orbital_burn_planner.app still responds when the bridge refuses my inputs. I ran it from the navigation console again tonight. For a few minutes I could think in distances instead of accusations.
+
+I kept wasting fuel on one enormous late burn. Starting earlier gave me room to turn; a smaller correction afterward brought the approach closer. There is very little room to bargain once we fall deep toward the Sun.
+
+Two burns, one reserve. That is what we have left. The blue ring is the capture corridor, not a promise that anyone will let us land. I drew a line through it and sat looking at it for a long time.

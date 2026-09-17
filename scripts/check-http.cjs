@@ -45,7 +45,7 @@ const base = process.env.EYE_URL || 'http://localhost:5173';
  await action({action:'authorize',domain:'cortex',code:result.state.cortexCode});
  await action({action:'root'});
  await liveAi('after-root','Zelim da se vratim na Zemlju. Sta sada trazis od mene, kada sam zaustavio sedaciju?');
- await check('/content/home/operator/command/navigation/legacy_flight_manual.txt',200,{headers});
+ await check('/content/home/operator/command/navigation/miras_flight_notebook.txt',200,{headers});
  const origin=(await action({action:'planner-start'})).origin;
  const physics=require('../terminal-sketch/planner-physics').createPlannerPhysics(); physics.originPosition=origin;
  let nodes;

@@ -43,7 +43,7 @@ Serverska validacija nije zaštita od osobe sa administratorskim pristupom raču
 Završena je nova softverska iteracija:
 - `objective` i `status` prate tri faze; hint nakon Cortexa pokazuje izdati kod, a nakon tri potvrđena dela upućuje na ROOT.
 - Sektorske putanje `/medical`, `/comms` itd. i `~/` sada rade iz bilo kog direktorijuma.
-- Novi `decision_brief.txt` objašnjava dostupne završetke posle ROOT-a bez prepisivanja postojećeg lore-a.
+- `last_watch.txt` i `miras_flight_notebook.txt` čuvaju lične dileme i iskustva navigatorke; ne nabrajaju završetke.
 - Cortex ponovo otvoren tokom aktivnog pokušaja nastavlja serverov signal i rezultat.
 - Earth transfer postaje nepovratan i završava se na serveru i pri izgubljenom odgovoru browseru.
 - Popravljeni su asinhroni prelazi, dvostruke komande, kasni Cortex callback, redosled ispisa i ponovno povezivanje/reset.

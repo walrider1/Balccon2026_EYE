@@ -1,8 +1,9 @@
 RAW UPLINK LEDGER // IMMUTABLE RECORDER
 
-23:17  PACKET 184 CREATED // DISTRESS PRIORITY
-23:17  UPLINK REQUESTED
-23:17  UPLINK BLOCKED
-23:17  TRANSMISSION: NOT SENT
+REQUEST R-62 // PACKET 108 // MAINTENANCE TELEMETRY
+REQUEST R-41 // PACKET 184 // DISTRESS PRIORITY
+REQUEST R-73 // PACKET 126 // CREW BULLETIN
+
+Packet-to-request register only. Delivery decisions are held in lock_audit.txt.
 
 No external distress transmission exists after this record.

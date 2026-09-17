@@ -2,7 +2,17 @@ const test=require('node:test'), assert=require('node:assert/strict'), fs=requir
 const {createGameService}=require('../terminal-sketch/game-service');
 const {createPlannerPhysics}=require('../terminal-sketch/planner-physics');
 function fixture(storage) { let time=1000000; const service=createGameService({now:()=>time,storage}); const id=service.create(); const act=(action,data={})=>service.action(id,{action,...data}); act('start'); return {service,id,act,advance:n=>time+=n,now:()=>time}; }
-function credential(f,domain) { return f.service.renderArchive(f.id,domain==='medical'?'/home/operator/medical/doctor_note.txt':'/home/operator/comms/evidence.txt',domain==='medical'?'MR-07-0412':'F-184-2317'); }
+function credential(f,domain) {
+ const read=name=>{const file=`/home/operator/${domain}/${name}.txt`;return f.service.renderArchive(f.id,file,fs.readFileSync(path.join(__dirname,'../terminal-sketch/content',file),'utf8'));};
+ if(domain==='medical') {
+  const chamber=read('patient_intake').match(/REGENERATION CHAMBER: (\d{2})/)[1];
+  const date=read('medbay_audit').match(/02  (\d{2})\/(\d{2})  MANUAL OVERRIDE/);
+  return `MR-${chamber}-${date[1]}${date[2]}`;
+ }
+ const packet=read('raw_uplink_ledger').match(/REQUEST (R-\d+) \/\/ PACKET (\d+) \/\/ DISTRESS PRIORITY/);
+ const block=read('lock_audit').split('\n').find(row=>row.startsWith(`REQUEST ${packet[1]} // BLOCKED`)).match(/(\d{2}):(\d{2})/);
+ return `F-${packet[2]}-${block[1]}${block[2]}`;
+}
 function medical(f) { const r=f.act('authorize',{domain:'medical',code:credential(f,'medical')});assert.equal(r.neuralRequired,true);assert.equal(r.state.access,0);const c=f.act('medical-start').challenge;assert.equal(f.act('medical-submit',{token:c.token,values:c.target}).state.access,1); }
 function findSignal(f,c) {
  const sample=(frequency,polarization)=>f.act('comms-submit',{token:c.token,frequency,polarization});
@@ -23,7 +33,7 @@ function link(f) {
 function comms(f) {medical(f);f.act('authorize',{domain:'comms',code:credential(f,'comms')});link(f);}
 function cortex(f) {let r=f.act('cortex-start'); for(let i=0;i<20;i++) {f.advance(Math.max(0,r.challenge.issuedAt-f.now())); r=f.act('cortex-answer',{token:r.challenge.token,key:r.challenge.target});} assert.equal(r.success,true);return r.state.cortexCode;}
 function root(f) {comms(f);f.act('authorize',{domain:'cortex',code:cortex(f)});assert.equal(f.act('root').ok,true);}
-test('server rejects skipped steps and hides attestation; ignores forged state',()=>{ const f=fixture();assert.equal(f.service.snapshot(f.id).cortexCode,null); assert.equal(f.act('root',{access:3}).ok,false);assert.throws(()=>f.act('ending',{kind:'shutdown'}),/ROOT/);assert.throws(()=>f.act('cortex-start'),/SEDATION/);assert.throws(()=>f.act('planner-start'),/ROOT/);assert.equal(f.service.canRead(f.id,'/home/operator/comms/raw_uplink_ledger.txt'),false); medical(f);assert.equal(f.service.canRead(f.id,'/home/operator/comms/raw_uplink_ledger.txt'),true);assert.equal(f.service.canRead(f.id,'/home/operator/command/navigation/legacy_flight_manual.txt'),false);});
+test('server rejects skipped steps and hides attestation; ignores forged state',()=>{ const f=fixture();assert.equal(f.service.snapshot(f.id).cortexCode,null); assert.equal(f.act('root',{access:3}).ok,false);assert.throws(()=>f.act('ending',{kind:'shutdown'}),/ROOT/);assert.throws(()=>f.act('cortex-start'),/SEDATION/);assert.throws(()=>f.act('planner-start'),/ROOT/);assert.equal(f.service.canRead(f.id,'/home/operator/comms/raw_uplink_ledger.txt'),false); medical(f);assert.equal(f.service.canRead(f.id,'/home/operator/comms/raw_uplink_ledger.txt'),true);assert.equal(f.service.canRead(f.id,'/home/operator/command/navigation/miras_flight_notebook.txt'),false);});
 test('Cortex checks signal freshness, real score and grants random attestation',()=>{const f=fixture();comms(f);let r=f.act('cortex-start');const token=r.challenge.token;r=f.act('cortex-answer',{token,key:r.challenge.target});assert.throws(()=>f.act('cortex-answer',{token,key:'a'}),/STALE/);assert.throws(()=>f.act('cortex-answer',{token:r.challenge.token,key:r.challenge.target}),/NOT YET/);f.act('cortex-cancel');const code=cortex(f);assert.match(code,/^CORTEX-[0-9A-F]{6}$/);f.act('authorize',{domain:'cortex',code});assert.equal(f.act('root').ok,true);assert.equal(f.service.snapshot(f.id).sedationEndsAt,null);});
 test('Cortex fails on missed threshold and can retry',()=>{const f=fixture();comms(f);let r=f.act('cortex-start');for(let i=0;i<6;i++){f.advance(1800);r=f.act('cortex-answer',{token:r.challenge.token,key:''});}assert.equal(r.done,true);assert.equal(r.success,false);assert.equal(r.state.cortexCode,null);assert.ok(f.act('cortex-start').challenge);});
 test('deadlines survive restart, expired session cannot authorize, reset is gated',()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'eye-test-'));try{const storage=path.join(dir,'sessions.json'),f=fixture(storage);comms(f);f.advance(300001);const restored=createGameService({now:f.now,storage});assert.equal(restored.snapshot(f.id).endingKind,'sedation');assert.throws(()=>restored.action(f.id,{action:'authorize',domain:'cortex',code:'CORTEX-9D3'}),/ACTIVE/);assert.throws(()=>restored.action(f.id,{action:'reset'}),/NOT YET/);f.advance(60001);assert.equal(restored.action(f.id,{action:'reset'}).state.access,0);}finally{fs.rmSync(dir,{recursive:true});}});
@@ -37,12 +47,12 @@ for(const kind of ['sun','transfer']) test(`${kind} ending is final, idempotent 
  assert.throws(()=>f.act('hint'),/ACTIVE/);f.advance(60001);const reset=f.act('reset');assert.equal(reset.state.started,false);assert.equal(reset.state.access,0);assert.equal(reset.state.cortexCode,null);assert.deepEqual(reset.state.readFiles,[]);assert.notEqual(reset.state.sessionTag,end.sessionTag);
 });
 test('mission failure, idle reset and planner pause use server deadlines',()=>{
- const f=fixture();f.advance(900001);assert.equal(f.service.snapshot(f.id).endingKind,'mission');
+ const f=fixture();f.advance(1200001);assert.equal(f.service.snapshot(f.id).endingKind,'mission');
  const idle=fixture();idle.advance(300001);assert.equal(idle.act('reset').state.started,false);
  const p=fixture();root(p);const remaining=p.act('planner-start').state.missionRemaining;p.advance(950000);assert.equal(p.service.snapshot(p.id).ending,false);const resumed=p.act('planner-exit').state;assert.equal(resumed.missionEndsAt,p.now()+remaining);p.advance(remaining+1);assert.equal(p.service.snapshot(p.id).endingKind,'mission');
 });
 test('objective follows the attestation and ROOT transitions',()=>{
- const f=fixture();assert.equal(f.service.snapshot(f.id).objective.phase,1);medical(f);assert.equal(f.service.snapshot(f.id).objective.phase,2);f.act('authorize',{domain:'comms',code:credential(f,'comms')});link(f);assert.equal(f.service.snapshot(f.id).objective.phase,3);const code=cortex(f);assert.ok(f.service.snapshot(f.id).objective.text.includes(code));f.act('authorize',{domain:'cortex',code});assert.match(f.service.snapshot(f.id).objective.text,/root recover/);f.act('root');assert.match(f.service.snapshot(f.id).objective.text,/decision_brief/);
+ const f=fixture();assert.equal(f.service.snapshot(f.id).objective.phase,1);medical(f);assert.equal(f.service.snapshot(f.id).objective.phase,2);f.act('authorize',{domain:'comms',code:credential(f,'comms')});link(f);assert.equal(f.service.snapshot(f.id).objective.phase,3);const code=cortex(f);assert.ok(f.service.snapshot(f.id).objective.text.includes(code));f.act('authorize',{domain:'cortex',code});assert.match(f.service.snapshot(f.id).objective.text,/root recover/);f.act('root');assert.match(f.service.snapshot(f.id).objective.text,/Navigation archive/);
 });
 test('Cortex can resume the current signal without erasing score',()=>{
  const f=fixture();comms(f);const first=f.act('cortex-start').challenge;f.act('cortex-answer',{token:first.token,key:first.target});const restored=f.act('cortex-start').challenge;assert.equal(restored.index,1);assert.equal(restored.hits,1);assert.notEqual(restored.token,first.token);
@@ -59,7 +69,7 @@ test('Earth commit finishes after a lost reply and cannot switch outcome',()=>{
  assert.ok(nodes);f.act('planner-arm',{nodes});f.advance(2100);f.act('planner-commit',{confirmed:true});assert.equal(f.act('planner-commit',{confirmed:true}).state.missionResolved,true);assert.throws(()=>f.act('ending',{kind:'sun'}),/IRREVERSIBLE/);f.advance(3001);assert.equal(f.service.snapshot(f.id).endingKind,'earth');
 });
 test('expired mission keeps its actual deadline across an offline interval',()=>{
- const f=fixture();const deadline=f.service.snapshot(f.id).missionEndsAt;f.advance(1000000);const ended=f.service.snapshot(f.id);assert.equal(ended.endingKind,'mission');assert.equal(ended.resetAt,deadline+60000);assert.equal(f.act('reset').state.access,0);
+ const f=fixture();const deadline=f.service.snapshot(f.id).missionEndsAt;f.advance(1300000);const ended=f.service.snapshot(f.id);assert.equal(ended.endingKind,'mission');assert.equal(ended.resetAt,deadline+60000);assert.equal(f.act('reset').state.access,0);
 });
 test('failed durable authorization is rolled back before the next read',()=>{
  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'eye-durable-'));const storage=path.join(directory,'sessions.json');const f=fixture(storage);const rename=fs.renameSync;
@@ -113,7 +123,7 @@ test('Cortex accelerates and a failed attempt can restart at initial speed',()=>
 });
 
 test('medical needs both session credential and waveform, and cannot replay a solved challenge',()=>{
- const f=fixture();assert.throws(()=>f.act('medical-start'),/AUTHORIZE MEDICAL/);
+ const f=fixture();assert.throws(()=>f.act('medical-start'),/MEDICAL CREDENTIAL REQUIRED/);
  assert.equal(f.act('authorize',{domain:'medical',code:'MR-07-0412'}).ok,false);
  const code=credential(f,'medical');f.act('authorize',{domain:'medical',code});
  const c=f.act('medical-start').challenge;assert.deepEqual(f.act('medical-start').challenge,c);
@@ -138,13 +148,13 @@ test('session clues survive reload, differ after reset and old credentials fail'
 
 function shutDown(f) {
  let c=f.act('shutdown-start').challenge;
- for(let i=0;i<4;i++){f.act('shutdown-arm',{token:c.token,key:c.key});f.advance(4100);const r=f.act('shutdown-step',{token:c.token});if(r.complete)return r;c=r.challenge;}
+ for(let i=0;i<8;i++){assert.equal(c.key,i%2?'ArrowUp':'ArrowDown');f.act('shutdown-arm',{token:c.token,key:c.key});f.advance(2000);const r=f.act('shutdown-step',{token:c.token});assert.equal(Boolean(r.complete),i===7);if(r.complete)return r;assert.equal(r.state.aiOffline,false);c=r.challenge;}
 }
-test('shutdown requires ROOT, holds and four links; abort leaves HRTOK online',()=>{
+test('shutdown requires ROOT, two-second holds and eight links; abort leaves HRTOK online',()=>{
  const f=fixture();assert.throws(()=>f.act('shutdown-start'),/ROOT/);root(f);
  assert.throws(()=>f.act('ending',{kind:'shutdown'}),/UNKNOWN ENDING/);
  let c=f.act('shutdown-start').challenge;assert.throws(()=>f.act('shutdown-step',{token:c.token}),/INCOMPLETE/);
- f.act('shutdown-arm',{token:c.token,key:c.key});f.advance(2000);assert.throws(()=>f.act('shutdown-step',{token:c.token}),/INCOMPLETE/);
+ f.act('shutdown-arm',{token:c.token,key:c.key});f.advance(1999);assert.throws(()=>f.act('shutdown-step',{token:c.token}),/INCOMPLETE/);
  f.act('shutdown-release');f.advance(5000);assert.throws(()=>f.act('shutdown-step',{token:c.token}),/INCOMPLETE/);
  f.act('shutdown-cancel');assert.equal(f.service.snapshot(f.id).aiOffline,false);
  assert.throws(()=>f.act('shutdown-step',{token:c.token}),/INCOMPLETE/);
@@ -164,7 +174,7 @@ test('shutdown preserves navigation and the separate Earth ending, and reset res
 });
 
 test('timeout after disconnect is still failure rather than voluntary solar quarantine',()=>{
- const f=fixture();root(f);shutDown(f);f.advance(900001);
+ const f=fixture();root(f);shutDown(f);f.advance(1200001);
  assert.equal(f.service.snapshot(f.id).endingKind,'mission');
  assert.equal(f.service.snapshot(f.id).aiOffline,true);
 });
@@ -194,4 +204,22 @@ test('transient Cortex telemetry avoids disk writes and restarts safely after se
  const saved=fs.readFileSync(storage,'utf8');f.act('cortex-answer',{token:c.token,key:c.target});assert.equal(fs.readFileSync(storage,'utf8'),saved);
  const restored=createGameService({now:f.now,storage});const next=restored.action(f.id,{action:'cortex-start'}).challenge;assert.equal(next.index,0);assert.notEqual(next.token,c.token);assert.equal(restored.snapshot(f.id).cortexCode,null);
  }finally{fs.rmSync(dir,{recursive:true});}
+});
+
+test('Medical and Comms use independent server RNG targets and retain an unfinished Medical challenge',t=>{
+ const crypto=require('node:crypto'),randomInt=crypto.randomInt;let high=false;
+ t.mock.method(crypto,'randomInt',(min,max)=>{
+  if([[3,6],[2,7],[500,1501],[0,720]].some(([a,b])=>a===min&&b===max))return high?max-1:min;
+  return max===undefined?randomInt(min):randomInt(min,max);
+ });
+ for(const upper of [false,true]){
+  high=upper;const f=fixture();f.act('authorize',{domain:'medical',code:credential(f,'medical')});
+  const c=f.act('medical-start').challenge;assert.deepEqual(c.target,upper?[5,6,5]:[3,2,3]);
+  assert.deepEqual(f.act('medical-start').challenge,c);
+  f.act('medical-submit',{token:c.token,values:c.target});
+  f.act('authorize',{domain:'comms',code:credential(f,'comms')});
+  const radio=f.act('comms-start').challenge;assert.deepEqual(Object.keys(radio),['token']);
+  const sample=f.act('comms-submit',{token:radio.token,frequency:upper?75:25,polarization:upper?179.75:0});
+  assert.equal(sample.carrier,100);assert.equal(sample.alignment,100);
+ }
 });

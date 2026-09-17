@@ -15,9 +15,9 @@ test('completed run survives reset/restart, is counted once, and excludes creden
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'eye-history-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
  const storage=path.join(dir,'state.json');let now=1000;
  let api=createGameService({storage,now:()=>now});const id=api.create();api.action(id,{action:'start'});
- now+=16*60000;api.snapshot(id);api.snapshot(id);
+ now+=21*60000;api.snapshot(id);api.snapshot(id);
  assert.equal(api.history().total,1);assert.equal(api.history().runs[0].outcome,'mission');
- assert.equal(api.history().runs[0].durationMs,15*60000);
+ assert.equal(api.history().runs[0].durationMs,20*60000);
  api.operatorReset(id);api=createGameService({storage,now:()=>now});
  assert.equal(api.history().total,1);assert.equal(JSON.stringify(api.history()).includes(id),false);
  assert.equal(JSON.stringify(api.history()).includes('cortexCode'),false);
@@ -53,7 +53,7 @@ test('history is bounded to 500 runs',()=>{
 test('failed save rolls back both ending and its history entry',t=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'eye-history-fail-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
  let now=1000;const storage=path.join(dir,'state.json');const api=createGameService({storage,now:()=>now});
- const id=api.create();api.action(id,{action:'start'});now+=16*60000;
+ const id=api.create();api.action(id,{action:'start'});now+=21*60000;
  const rename=fs.renameSync;fs.renameSync=()=>{const e=new Error('disk');e.code='EIO';throw e;};
  try{assert.throws(()=>api.snapshot(id));assert.equal(api.history().total,0);}finally{fs.renameSync=rename;}
  api.snapshot(id);assert.equal(api.history().total,1);

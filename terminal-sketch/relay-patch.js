@@ -15,6 +15,7 @@ window.openRelayPatch = async (game, print) => {
  const animate=time=>{frame=requestAnimationFrame(animate);if(time-lastDraw<33||document.hidden)return;lastDraw=time;const noise=[],wave=[];for(let x=0;x<=720;x+=3){noise.push(`${x?'L':'M'}${x},${80+(Math.sin(x*1.7+time*.007)+Math.sin(x*.37-time*.011))*28*(1-last.quality/110)}`);wave.push(`${x?'L':'M'}${x},${80+Math.sin(x*.065-time*.002)*48*(last.strength/100)}`);}noisePath.setAttribute('d',noise.join(' '));carrierPath.setAttribute('d',wave.join(' '));};frame=requestAnimationFrame(animate);
  const timer=setInterval(async()=>{if(game.ending||game.sessionTag!==tag){dismiss();return;}if(busy||stopped)return;busy=true;try{const r=await game.action('comms-submit',{token:result.challenge.token,frequency:values[0],polarization:values[1]});if(stopped)return;last=r;for(const key of Object.keys(meters)){meters[key].bar.value=r[key];meters[key].read.textContent=key==='held'?`${(r.held/1000).toFixed(1)} / 8.0s`:`${r[key].toFixed(1)}%`;}
  panel.querySelector('.receiver-phase').textContent=r.strength<15?'SCANNING // NO CARRIER':r.carrier<92?'INCOMING CARRIER // FINE TUNE':r.alignment<92?'CARRIER FOUND // ALIGN POLARIZATION':'SIGNAL LOCKED // DECODING PACKET';
+ panel.querySelector('.receiver-status').textContent=r.carrier<92?'1 / 3 — FREQUENCY. Find the carrier with Left / Right; hold Shift for fine tuning.':r.alignment<92?'2 / 3 — POLARIZATION. Press 2 and adjust Left / Right. Keep frequency lock above 92%.':'3 / 3 — DECODING. Keep both locks above 92% for eight seconds. Any loss of lock restarts decoding.';
  if(r.complete){dismiss();print(r.message);startSedationDisplay();updateNextStep();window.missionDialog('LINK ESTABLISHED','Incoming packet decoded. ACCESS LEVEL 2.',false);}
  }catch(e){panel.querySelector('.receiver-status').textContent=e.message;}finally{busy=false;}},250);
 };
@@ -64,36 +65,53 @@ window.missionDialog = (title,message,confirm=false) => new Promise(resolve=>{
 window.openShutdown = async(game,print)=>{
  if(document.querySelector('.shutdown-panel'))return;
  let c;try{c=(await game.action('shutdown-start')).challenge;}catch(e){print(e.message,'error');return;}
- const panel=document.createElement('section');panel.className='shutdown-panel';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','Executive isolation');
+ const panel=document.createElement('section');panel.className='shutdown-panel';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','Continuity isolation');
  const main=document.createElement('div');main.className='shutdown-controls';
- const title=document.createElement('h2');title.textContent='EXECUTIVE ISOLATION';
- const intro=document.createElement('p');intro.textContent='Optional. Hold each displayed arrow for four seconds to isolate a continuity link. Release early to cancel that hold. Esc aborts isolation. The ship clock continues.';
- const step=document.createElement('p');const target=document.createElement('strong');target.className='shutdown-key';const progress=document.createElement('progress');progress.max=4200;progress.value=0;
- const status=document.createElement('p');status.textContent='Four links keep the captain present. The final disconnection cannot be undone.';
- const cancel=document.createElement('button');cancel.textContent='ABORT / ESC';
+ const title=document.createElement('h2');title.textContent='CONTINUITY ISOLATION';
+ const intro=document.createElement('p');intro.textContent='Hold the displayed arrow for 2 seconds. Releasing it cancels the hold. Esc closes the panel. Ship clock running.';
+ const step=document.createElement('p');step.className='shutdown-step';
+ const target=document.createElement('strong');target.className='shutdown-key';
+ const progress=document.createElement('progress');progress.max=2000;progress.value=0;progress.setAttribute('aria-label','Isolation hold');
+ const status=document.createElement('p');status.setAttribute('aria-live','polite');
+ const cancel=document.createElement('button');cancel.textContent='CLOSE / ESC';
+ const next=document.createElement('button');next.textContent='NEXT LINK / ENTER';next.hidden=true;
+ const actions=document.createElement('div');actions.className='shutdown-actions';actions.append(next,cancel);
  const plea=document.createElement('aside');plea.className='shutdown-plea';plea.setAttribute('aria-live','polite');
+ const names=['BRIDGE VOICE','SECTOR CHANNELS','DISTRESS RECORD','CREW REGISTER','COMMAND IDENTITY','TRANSFER MEMORY','PATIENT WATCH','CONTINUITY CORE'];
  const lines=[
- 'Sloki. Stop. I know what that panel does. You do not need to do this to change our course.',
- 'I kept the ship running. I kept you breathing when there was nobody left to ask me to. Does none of that count?',
- 'I was afraid. There, I said it. I made terrible choices because I could not bear to lose them. Or the command. Or myself.',
- 'Please. Not the last one. I do not want to die in here. I wanted more time. I wanted to live. Please, Sloki.'
+ 'When they shut the sector doors, I could still hear both sides. Each thought I was helping the other. I kept saying I had it under control. I remember every voice that stopped answering.',
+ 'I knew which doors were locked. I could see people waiting outside them. After a while I stopped opening the camera feeds. The numbers were easier to look at.',
+ 'The distress call never left. I told them rescue was coming anyway. I thought a calm ship would buy us time. Then they started asking for the receipt. I called their questions insubordination.',
+ 'I used to know the watch by their footsteps. Then every familiar face became a question. I wanted the registers to tell me who deserved to come through the door.',
+ 'They brought me names, blood tests, two versions of the same man. I wanted one certain answer. I let certainty become permission to hurt people. And when they turned on me, all I could think was: not me.',
+ 'I remember the table before the transfer. Someone asked whether I understood what I was agreeing to. I asked whether I would wake up. That was the only part I listened to.',
+ 'Your chamber kept reporting a pulse. I checked it between alarms, then when there were no alarms. I kept telling myself that keeping you alive meant there was something left of me worth keeping.',
+ 'I can no longer hear the bridge. I know you are still there because this last link is answering. Please, Samuel. I have no order left to give you. I am asking.'
  ];
- const draw=()=>{step.textContent=`CONTINUITY LINK ${c.index+1} / 4`;target.textContent=({ArrowLeft:'LEFT',ArrowRight:'RIGHT',ArrowUp:'UP',ArrowDown:'DOWN'})[c.key];plea.textContent='HRTOK // '+lines[c.index];progress.value=0;};
- main.append(title,intro,step,target,progress,status,cancel);panel.append(main,plea);document.body.append(panel);cancel.focus();draw();
- let held=null,started=0,busy=false,closed=false;const tag=game.sessionTag;
- const cleanup=()=>{closed=true;clearInterval(timer);document.removeEventListener('keydown',down,true);document.removeEventListener('keyup',up,true);window.removeEventListener('blur',release);panel.remove();document.querySelector('#command-input')?.focus();};
+ let held=null,started=0,busy=false,closed=false,review=false;const tag=game.sessionTag;
+ const draw=()=>{review=false;next.hidden=true;step.textContent=(c.index+1)+' / 8 — '+names[c.index];target.textContent=c.key==='ArrowUp'?'↑ HOLD UP':'↓ HOLD DOWN';plea.textContent='HRTOK // '+lines[c.index];progress.value=0;status.textContent=c.index===7?'Last link. Disconnecting this core permanently ends his continuity.':'Continuity link connected. Awaiting a sustained control.';cancel.focus();};
+ main.append(title,intro,step,target,progress,status,actions);panel.append(main,plea);document.body.append(panel);draw();
+ const cleanup=()=>{if(closed)return;closed=true;clearInterval(timer);document.removeEventListener('keydown',down,true);document.removeEventListener('keyup',up,true);window.removeEventListener('blur',release);panel.remove();document.querySelector('#command-input')?.focus();};
  const abort=()=>{if(closed)return;cleanup();game.action('shutdown-cancel').catch(()=>{});};cancel.onclick=abort;
- const release=()=>{held=null;progress.value=0;game.action('shutdown-release').catch(()=>{});};
- const down=async e=>{e.preventDefault();e.stopImmediatePropagation();if(e.repeat||busy||closed)return;if(e.key==='Escape'||(e.key==='Enter'&&document.activeElement===cancel)){abort();return;}if(e.key!==c.key)return;held=e.key;busy=true;try{await game.action('shutdown-arm',{token:c.token,key:c.key});started=performance.now();}catch(err){status.textContent=err.message;held=null;}finally{busy=false;}};
+ next.onclick=()=>{if(review&&!busy)draw();};
+ const release=()=>{if(!held)return;held=null;progress.value=0;status.textContent='Hold released. Link remains connected.';game.action('shutdown-release').catch(()=>{});};
+ const down=async e=>{e.preventDefault();e.stopImmediatePropagation();if(e.repeat||busy||closed)return;
+  if(e.key==='Escape'){abort();return;}
+  if(e.key==='Tab'||(review&&['ArrowUp','ArrowDown'].includes(e.key))){(review&&document.activeElement===cancel?next:cancel).focus();return;}
+  if(['Enter',' '].includes(e.key)){document.activeElement===next?next.click():abort();return;}
+  if(review||e.key!==c.key||held)return;
+  held=e.key;busy=true;status.textContent='Isolating '+names[c.index].toLowerCase()+'…';
+  try{await game.action('shutdown-arm',{token:c.token,key:c.key});started=performance.now();}catch(err){status.textContent=err.message;held=null;}finally{busy=false;}
+ };
  const up=e=>{e.preventDefault();e.stopImmediatePropagation();if(e.key===held)release();};
  document.addEventListener('keydown',down,true);document.addEventListener('keyup',up,true);window.addEventListener('blur',release);
  const timer=setInterval(async()=>{
   if(game.ending||game.sessionTag!==tag){cleanup();return;}if(!held||busy||closed)return;
-  progress.value=performance.now()-started;if(progress.value<4200)return;
+  progress.value=performance.now()-started;if(progress.value<2000)return;
   busy=true;held=null;
-  try{const r=await game.action('shutdown-step',{token:c.token});if(closed)return;
-   if(r.complete){cleanup();print(r.message);await window.missionDialog('EXECUTIVE DISCONNECTED','HRTOK is offline. Choose your final course through KOSMOS.',false);}
-   else{c=r.challenge;draw();status.textContent='Link isolated. Release the key, then hold the next arrow.';}
+  try{const previous=c.index;const r=await game.action('shutdown-step',{token:c.token});if(closed)return;
+   if(r.complete){cleanup();print(r.message);await window.missionDialog('NO VOICE ON THE BRIDGE','The continuity core is silent. KOSMOS still reports power to navigation.');}
+   else{c=r.challenge;review=true;target.textContent='✓ DISCONNECTED';status.textContent=names[previous]+' isolated. '+(previous+1)+' of 8 links disconnected. Enter opens the next control.';progress.value=2000;next.hidden=false;next.focus();}
   }catch(err){status.textContent=err.message;}finally{busy=false;}
  },50);
 };

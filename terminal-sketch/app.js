@@ -352,7 +352,7 @@ function print(text, cls = 'system', highlightedUsage = '') {
     for (const row of value.split('\n')) {
       const part = document.createElement('span');
       part.textContent = row + '\n';
-      if (/^(PATIENT:|ROLE:|CHAMBER:|LAST MANUAL OVERRIDE:|CURRENT COURSE:|DESTINATION:|GOAL:|AUTHORIZATION|TYPE:|DATE:|auth |run |.*UNSENT|.*BLOCK TIME)/i.test(row)) part.className = 'record-key';
+      if (/^(VOID:|CURRENT COURSE:|DESTINATION:|GOAL:|AUTHORIZATION|TYPE:|auth |run )/i.test(row)) part.className = 'record-key';
       line.append(part);
     }
   } else line.textContent = value;
@@ -418,7 +418,7 @@ function updateNextStep() {
   const remaining = gameState.missionPaused ? gameState.missionRemaining : (gameState.missionEndsAt || Date.now()) - Date.now();
   const urgent = remaining < 180000 || (gameState.sedationEndsAt && !gameState.rootRecovered && gameState.sedationEndsAt - Date.now() < 90000);
   guide.classList.toggle('urgent-hint', Boolean(urgent));
-  guide.textContent = !(gameState.readFiles || []).includes('/home/operator/readme.txt') && !urgent ? 'START HERE: cat readme.txt // Your goal and three short steps' : urgent ? 'TIME CRITICAL // ' + gameState.objectiveText() + ' // Type help for controls.' : 'ls: list  |  cd <folder>: enter  |  cat <file>: read  |  help: all commands';
+  guide.textContent = !(gameState.readFiles || []).includes('/home/operator/readme.txt') && !urgent ? 'START HERE: cat readme.txt // A letter left for you' : urgent ? 'TIME CRITICAL // ' + gameState.objectiveText() + ' // Type help for controls.' : 'ls: list  |  cd <folder>: enter  |  cat <file>: read  |  help: all commands';
   const discovered = document.querySelector('#discovered-status');
   if (discovered) discovered.textContent = `NAME: ${gameState.identityKnown() ? 'SAMUEL "SLOKI" KOVAC' : 'UNKNOWN'}  //  ROLE: ${gameState.identityKnown() ? 'BOTANIST / PATIENT' : 'UNKNOWN'}`;
   guide.title = 'Enter: submit. Ctrl+Right: HRTOK. Ctrl+Left: KOSMOS.';
@@ -504,6 +504,7 @@ function centralSignal(label, value = '', cls = 'neutral') {
 }
 
 function centralApplyDeltas(response) {
+  if (gameState.aiOffline) return;
   if (response?.relationship) centralMemory.relationship = response.relationship;
   const trust = Number(response?.trust_delta) || 0;
   const suspicion = Number(response?.suspicion_delta) || 0;
@@ -519,6 +520,7 @@ function renderCentralPromptSelection() {
 }
 
 function showCentralPrompt(question, choices) {
+  if (gameState.aiOffline) return;
   const promptLine = centralLine(captainName, question, 'central-observe central-prompt-line');
   const choiceWrap = document.createElement('div');
   choiceWrap.className = 'central-choices';
@@ -553,11 +555,12 @@ function chooseCentralPrompt(index = centralPrompt?.selected) {
 }
 
 function centralObserve(key, text, delay = 900) {
+  if (gameState.aiOffline) return;
   if (!['sedation-started','root-recover','earth-transfer','evidence-neural','evidence-pods'].includes(key)) return;
   if (centralMemory.observed.has(key)) return;
   centralMemory.observed.add(key);
   window.setTimeout(async () => {
-    if (gameState.ending || resetInProgress || game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
+    if (gameState.aiOffline || gameState.ending || resetInProgress || game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
     try {
       const response = await requestCentralReply({ kind: 'event', eventKey: key, eventText: text });
       if (!response.message || gameState.ending || resetInProgress) return;
@@ -581,7 +584,9 @@ function centralStateSnapshot() {
 }
 
 async function requestCentralReply(payload) {
-  return hrtokClient.send({ ...payload, state: centralStateSnapshot() });
+  if (gameState.aiOffline) return {message:'',skipped:true};
+  const response = await hrtokClient.send({ ...payload, state: centralStateSnapshot() });
+  return gameState.aiOffline ? {message:'',skipped:true} : response;
 }
 
 async function handleCentralMessage(rawMessage) {
@@ -608,6 +613,7 @@ async function handleCentralMessage(rawMessage) {
 }
 
 function scheduleCentralIdleMessage() {
+  if (gameState.aiOffline) return;
   if (centralIdleTimer || centralMemory.idleCount >= 1) return;
   if (game.classList.contains('hidden') || !failureScreen.classList.contains('hidden')) return;
   if (centralMemory.messages.length === 0 && centralMemory.observed.size === 0) return;
@@ -1107,6 +1113,7 @@ async function loadFilesystem() {
     fs = new VirtualFileSystem(await response.json());
     mountStatus.textContent = 'SHIP ARCHIVE: READY';
     mountStatus.classList.add('mounted');
+    startGame();
   } catch {
     mountStatus.textContent = 'CONTENT OFFLINE // RETRYING CONNECTION';
     window.setTimeout(loadFilesystem, 3000);
@@ -1380,12 +1387,17 @@ const plannerGame = {
         ring.setAttribute('class', 'planner-vector-ring');
         plannerNodeLayer.append(ring);
         const direction = trajectory.burnVectors[index] || this.burnDirection(node);
+        const vectorLength = 80 + 60 * node.deltaV / this.maxDeltaV;
         const vector = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        vector.setAttribute('x1', point.x.toFixed(1));
-        vector.setAttribute('y1', point.y.toFixed(1));
-        vector.setAttribute('x2', (point.x + direction.x * 17).toFixed(1));
-        vector.setAttribute('y2', (point.y + direction.y * 17).toFixed(1));
+        vector.setAttribute('x1', (point.x + direction.x * 22).toFixed(1));
+        vector.setAttribute('y1', (point.y + direction.y * 22).toFixed(1));
+        vector.setAttribute('x2', (point.x + direction.x * vectorLength).toFixed(1));
+        vector.setAttribute('y2', (point.y + direction.y * vectorLength).toFixed(1));
+        vector.setAttribute('marker-end', 'url(#planner-thrust-head)');
         vector.setAttribute('class', 'planner-vector');
+        const vectorTitle = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        vectorTitle.textContent = 'Thrust direction — not the predicted flight path';
+        vector.append(vectorTitle);
         plannerNodeLayer.append(vector);
       }
       const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -1404,14 +1416,20 @@ const plannerGame = {
     plannerSelected.textContent = this.selected === null
       ? `CURSOR: ${this.cursor.toFixed(1)}%`
       : `NODE ${this.selected + 1}: ${this.nodes[this.selected].position.toFixed(1)}% // ${this.nodes[this.selected].deltaV} m/s // ${this.nodes[this.selected].angle >= 0 ? '+' : ''}${this.nodes[this.selected].angle}°`;
-    plannerIntercept.textContent = trajectory.captured ? 'INTERCEPT: EARTH CAPTURE' : `CLOSEST APPROACH: ${Math.round(trajectory.captureDistance)} km`;
+    plannerIntercept.textContent = trajectory.captured ? 'INTERCEPT: EARTH CAPTURE' : trajectory.terminal === 'sun' ? 'PREDICTION: SOLAR IMPACT' : `CLOSEST APPROACH: ${Math.round(trajectory.captureDistance)} km`;
 
     if (this.committing) {
       plannerStatus.textContent = 'TRANSFER BURN EXECUTING...';
     } else if (this.locked) {
       plannerStatus.textContent = 'EARTH TRANSFER COMMITTED. PRESS ESC TO RETURN TO THE CONSOLE.';
-    } else if (trajectory.captured) plannerStatus.textContent = 'EARTH CAPTURE AVAILABLE. HOLD ENTER FOR 2 SECONDS, THEN CONFIRM DESTINATION.';
-    else plannerStatus.textContent = 'Place a burn node, then adjust its strength and direction toward the Earth capture ring.';
+    } else if (trajectory.captured) {
+      plannerStatus.textContent = '4 / 4 — CAPTURE VERIFIED. Hold Enter for 2 seconds to arm; destination confirmation follows.';
+    } else if (!this.nodes.length) plannerStatus.textContent = '1 / 4 — BURN TIME. A / D moves the cursor along the route. Enter places a burn here. Earlier burns leave more room to turn.';
+    else if (this.selected === null) plannerStatus.textContent = 'SELECT A BURN — Press 1 or 2 to edit an existing node. A / D moves the cursor; Enter places or selects a node.';
+    else if (!this.nodes[this.selected].deltaV) plannerStatus.textContent = '2 / 4 — THRUST. Up / Down changes the selected burn strength. The reserve is shared by both nodes.';
+    else plannerStatus.textContent = trajectory.terminal === 'sun'
+      ? '3 / 4 — SOLAR IMPACT. The predicted path ends at the Sun. A moves the burn earlier; Left / Right turns thrust, Up / Down changes strength. Cyan arrow: thrust. Amber line: flight path.'
+      : '3 / 4 — APPROACH. Cyan arrow: thrust direction. Amber line: predicted flight path. Left / Right turns thrust; A / D changes burn time. Guide the flight path through the Earth ring.';
   },
 
   animateTransfer() {
@@ -1629,15 +1647,17 @@ const plannerGame = {
     event.preventDefault();
     const key = event.key.toLowerCase();
     if (key === 'escape') this.exit();
-    else if (!this.locked && !this.committing && key === 'a') this.move(-2);
-    else if (!this.locked && !this.committing && key === 'd') this.move(2);
-    else if (!this.locked && !this.committing && key === 'w') this.adjustDeltaV(20);
-    else if (!this.locked && !this.committing && key === 's') this.adjustDeltaV(-20);
-    else if (!this.locked && !this.committing && key === 'arrowleft') this.rotateVector(-5);
-    else if (!this.locked && !this.committing && key === 'arrowright') this.rotateVector(5);
+    else if (!this.locked && !this.committing && key === 'a') this.move(event.shiftKey ? -.25 : -2);
+    else if (!this.locked && !this.committing && key === 'd') this.move(event.shiftKey ? .25 : 2);
+    else if (!this.locked && !this.committing && ['w','arrowup'].includes(key)) this.adjustDeltaV(event.shiftKey ? 5 : 20);
+    else if (!this.locked && !this.committing && ['s','arrowdown'].includes(key)) this.adjustDeltaV(event.shiftKey ? -5 : -20);
+    else if (!this.locked && !this.committing && key === 'arrowleft') this.rotateVector(event.shiftKey ? -1 : -5);
+    else if (!this.locked && !this.committing && key === 'arrowright') this.rotateVector(event.shiftKey ? 1 : 5);
     else if (!this.locked && !this.committing && key === 'enter') {
-      if (!event.repeat && (this.selected !== null || this.nearestNode() >= 0 || this.nodes.length < this.maxNodes)) this.placeOrSelect();
-      else if (this.validTransfer()) this.beginCommitHold();
+      if (!this.validTransfer()) {
+        if (!event.repeat) this.placeOrSelect();
+        return true;
+      }
       if (!event.repeat) {
         window.clearTimeout(this.holdStartTimer);
         this.holdStartTimer = window.setTimeout(() => {
@@ -1753,9 +1773,11 @@ function completeEarthTransfer() {
   if (earthTransferDisplayed || endingDisplayed || resetInProgress) return;
   earthTransferDisplayed = true;
   commandInput.disabled = true;
-  sfx.play('centralSting', .24);
-  centralObserve('earth-transfer', 'You have selected the only outcome I could not verify as safe.', 200);
-  print('EARTH INTERCEPT CONFIRMED\nRETURN VECTOR COMMITTED\n\nHRTOK: You have doomed us all.', 'anomaly-line');
+  if (!gameState.aiOffline) {
+    sfx.play('centralSting', .24);
+    centralObserve('earth-transfer', 'You have selected the only outcome I could not verify as safe.', 200);
+  }
+  print('EARTH INTERCEPT CONFIRMED\nRETURN VECTOR COMMITTED' + (gameState.aiOffline ? '' : '\n\nHRTOK: You have doomed us all.'), 'anomaly-line');
   // CONVENTION REWARD HOOK: award the physical winner prize after an Earth transfer is confirmed.
   window.clearTimeout(postTransferTimer);
   postTransferTimer = window.setTimeout(() => endGame('earth'), 3000);
@@ -1877,11 +1899,6 @@ function startGame() {
     return;
   }
 
-  if (bootInput.value.trim().toLowerCase() !== 'start system') {
-    bootInput.value = '';
-    bootInput.placeholder = 'COMMAND NOT RECOGNIZED';
-    return;
-  }
 
   bootInput.disabled = true;
   bootForm.classList.add('boot-accepted');

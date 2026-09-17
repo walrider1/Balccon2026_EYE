@@ -1,8 +1,10 @@
 MEDICAL CONTROLLER AUDIT
 
-04/10  Patient admitted to chamber 07.
-04/11  Automated vitals recalibration complete.
-04/12  MANUAL OVERRIDE // attending physician present.
-04/14  Neural scan archived.
+Patient file: SAMUEL KOVAC // signed sequence, oldest entry first.
+
+01  Automated vitals recalibration complete.
+02  04/12  MANUAL OVERRIDE // attending physician signature verified.
+03  Neural scan archived // automated procedure, no manual intervention.
+VOID: 06/21 MANUAL OVERRIDE // unsigned transfer request, never executed.
 
 No further manual intervention was recorded.

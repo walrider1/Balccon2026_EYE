@@ -1,6 +1,6 @@
 COMMUNICATIONS // RESTORE THE UPLINK
 
-The controller needs the unsent packet number and its block time from evidence.txt.
+The controller needs the blocked distress packet number and the time its request was blocked. Packet and lock registers use a shared request ID. The evidence review explains the recorder conventions.
 Credential: F-<packet>-<HHMM>. Remove the colon from the time.
 Use the comms authorization domain. Command reference: auth help.
 

@@ -11,7 +11,7 @@ node terminal-sketch/server.js
 
 Igra: http://localhost:5173
 
-U browseru upiši `start system`. `objective` pokazuje sledeći korak, `hint` daje postepenu pomoć, a `status` prikazuje tajmere i napredak.
+Otvori stranicu; sistem se pokreće automatski. `objective` pokazuje sledeći korak, `hint` daje postepenu pomoć, a `status` prikazuje tajmere i napredak.
 
 ## Tri faze
 
@@ -23,7 +23,7 @@ Cortex ima 20 signala, potrebno je najmanje 15 pogodaka. Nakon uspeha ne ponavlj
 Komunikaciona autorizacija pokreće petominutnu sedaciju. Glavna misija traje 15 minuta; pauzira se dok je orbitalni planer otvoren. ESC zatvara planer i nastavlja misiju.
 Opciono `ctf` otvara dvominutnu istragu, dostupnu posle Comms-a. Može da se radi i posle ROOT-a. Ne zaustavlja glavne tajmere. `status` prikazuje preostalo vreme; posle isteka `ctf` pokreće novi pokušaj.
 
-Objašnjenje završnih izbora dostupno je posle ROOT-a: `cat /command/navigation/decision_brief.txt`. Neural opcija zahteva čitanje odgovarajućeg Command zapisa.
+Lični zapis poslednje straže dostupan je posle ROOT-a: `cat /command/navigation/last_watch.txt`. Neural opcija zahteva čitanje odgovarajućeg Command zapisa.
 
 ## Administrator
 
@@ -42,7 +42,7 @@ Otvoren igrački tab u istom browser profilu prepoznaje novu partiju i osvežava
 
 Ako je šifra izgubljena: zaustavi server i lokalno premesti `.runtime/admin.json` na bezbedno mesto kao rezervu, pa ponovi setup. Restart poništava stare administratorske prijave.
 
-Ovaj panel ne zaključava operativni sistem i ne sprečava fizičko gašenje računara. Za uređaj na događaju i dalje treba namenski kiosk nalog i OS konfiguracija. Igrački `central shutdown` je završetak priče; zaustavljanje stvarnog servera je administratorska kontrola.
+Ovaj panel ne zaključava operativni sistem i ne sprečava fizičko gašenje računara. Za uređaj na događaju i dalje treba namenski kiosk nalog i OS konfiguracija. Igrački `central shutdown` odvaja HRTOK-ove linkove; navigacija ostaje dostupna. Zaustavljanje stvarnog servera je administratorska kontrola.
 
 ## Čuvanje, prekidi i sledeći igrač
 

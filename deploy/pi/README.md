@@ -32,3 +32,19 @@ Potrebno je potvrditi: model Pi-ja i OS, oba TV-a i njihove rezolucije, kameru/i
 Pri prijemu opreme: prvo video na oba izlaza, zatim kamera kao read-only preview, pa Arduino u simulaciji bez priključenih aktuatora; tek potom pojedinačno potvrđene izlazne komande. Za sada nema implementirane hardverske integracije.
 
 Osnova za labwc autostart i granice kiosk zaštite: https://www.raspberrypi.com/tutorials/how-to-use-a-raspberry-pi-in-kiosk-mode/
+
+## Osvežavanje verzije i nedostajući zapisi
+
+`git pull --ff-only` preuzima samo commitovane i poslate izmene, u repozitorijumu u kom je pokrenut. Posle ažuriranja restartovati Node server i osvežiti oba browser prozora sa Ctrl+F5; otvorena igra zadržava prethodnu listu arhive do osvežavanja.
+
+Provera iz foldera kloniranog repozitorijuma:
+
+```sh
+git pull --ff-only
+git log -1 --oneline
+ls terminal-sketch/content/home/operator/medical/
+```
+
+Ako je igra instalirana kao servis, proveriti `systemctl cat eye.service`: servis možda pokreće `/opt/eye/server.js`, dok je Git repozitorijum u drugom folderu. Pull u klonu ne ažurira automatski instalaciju u `/opt/eye`. Pratiti upgrade postupak iz odeljka Server i zatim `sudo systemctl restart eye.service`.
+
+Nove partije traju 20 minuta. Postojeća sačuvana partija zadržava svoj tajmer; za punih 20 minuta pokrenuti novu partiju preko administratorskog panela. Neural Link se automatski otvara posle prihvaćenog Medical koda; uspeh daje Access 1 i u listi označava aplikaciju kao završenu.

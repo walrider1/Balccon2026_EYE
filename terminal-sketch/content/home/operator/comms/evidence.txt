@@ -2,10 +2,10 @@ COMMUNICATIONS // RECORDER AND LOCK AUDIT
 
 The bridge announced that help was coming. The independent recorder disagrees.
 
-23:17 // PACKET 184 // DISTRESS PRIORITY
-TRANSMISSION: NOT SENT
-BLOCK TIME: 23:17
-LOCK OWNER: CENTRAL COMMAND
+The distress request never reached the antenna. The raw_uplink_ledger.txt records packet creation and request IDs; lock_audit.txt records controller decisions against those request IDs.
+
+VOID: PACKET 091 // RESCUE CONFIRMED AT 23:18 // bridge summary withdrawn; no antenna receipt.
+Recorder convention: red entries preserve withdrawn claims, not authenticated telemetry.
 
 No external distress transmission followed. The announcement was a promise without a signal behind it.
-The controller stores the packet ID and block time as its recovery evidence.
+Packet creation, controller block and public broadcast are separate events. Their clocks are not interchangeable.
