@@ -1241,7 +1241,7 @@ const cortexGame = {
   updateClock() {
     const remaining = Math.max(0, this.deadline - Date.now());
     const seconds = Math.ceil(remaining / 1000);
-    cortexClock.textContent = `00:${String(seconds).padStart(2, '0')}`;
+    cortexClock.textContent = `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;
     if (!remaining && this.active) this.finish(false, 'TIME EXPIRED');
   },
 
@@ -1264,8 +1264,14 @@ const cortexGame = {
     this.target = this.challenge.target;
     cortexPulse.textContent = this.target.toUpperCase();
     cortexPulse.className = `cortex-pulse lane-${this.target}`;
-    void cortexTrack.offsetWidth;
+    const duration=this.challenge.expiresAt-this.challenge.issuedAt;
+    const elapsed=Math.max(0,Date.now()-(this.challenge.issuedAt+gameState.clockOffset));
+    cortexPulse.style.setProperty('--cortex-duration',`${duration}ms`);
+    cortexPulse.style.setProperty('--cortex-delay',`${-Math.min(elapsed,duration)}ms`);
+    cortexPulse.style.setProperty('--cortex-distance',`${cortexTrack.clientWidth*.78}px`);
+    void cortexPulse.offsetWidth;
     cortexPulse.classList.add('pulse-active');
+    this.updateStatus(`PRESS ${this.target.toUpperCase()} // RESPONSE WINDOW ${(duration/1000).toFixed(2)}s`);
     sfx.play('cortexPulse', .12);
     this.signalTimer = window.setTimeout(() => this.resolve(''), Math.max(0, this.challenge.expiresAt + gameState.clockOffset - Date.now()));
   },
@@ -1285,6 +1291,8 @@ const cortexGame = {
     window.clearTimeout(this.signalTimer);
     this.target = null;
     cortexPulse.classList.remove('pulse-active');
+    cortexPulse.textContent='...';
+    this.updateStatus('CHECKING RESPONSE // Preparing next signal');
     try {
       const previousHits = this.hits;
       const reply = await gameState.action('cortex-answer', {token:this.challenge.token,key});
@@ -1887,7 +1895,7 @@ loadFilesystem();
 let statePollPending = false;
 let connectionLost = false;
 window.setInterval(async () => {
-  if ((!gameState.started && game.classList.contains('hidden')) || resetInProgress || statePollPending) return;
+  if ((!gameState.started && game.classList.contains('hidden')) || resetInProgress || statePollPending || cortexGame.active) return;
   statePollPending = true;
   try {
     await gameState.refresh();

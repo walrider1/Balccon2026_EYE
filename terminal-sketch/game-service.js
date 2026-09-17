@@ -28,12 +28,12 @@ function createGameService({ now = Date.now, storage = null } = {}) {
   const sessions = new Map();
   let completedRuns = [];
   let committed = '[]';
-  function restore(serialized) {
+  function restore(serialized, restartChallenges = false) {
     sessions.clear();
     const data = JSON.parse(serialized);
     completedRuns = Array.isArray(data) ? [] : data.completedRuns;
     if (!Array.isArray(completedRuns)) throw new Error('Invalid run history');
-    for (const [id, saved] of (Array.isArray(data) ? data : data.sessions)) sessions.set(id, { ...saved, game: Object.assign(new KosmosGame(), saved.game) });
+    for (const [id, saved] of (Array.isArray(data) ? data : data.sessions)) sessions.set(id, { ...saved, ...(restartChallenges ? {cortex:null,link:null} : {}), game: Object.assign(new KosmosGame(), saved.game) });
   }
   function persist() {
     if (!storage) return;
@@ -62,7 +62,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
   if (storage && fs.existsSync(storage)) {
     // Fail startup on damaged state instead of silently losing sessions or granting fresh attempts.
     committed = fs.readFileSync(storage, 'utf8');
-    restore(committed);
+    restore(committed, true);
   }
   function create(replacingId = null) {
     for (const [id, s] of sessions) if (now() - s.lastActivity > 24 * 60 * 60 * 1000) { archive(s, 'expired', s.lastActivity); sessions.delete(id); }
@@ -168,7 +168,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
   function cortexSignal(c, delay = 0) {
     c.token = crypto.randomBytes(12).toString('hex');
     c.target = ['a', 's', 'k', 'l'][crypto.randomInt(4)];
-    c.issuedAt = now() + delay; c.expiresAt = c.issuedAt + Math.max(650, 1700 - c.index * 50);
+    c.issuedAt = now() + delay; c.expiresAt = c.issuedAt + Math.max(850, 2100 - c.index * 65);
   }
   function publicChallenge(c) { return { token: c.token, target: c.target, index: c.index, hits: c.hits, misses: c.misses, deadline: c.deadline, issuedAt: c.issuedAt, expiresAt: c.expiresAt }; }
   function validatePlan(s, nodes) {
@@ -227,19 +227,26 @@ function createGameService({ now = Date.now, storage = null } = {}) {
       result={...g.authorize('medical','MR-07-0412'),complete:true};s.neural=null;event(s,'medical-auth');
     } else if (kind === 'comms-start') {
       if (!s.commsCredential || g.access < 1 || g.rootShares.comms) throw new GameError(403, 'AUTH COMMS REQUIRED BEFORE LINK CALIBRATION');
-      s.link = { token: crypto.randomBytes(12).toString('hex'), target: crypto.randomInt(25,76), stableSince: null };
+      s.link = { token: crypto.randomBytes(12).toString('hex'), target: crypto.randomInt(500,1501)/20, polarization:crypto.randomInt(0,720)/4, stableSince: null };
       result.challenge = {token:s.link.token};
     } else if (kind === 'comms-submit') {
       if (!s.link || input.token !== s.link.token || !s.commsCredential || g.rootShares.comms) throw new GameError(409, 'STALE LINK CHALLENGE');
       if (!Number.isFinite(input.frequency) || input.frequency<0 || input.frequency>100) throw new GameError(400,'INVALID FREQUENCY');
-      const quality=Math.max(0,100-Math.abs(input.frequency-s.link.target)*4);
+      if(!Number.isFinite(input.polarization)||input.polarization<0||input.polarization>=180)throw new GameError(400,'INVALID POLARIZATION');
+      if(!Number.isFinite(s.link.polarization))throw new GameError(409,'REOPEN LINK CALIBRATION');
+      const error=Math.abs(input.frequency-s.link.target);
+      const strength=Math.max(0,100-error*3);
+      const carrier=Math.max(0,100-error*50);
+      const angle=Math.abs(input.polarization-s.link.polarization);
+      const alignment=Math.max(0,100-Math.min(angle,180-angle)*3);
+      const quality=Math.min(carrier,alignment);
       if(s.link.lastSample && now()-s.link.lastSample>1500)s.link.stableSince=null;
       s.link.lastSample=now();
-      if(quality>=88) { if(s.link.stableSince===null)s.link.stableSince=now(); } else s.link.stableSince=null;
+      if(quality>=92) { if(s.link.stableSince===null)s.link.stableSince=now(); } else s.link.stableSince=null;
       const held=s.link.stableSince===null?0:now()-s.link.stableSince;
-      result={ok:true,quality,held,complete:false};
-      if(held>=6000){
-        result={...g.authorize('comms','F-184-2317'),complete:true,quality,held};
+      result={ok:true,quality,strength,carrier,alignment,held,complete:false};
+      if(held>=8000){
+        result={...g.authorize('comms','F-184-2317'),complete:true,quality,strength,carrier,alignment,held};
         s.link=null;g.sedationEndsAt=now()+300000;event(s,'comms-auth');event(s,'sedation-started');
       }
     } else if (kind === 'authorize') {
@@ -260,7 +267,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
     } else if (kind === 'cortex-start') {
       if (!g.canStartCortex()) throw new GameError(403, 'CORTEX REQUIRES ACTIVE SEDATION');
       if (s.cortex && now() < s.cortex.deadline) return { ok: true, challenge: publicChallenge(s.cortex), state: snapshot(id) };
-      s.cortex = { index: 0, hits: 0, misses: 0, deadline: now() + 40000 };
+      s.cortex = { index: 0, hits: 0, misses: 0, deadline: now() + 60000 };
       cortexSignal(s.cortex); result.challenge = publicChallenge(s.cortex); event(s, 'cortex-run');
     } else if (kind === 'cortex-answer') {
       const c = s.cortex;
@@ -274,7 +281,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
         result.success = c.hits >= 15 && now() <= c.deadline;
         if (result.success) { g.issueCortexCode(); event(s, 'cortex-pass'); }
         s.cortex = null;
-      } else { cortexSignal(c, 150); result.challenge = publicChallenge(c); }
+      } else { cortexSignal(c, 250); result.challenge = publicChallenge(c); }
     } else if (kind === 'cortex-cancel') {
       s.cortex = null;
     } else if (kind === 'planner-start') {
@@ -314,7 +321,11 @@ function createGameService({ now = Date.now, storage = null } = {}) {
       if (!CTF_FILES.every(file => s.readFiles.includes(file)) || input.flag !== CTF_FLAG) throw new GameError(403, 'FLAG REJECTED. Verify all three evidence fragments and their order.');
       s.ctf.completed = true; result.message = 'FLAG VERIFIED // CHAIN OF EVIDENCE RESTORED\nBonus archive unlocked: cd /home/operator/.bonus. Use ls, then display <file>.';
     } else throw new GameError(400, 'UNKNOWN ACTION');
-    s.revision++; persist(); return { ...result, state: snapshot(id) };
+    s.revision++;
+    // Per-signal telemetry is volatile. Persist authorization/results, not every
+    // radio sample or keypress: synchronous disk writes can stall all sessions.
+    if(!((kind==='cortex-answer'&&!result.done)||(kind==='comms-submit'&&!result.complete)))persist();
+    return { ...result, state: snapshot(id) };
   }
   function renderArchive(id,file,text) {
     if(!canRead(id,file))throw new GameError(403,'Archive access denied');

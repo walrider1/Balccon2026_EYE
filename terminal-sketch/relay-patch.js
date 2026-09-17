@@ -1,31 +1,22 @@
 window.openRelayPatch = async (game, print) => {
  if(document.querySelector('.relay-modal'))return;
  let result;try{result=await game.action('comms-start');}catch(e){print(e.message,'error');return;}
- const panel=document.createElement('section');panel.className='relay-modal';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','Signal calibration');
- const title=document.createElement('h2');title.textContent='UPLINK // ACQUIRE A STABLE SIGNAL';
- const instructions=document.createElement('p');instructions.textContent='Left/Right: tune. Shift+Left/Right: fine tune. Tab: select control. Esc: return. Mouse dragging is optional. Follow the signal strength. Keep it above 88% for six seconds to establish the link. Mission time continues.';
- const slider=document.createElement('input');slider.type='range';slider.min=0;slider.max=100;slider.step=0.25;slider.value=0;slider.setAttribute('aria-label','Carrier frequency');
- const bars=document.createElement('progress');bars.max=100;bars.value=0;
- const status=document.createElement('p');status.textContent='SEARCHING...';
- const close=document.createElement('button');close.textContent='CANCEL';
- const dial=document.createElement('div');dial.className='radio-dial';dial.tabIndex=0;dial.setAttribute('role','slider');dial.setAttribute('aria-label','Radio tuning dial');dial.setAttribute('aria-valuemin','0');dial.setAttribute('aria-valuemax','100');
- const readout=document.createElement('p');readout.className='radio-readout';
- const tune=v=>{slider.value=Math.max(0,Math.min(100,v));dial.style.setProperty('--angle',`${Number(slider.value)*2.7-135}deg`);dial.setAttribute('aria-valuenow',slider.value);readout.textContent=`${(88+Number(slider.value)*0.2).toFixed(2)} MHz`;};
- slider.oninput=()=>tune(Number(slider.value));slider.onkeydown=e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();tune(Number(slider.value)+(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?0.25:1));}};let drag=null;
- dial.onpointerdown=e=>{drag={y:e.clientY,value:Number(slider.value)};dial.setPointerCapture(e.pointerId);dial.focus();};
- dial.onpointermove=e=>{if(drag)tune(drag.value+(drag.y-e.clientY)*(e.shiftKey?0.025:0.25));};dial.onpointerup=dial.onpointercancel=()=>{drag=null;};
- dial.onkeydown=e=>{if(['ArrowLeft','ArrowDown','ArrowRight','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();tune(e.key==='Home'?0:e.key==='End'?100:Number(slider.value)+(['ArrowLeft','ArrowDown'].includes(e.key)?-1:1)*(e.shiftKey?0.25:1));}};tune(0);
- panel.append(title,instructions,dial,readout,slider,bars,status,close);document.body.append(panel);dial.focus();
- const tag=game.sessionTag;let stopped=false,busy=false;
- const dismiss=()=>{stopped=true;clearInterval(timer);panel.remove();document.querySelector('#command-input').focus();};close.onclick=dismiss;
- panel.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')dismiss();if(e.key==='Tab'){e.preventDefault();const controls=[dial,slider,close];const i=controls.indexOf(document.activeElement);controls[(i+(e.shiftKey?-1:1)+controls.length)%controls.length].focus();}});
- const timer=setInterval(async()=>{
-  if(game.ending||game.sessionTag!==tag){dismiss();return;}if(busy||stopped)return;busy=true;
-  try{const r=await game.action('comms-submit',{token:result.challenge.token,frequency:Number(slider.value)});
-   if(stopped)return;bars.value=r.quality;status.textContent=`SIGNAL ${r.quality}% // STABLE ${(r.held/1000).toFixed(1)} / 6.0s`;
-   if(r.complete){dismiss();print(r.message);startSedationDisplay();updateNextStep();window.missionDialog('LINK ESTABLISHED','Communications access restored. ACCESS LEVEL 2.',false);}
-  }catch(e){status.textContent=e.message;}finally{busy=false;}
- },500);
+ const panel=document.createElement('section');panel.className='relay-modal receiver-modal';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','Incoming signal receiver');
+ panel.innerHTML='<h2>COMMS // INCOMING SIGNAL</h2><p>1/2: select dial · Left/Right: tune · Shift: fine tune · Esc: return</p><div class="receiver-screen"><svg viewBox="0 0 720 160" preserveAspectRatio="none" aria-label="Incoming signal through interference" role="img"><path class="receiver-noise"/><path class="receiver-carrier"/></svg><strong class="receiver-phase">SCANNING // NO CARRIER</strong></div><div class="receiver-body"><div class="receiver-dials"></div><div class="receiver-meters"></div></div><p class="receiver-status" aria-live="polite">LOCAL RELAY / BUFFERED PACKET. Find the carrier, refine it, then align polarization. Hold both locks above 92% for eight seconds.</p>';
+ const values=[0,0],dials=[],outputs=[],names=['FREQUENCY','POLARIZATION'];let selected=0,last={strength:0,carrier:0,alignment:0,quality:0,held:0},frame=0;
+ const holder=panel.querySelector('.receiver-dials');
+ const tune=(i,v)=>{values[i]=i===0?Math.max(0,Math.min(100,v)):((v%180)+180)%180;values[i]=Math.round(values[i]*100)/100;dials[i].style.setProperty('--angle',`${i===0?values[i]*2.7-135:values[i]}deg`);dials[i].setAttribute('aria-valuenow',String(values[i]));outputs[i].textContent=i===0?`${(88+values[i]*0.2).toFixed(2)} MHz`:`${values[i].toFixed(2)} deg`;dials[i].setAttribute('aria-valuetext',outputs[i].textContent);};
+ names.forEach((name,i)=>{const group=document.createElement('div');const label=document.createElement('p');label.textContent=`${i+1} // ${name}`;const dial=document.createElement('div');dial.className='radio-dial';dial.tabIndex=0;dial.setAttribute('role','slider');dial.setAttribute('aria-label',name.toLowerCase());dial.setAttribute('aria-valuemin','0');dial.setAttribute('aria-valuemax',i===0?'100':'179.99');const output=document.createElement('output');output.className='radio-readout';group.append(label,dial,output);holder.append(group);dials.push(dial);outputs.push(output);dial.onfocus=()=>{selected=i;};let drag=null;dial.onpointerdown=e=>{selected=i;dial.focus();drag={y:e.clientY,value:values[i]};dial.setPointerCapture(e.pointerId);};dial.onpointermove=e=>{if(drag)tune(i,drag.value+(drag.y-e.clientY)*(e.shiftKey?(i===0?0.05:0.25):(i===0?0.5:2)));};dial.onpointerup=dial.onpointercancel=()=>{drag=null;};tune(i,0);});
+ const meters={};for(const [key,label] of [['strength','RF STRENGTH'],['carrier','FREQUENCY LOCK'],['alignment','POLARIZATION LOCK'],['held','PACKET DECODE']]){const box=document.createElement('label');box.textContent=label;const bar=document.createElement('progress');bar.max=key==='held'?8000:100;bar.value=0;const read=document.createElement('output');read.textContent='0%';box.append(bar,read);panel.querySelector('.receiver-meters').append(box);meters[key]={bar,read};}
+ const close=document.createElement('button');close.textContent='CANCEL / ESC';panel.append(close);document.body.append(panel);dials[0].focus();const tag=game.sessionTag;let stopped=false,busy=false;
+ const dismiss=()=>{stopped=true;clearInterval(timer);cancelAnimationFrame(frame);panel.remove();document.querySelector('#command-input')?.focus();};close.onclick=dismiss;
+ panel.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();dismiss();return;}if(['1','2'].includes(e.key)){e.preventDefault();selected=Number(e.key)-1;dials[selected].focus();return;}if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();const delta=(selected===0?(e.shiftKey?0.05:1):(e.shiftKey?0.25:5))*(['ArrowLeft','ArrowDown'].includes(e.key)?-1:1);tune(selected,values[selected]+delta);return;}if(e.key==='Tab'){e.preventDefault();const controls=[...dials,close];const i=controls.indexOf(document.activeElement);controls[(i+(e.shiftKey?-1:1)+controls.length)%controls.length].focus();}});
+ const noisePath=panel.querySelector('.receiver-noise'),carrierPath=panel.querySelector('.receiver-carrier');let lastDraw=0;
+ const animate=time=>{frame=requestAnimationFrame(animate);if(time-lastDraw<33||document.hidden)return;lastDraw=time;const noise=[],wave=[];for(let x=0;x<=720;x+=3){noise.push(`${x?'L':'M'}${x},${80+(Math.sin(x*1.7+time*.007)+Math.sin(x*.37-time*.011))*28*(1-last.quality/110)}`);wave.push(`${x?'L':'M'}${x},${80+Math.sin(x*.065-time*.002)*48*(last.strength/100)}`);}noisePath.setAttribute('d',noise.join(' '));carrierPath.setAttribute('d',wave.join(' '));};frame=requestAnimationFrame(animate);
+ const timer=setInterval(async()=>{if(game.ending||game.sessionTag!==tag){dismiss();return;}if(busy||stopped)return;busy=true;try{const r=await game.action('comms-submit',{token:result.challenge.token,frequency:values[0],polarization:values[1]});if(stopped)return;last=r;for(const key of Object.keys(meters)){meters[key].bar.value=r[key];meters[key].read.textContent=key==='held'?`${(r.held/1000).toFixed(1)} / 8.0s`:`${r[key].toFixed(1)}%`;}
+ panel.querySelector('.receiver-phase').textContent=r.strength<15?'SCANNING // NO CARRIER':r.carrier<92?'INCOMING CARRIER // FINE TUNE':r.alignment<92?'CARRIER FOUND // ALIGN POLARIZATION':'SIGNAL LOCKED // DECODING PACKET';
+ if(r.complete){dismiss();print(r.message);startSedationDisplay();updateNextStep();window.missionDialog('LINK ESTABLISHED','Incoming packet decoded. ACCESS LEVEL 2.',false);}
+ }catch(e){panel.querySelector('.receiver-status').textContent=e.message;}finally{busy=false;}},250);
 };
 
 window.openNeuralLink = async (print) => {

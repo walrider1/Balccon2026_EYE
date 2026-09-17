@@ -4,12 +4,22 @@ const {createPlannerPhysics}=require('../terminal-sketch/planner-physics');
 function fixture(storage) { let time=1000000; const service=createGameService({now:()=>time,storage}); const id=service.create(); const act=(action,data={})=>service.action(id,{action,...data}); act('start'); return {service,id,act,advance:n=>time+=n,now:()=>time}; }
 function credential(f,domain) { return f.service.renderArchive(f.id,domain==='medical'?'/home/operator/medical/doctor_note.txt':'/home/operator/comms/evidence.txt',domain==='medical'?'MR-07-0412':'F-184-2317'); }
 function medical(f) { const r=f.act('authorize',{domain:'medical',code:credential(f,'medical')});assert.equal(r.neuralRequired,true);assert.equal(r.state.access,0);const c=f.act('medical-start').challenge;assert.equal(f.act('medical-submit',{token:c.token,values:c.target}).state.access,1); }
+function findSignal(f,c) {
+ const sample=(frequency,polarization)=>f.act('comms-submit',{token:c.token,frequency,polarization});
+ let frequency=0,best=-1,polarization=0;
+ for(let n=0;n<=100;n++){const r=sample(n,0);if(r.strength>best){best=r.strength;frequency=n;}}
+ const coarse=frequency;best=-1;
+ for(let n=Math.max(0,coarse-1);n<=Math.min(100,coarse+1)+.001;n+=.05){const v=Math.round(n*100)/100,r=sample(v,0);if(r.carrier>best){best=r.carrier;frequency=v;}}
+ best=-1;for(let n=0;n<180;n+=5){const r=sample(frequency,n);if(r.alignment>best){best=r.alignment;polarization=n;}}
+ const coarseAngle=polarization;best=-1;for(let n=coarseAngle-5;n<=coarseAngle+5;n+=.25){const v=(n+180)%180,r=sample(frequency,v);if(r.alignment>best){best=r.alignment;polarization=v;}}
+ return {frequency,polarization};
+}
 function link(f) {
- const c=f.act('comms-start').challenge;let frequency=0;
- for(;frequency<=100;frequency++){if(f.act('comms-submit',{token:c.token,frequency}).quality===100)break;}
- let result;for(let i=0;i<13;i++){f.advance(500);result=f.act('comms-submit',{token:c.token,frequency});if(result.complete)break;}
+ const c=f.act('comms-start').challenge,settings=findSignal(f,c);let result;
+ for(let i=0;i<18;i++){f.advance(500);result=f.act('comms-submit',{token:c.token,...settings});if(result.complete)break;}
  return result;
 }
+
 function comms(f) {medical(f);f.act('authorize',{domain:'comms',code:credential(f,'comms')});link(f);}
 function cortex(f) {let r=f.act('cortex-start'); for(let i=0;i<20;i++) {f.advance(Math.max(0,r.challenge.issuedAt-f.now())); r=f.act('cortex-answer',{token:r.challenge.token,key:r.challenge.target});} assert.equal(r.success,true);return r.state.cortexCode;}
 function root(f) {comms(f);f.act('authorize',{domain:'cortex',code:cortex(f)});assert.equal(f.act('root').ok,true);}
@@ -157,4 +167,31 @@ test('timeout after disconnect is still failure rather than voluntary solar quar
  const f=fixture();root(f);shutDown(f);f.advance(900001);
  assert.equal(f.service.snapshot(f.id).endingKind,'mission');
  assert.equal(f.service.snapshot(f.id).aiOffline,true);
+});
+
+test('receiver needs precise frequency and polarization, and losing lock resets packet decoding',()=>{
+ const f=fixture();medical(f);f.act('authorize',{domain:'comms',code:credential(f,'comms')});const c=f.act('comms-start').challenge;
+ assert.deepEqual(Object.keys(c),['token']);assert.throws(()=>f.act('comms-submit',{token:c.token,frequency:50}),/POLARIZATION/);
+ const settings=findSignal(f,c);let r=f.act('comms-submit',{token:c.token,...settings});assert.ok(r.quality>99);
+ f.advance(500);r=f.act('comms-submit',{token:c.token,...settings});assert.ok(r.held>0);
+ r=f.act('comms-submit',{token:c.token,...settings,frequency:settings.frequency+.3});assert.ok(r.quality<92);assert.equal(r.held,0);assert.equal(r.complete,false);
+ r=f.act('comms-submit',{token:c.token,...settings,polarization:(settings.polarization+8)%180});assert.ok(r.quality<92);assert.equal(r.held,0);
+ assert.equal(f.service.snapshot(f.id).access,1);
+});
+
+test('Cortex response windows smoothly shrink and stay inside the trial budget',()=>{
+ const f=fixture();comms(f);let r=f.act('cortex-start'),previous=Infinity,total=0;
+ assert.equal(r.challenge.deadline-f.now(),60000);
+ for(let i=0;i<20;i++){
+ const c=r.challenge,duration=c.expiresAt-c.issuedAt;assert.ok(duration<previous);assert.ok(duration>=850);if(i===0)assert.equal(duration,2100);previous=duration;total+=duration+250;
+ f.advance(Math.max(0,c.expiresAt-f.now())-100);r=f.act('cortex-answer',{token:c.token,key:c.target});
+ }
+ assert.equal(r.success,true);assert.ok(total<60000);
+});
+test('transient Cortex telemetry avoids disk writes and restarts safely after server restart',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'eye-cortex-'));
+ try { const storage=path.join(dir,'state.json'),f=fixture(storage);comms(f);const c=f.act('cortex-start').challenge;
+ const saved=fs.readFileSync(storage,'utf8');f.act('cortex-answer',{token:c.token,key:c.target});assert.equal(fs.readFileSync(storage,'utf8'),saved);
+ const restored=createGameService({now:f.now,storage});const next=restored.action(f.id,{action:'cortex-start'}).challenge;assert.equal(next.index,0);assert.notEqual(next.token,c.token);assert.equal(restored.snapshot(f.id).cortexCode,null);
+ }finally{fs.rmSync(dir,{recursive:true});}
 });
