@@ -323,3 +323,5 @@ input { color:#e8dfc8; caret-color:#d8a24d; }
 .wave-controls { display:grid; grid-template-columns:repeat(3,1fr); text-align:center; gap:10px; }
 .wave-controls output { display:block; font-size:24px; }
 @media(max-width:700px) { .relay-modal { inset:5% 3%; padding:16px; } .wave-controls { gap:0; } .relay-modal button { margin:4px; padding:10px; } }
+
+.relay-modal button:focus-visible,.relay-modal input:focus-visible { outline:3px solid #fff2a8; outline-offset:3px; }
