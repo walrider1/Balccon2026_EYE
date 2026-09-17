@@ -4,6 +4,7 @@ const INTENTS = ['OBSERVE', 'WARN', 'DEFLECT', 'PROBE', 'CONFESS_PARTIAL', 'THRE
 const clamp = (n, min = 0, max = 100) => Math.min(max, Math.max(min, n));
 const normalize = text => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const FACTS = {
+  incident: 'The player read Incident 17: conflicting reports about a missing worker, frightened families behind sealed doors, denied local navigation authority, communications routed through the bridge, and the captain promising Earth return and assistance. The recording cuts out. It proves neither a confirmed copy nor bridge deaths nor whether rescue was actually requested; those require later evidence.',
   mission: 'Safe background, available immediately: alternate-future Yugoslavia remains a participant in international space science. This is a large civilian scientific and colonization mission to Mars, with research crews and hibernating passengers from many communities. Sloki is Samuel Kovac, a Slovak from Vojvodina, a gifted botanist specializing in extreme ecosystems and extraterrestrial biology. His public personality is relaxed, humorous and conciliatory. Explain this naturally when asked; do not reveal addiction, replication or the crisis from this background.',
   personal: 'The player read an intimate unsent letter from a woman who loved Samuel. She saw him conceal substance use before Mars, then repeat it openly afterward. She helped trust the calm claimant instead of the panicked one and regrets it. These observations raised suspicion, not a reliable identity test. Do not invent her name or fate.',
   origin: 'The player has read the ROOT-level origin review: the original Sloki was eliminated during the first identification dispute; the calm survivor was the first successful copy and later entered the regeneration chamber. Acknowledge this difficult discovery without declaring his future choices predetermined. The passengers remain unclassified.',
@@ -26,6 +27,7 @@ const FACTS = {
   interlock: 'Recovery requires independent trust domains. HRTOK cannot cancel the patient-safety controller or erase valid recovery shares.'
 };
 const FILE_FACTS = {
+  '/home/operator/archives/incident_17.txt': 'incident',
   '/home/operator/medical/observations.txt': 'identityLimits',
   '/home/operator/botany/private_letter.txt': 'personal',
   '/home/operator/command/navigation/origin_review.txt': 'origin',
@@ -126,7 +128,7 @@ function prepareTurn(character, payload) {
   if (kind === 'event') character.events.push(eventKey);
   for (const file of state.readFiles) {
     const fact = FILE_FACTS[file];
-    if (state.access >= (['identityLimits', 'patient', 'course', 'biography'].includes(fact) ? 0 : ['comms','crewUnrest'].includes(fact) ? 1 : fact === 'origin' ? 3 : 2) && !character.facts.includes(fact)) character.facts.push(fact);
+    if (state.access >= (['incident', 'identityLimits', 'patient', 'course', 'biography'].includes(fact) ? 0 : ['comms','crewUnrest'].includes(fact) ? 1 : fact === 'origin' ? 3 : 2) && !character.facts.includes(fact)) character.facts.push(fact);
   }
   if (state.readFiles.includes('/home/operator/wake_protocol.txt') && !character.facts.includes('patient')) character.facts.push('patient');
   if (state.access >= 2 && !character.facts.includes('comms')) character.facts.push('comms');

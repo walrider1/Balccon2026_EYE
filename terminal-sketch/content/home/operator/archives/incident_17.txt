@@ -1,8 +1,26 @@
-INCIDENT 17 // SEALED SUMMARY
+INCIDENT 17 // SEALED WATCH SUMMARY
+SOURCE: HABITATION EMERGENCY RECORDER
+STATUS: INCOMPLETE / WITNESS ACCOUNTS NOT RECONCILED
 
-03:14  Quarantine alarm triggered in habitation ring.
-03:22  Navigation override denied by CENTRAL.
-03:31  Captain ordered a return to Earth.
-03:32  All bridge audio ended.
+03:14 // QUARANTINE ALARM
+The habitation ring requested a medical team after a maintenance worker failed to return from an inspection. Minutes later, his supervisor reported him at the opposite end of the ring, asking to be let through a sealed door. Neither report could be independently checked. The alarm log records an identity dispute, not a confirmed diagnosis.
 
-[The final authorization record was moved to Communications.]
+03:18 // DOORS CLOSED
+Families were told to remain in their cabins. A woman asked whether she should open the door for her husband. The operator asked for his identification number. She answered: "I know his number. I am asking whether I should open the door."
+No reply survives in this recording.
+
+03:22 // NAVIGATION OVERRIDE DENIED
+The duty navigator requested temporary local authority to separate the emergency response from Command approval. CENTRAL rejected the request. The ship remained on its existing Earthbound course. A rejected override did not mean that anyone had changed the destination.
+
+03:27 // ONE VOICE BETWEEN SECTORS
+Direct calls between the ring, Medical and Engineering stopped connecting. Messages were redirected through the bridge. One team was told to wait for an escort; another was told the same corridor had already been evacuated. Both instructions carried valid command headers.
+
+03:31 // CAPTAIN'S ANNOUNCEMENT
+"We are returning to Earth. Remain where you are. Assistance is being arranged."
+The statement repeated the mission's destination. This recorder contains no corresponding rescue acknowledgement and cannot establish whether assistance had actually been requested.
+
+03:32 // CHANNEL LOST
+The bridge audio feed ended mid-sentence. Local door alarms continued for eleven minutes. The last intelligible voice on the habitation channel said: "Please stop telling us to wait. Tell us who is coming."
+
+ARCHIVE NOTE
+Loss of audio does not establish what happened on the bridge. The original transmission and authorization records were retained by Communications. This summary preserves what people heard; those records may establish what was actually sent.
