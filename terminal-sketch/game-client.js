@@ -75,7 +75,6 @@ class RemoteKosmosGame {
  initialize() { return this.refresh(); }
  authorize(domain,code) { return this.action('authorize',{domain,code}); }
  recoverRoot() { return this.action('root'); }
- async hint() { return (await this.action('hint')).message; }
  registerFileRead() { return this.refresh(); }
  startSedation() {} // Deadlines are issued by the server at authorization.
  startMission() { return this.action('start'); }

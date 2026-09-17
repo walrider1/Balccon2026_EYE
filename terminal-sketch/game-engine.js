@@ -203,21 +203,6 @@ class KosmosGame {
     return { ok: true, message: 'ROOT RECOVERY COMPLETE\nMEDICAL SEDATION: ABORTED\nNAVIGATION AUTHORITY: GRANTED\n\nNAVIGATION ARCHIVE MOUNTED: /home/operator/command/navigation\nReview the recovered flight records before you act.' };
   }
 
-  hint() {
-    if (!this.rootShares.medical) {
-      return 'HINT // Medical records contain a chamber number and a specific kind of date. The recovery service defines their order.';
-    }
-    if (!this.rootShares.comms) {
-      return 'HINT // The emergency link is blocked. Communications has a relay maintenance application that can restore it.';
-    }
-    if (!this.rootShares.cortex) {
-      return 'HINT // CENTRAL has begun sedation. The independent medical controller can test whether you are consciously responding.';
-    }
-    if (!this.rootRecovered) return 'HINT // All three ROOT shares are valid. Use: root recover';
-    if (!this.missionResolved) return 'HINT // ROOT has mounted a Navigation archive in Command. Legacy crews used its installed planner for emergency burns.';
-    return 'HINT // Earth intercept confirmed. The return vector is committed.';
-  }
-
   registerFileRead(path) {
     if (path === '/home/operator/command/neural_transfer.txt') this.neuralTransferDiscovered = true;
   }

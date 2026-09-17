@@ -11,6 +11,6 @@ You are the one who can recover the authority to do it. Give whoever is still ab
 2. COMMS: check the blocked transmission and recover the second authorization.
 3. CONTROL: if sedation starts, pass Cortex, recover ROOT, then use the navigation planner.
 
-Type help for commands at your current level, or hint if you get stuck.
+Type help for commands at your current level. The records contain what you need.
 I left the codes and instructions where you will need them.
 You always knew which way home was. I believe you will do the right thing.

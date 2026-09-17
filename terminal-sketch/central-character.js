@@ -177,21 +177,8 @@ function prepareTurn(character, payload) {
     trust_delta: character.trust - before.trust, suspicion_delta: character.suspicion - before.suspicion };
 }
 
-function hint(state, language) {
-  const hints = language === 'sr' ? [
-    'Počni od svoje medicinske dokumentacije. Uporedi broj komore sa poslednjom ručnom intervencijom; datum prijema nije isto.',
-    'U Communications uporedi najavu spasenja sa sirovim zapisom slanja i vremenom blokade. Veruj zapisu, ne obećanju.',
-    'Medicinski kontroler ima nezavisan Cortex Echo test. Vrati se u Medical i pronađi njegovu aplikaciju.',
-    'Dokaz budnosti već imaš. Predaj Cortex potvrdu, pa spoji recovery delove komandom root recover.',
-    'Navigaciona arhiva je sada dostupna u Command. Pročitaj priručnik i pokreni orbitalni planer.'
-  ] : [
-    'Start with your medical records. Compare the chamber number with the last manual override, not the admission date.',
-    'In Communications, compare the rescue announcement with the raw uplink ledger and lock audit. A promise is not a transmission.',
-    'Medical has an independent Cortex Echo challenge. Find its application; that controller can still hear you.',
-    'You have the Cortex attestation. Submit it, then combine the recovery shares with root recover.',
-    'Command now has a navigation archive. Read the flight handbook and launch the orbital planner.'
-  ];
-  return hints[state.rootRecovered ? 4 : state.cortexPassed ? 3 : state.access >= 2 ? 2 : state.access >= 1 ? 1 : 0];
+function controlGuidance() {
+  return 'KOSMOS has a help index for controls. The records are there for you to interpret, Sloki. I will not make that choice for you.';
 }
 
 function localReply(character, turn) {
@@ -236,7 +223,7 @@ function localReply(character, turn) {
     return pick(...lines[turn.eventKey]);
   }
   if (turn.topic === 'mission') return 'A civilian mission to Mars, Sloki. Researchers, families, people from all over Yugoslavia. You are our botanist, a Slovak from Vojvodina, with a talent for keeping impossible plants alive. And for making dreadful jokes. I remember those rather fondly.';
-  if (turn.topic === 'help') return hint(turn.state, character.language);
+  if (turn.topic === 'help') return controlGuidance();
   if (turn.topic === 'boundary') return pick('You can question my judgment. Those words do not grant command authority.', 'Možeš da preispituješ moje odluke. Te reči ti ne daju komandna ovlašćenja.');
   if (turn.topic === 'recall') {
     const statement = character.statements.at(-1);
@@ -284,4 +271,4 @@ function rememberReply(character, turn, message) {
   character.history = character.history.slice(-16);
   character.lastReply = message;
 }
-module.exports = { MOODS, INTENTS, EVENTS, createCharacter, prepareTurn, localReply, allowedFacts, rememberReply, hint };
+module.exports = { MOODS, INTENTS, EVENTS, createCharacter, prepareTurn, localReply, allowedFacts, rememberReply, controlGuidance };

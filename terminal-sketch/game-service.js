@@ -198,7 +198,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
     }
     if (kind === 'ending' && g.ending && input.kind === s.endingKind) return { ok: true, state: snapshot(id) };
     ensureActive(s); s.lastActivity = now();
-    if (g.missionResolved && !['ending', 'hint', 'planner-commit'].includes(kind)) throw new GameError(409, 'EARTH TRANSFER ALREADY COMMITTED. Await the final report.');
+    if (g.missionResolved && !['ending', 'planner-commit'].includes(kind)) throw new GameError(409, 'EARTH TRANSFER ALREADY COMMITTED. Await the final report.');
     let result = { ok: true };
     if(kind==='medical-start') {
       if(!s.medicalCredential||g.rootShares.medical)throw new GameError(403,'AUTHORIZE MEDICAL BEFORE NEURAL LINK');
@@ -285,18 +285,6 @@ function createGameService({ now = Date.now, storage = null } = {}) {
       if (input.kind === 'earth' && !g.missionResolved) throw new GameError(403, 'EARTH TRANSFER NOT VERIFIED');
       if (input.kind === 'transfer' && !g.neuralTransferDiscovered) throw new GameError(403, 'NEURAL CHANNEL NOT DISCOVERED');
       finish(s, input.kind);
-    } else if (kind === 'hint') {
-      if (g.cortexCodeIssued && !g.rootShares.cortex || g.missionResolved) return { ok: true, message: `HINT // ${objective(g).text}`, state: snapshot(id) };
-      const stage = !g.rootShares.medical ? 'medical' : !g.rootShares.comms ? 'comms' : !g.rootShares.cortex ? 'cortex' : !g.rootRecovered ? 'root' : 'navigation';
-      const level = Math.min(3, (s.hintCounts[stage] || 0) + 1); s.hintCounts[stage] = level;
-      const details = {
-        medical: ['Read /medical/doctor_note.txt and /medical/recovery_service.txt.', `Use CHAMBER ${s.credentials.chamber} and LAST MANUAL OVERRIDE ${s.credentials.month}/${s.credentials.day} from doctor_note.txt. Authorize medical, then complete Neural Link.`],
-        comms: ['Read the packet ID and block time in /comms/evidence.txt.', 'Authorize comms with those values, then tune the radio carrier above 88% for six seconds.'],
-        cortex: ['Run /medical/cortex_echo.app while sedation is active.', 'Press the displayed A/S/K/L key once per signal. At least 15 of 20 must match; retries are allowed.'],
-        root: ['All three shares have been accepted. Enter: root recover.', 'ROOT recovery stops sedation and opens the navigation archive. Enter: root recover.'],
-        navigation: ['Read /command/navigation/legacy_flight_manual.txt and run its planner.', 'Place an early burn, adjust its vector and strength toward the blue ring, then use a second correction if needed. Hold Enter once capture is confirmed.']
-      };
-      result.message = level === 1 ? g.hint() : `HINT ${level}/3 // ${details[stage][level - 2]}`;
     } else if (kind === 'ctf-start') {
       if (g.access < 2) throw new GameError(403, 'ACCESS LEVEL 2 REQUIRED');
       if (!s.ctf || (!s.ctf.completed && now() >= s.ctf.endsAt)) s.ctf = { endsAt: now() + 120000, completed: false };

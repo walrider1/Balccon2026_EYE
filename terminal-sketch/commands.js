@@ -15,7 +15,7 @@ function createCommands() {
         const phase = !game.rootShares.medical
           ? {goal: 'ACCESS 0 -> 1 // Read the medical records and restore medical access.', commands: ['ls','cd','cat','auth','run']}
           : !game.rootShares.comms
-          ? {goal: 'ACCESS 1 -> 2 // Repair the blocked relay to restore communications access.', commands: ['ls','cd','cat','auth']}
+          ? {goal: 'ACCESS 1 -> 2 // Authorize the communications controller and stabilize its radio signal.', commands: ['ls','cd','cat','auth','run']}
           : !game.rootShares.cortex
           ? {goal: 'ACCESS 2 -> 3 // Complete the response challenge and verify its result to stop sedation.', commands: ['run','auth']}
           : !game.rootRecovered
@@ -23,7 +23,7 @@ function createCommands() {
           : {goal: 'ACCESS 3 // Review navigation and plan the return to Earth.', commands: ['cat','run']};
         print('RELEVANT NOW // ' + phase.goal, 'progression-help');
         print('ALL COMMANDS');
-        const relevant = new Set(['hint', ...phase.commands]);
+        const relevant = new Set(phase.commands);
         for (const command of new Set(registry.commands.values())) {
           if (command.showInHelp === false) continue;
           print(`  ${command.usage.padEnd(28)} ${command.description}`, relevant.has(command.name) ? 'help-relevant' : 'system', command.usage);
@@ -54,12 +54,6 @@ function createCommands() {
       usage: 'sectors',
       description: 'list ship network sectors',
       run: ({ game, print }) => print(game.availableSectors())
-    },
-    {
-      name: 'hint',
-      usage: 'hint',
-      description: 'request a current objective hint',
-      run: async ({ game, print }) => print(await game.hint(), 'anomaly-line')
     },
     {
       name: 'ls',

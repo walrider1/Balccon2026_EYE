@@ -418,7 +418,7 @@ function updateNextStep() {
   const remaining = gameState.missionPaused ? gameState.missionRemaining : (gameState.missionEndsAt || Date.now()) - Date.now();
   const urgent = remaining < 180000 || (gameState.sedationEndsAt && !gameState.rootRecovered && gameState.sedationEndsAt - Date.now() < 90000);
   guide.classList.toggle('urgent-hint', Boolean(urgent));
-  guide.textContent = !(gameState.readFiles || []).includes('/home/operator/readme.txt') && !urgent ? 'START HERE: cat readme.txt // Your goal and three short steps' : urgent ? 'TIME CRITICAL // ' + gameState.objectiveText() + ' // Type hint for help.' : 'ls: list  |  cd <folder>: enter  |  cat <file>: read  |  help: all commands';
+  guide.textContent = !(gameState.readFiles || []).includes('/home/operator/readme.txt') && !urgent ? 'START HERE: cat readme.txt // Your goal and three short steps' : urgent ? 'TIME CRITICAL // ' + gameState.objectiveText() + ' // Type help for controls.' : 'ls: list  |  cd <folder>: enter  |  cat <file>: read  |  help: all commands';
   const discovered = document.querySelector('#discovered-status');
   if (discovered) discovered.textContent = `NAME: ${gameState.identityKnown() ? 'SAMUEL "SLOKI" KOVAC' : 'UNKNOWN'}  //  ROLE: ${gameState.identityKnown() ? 'BOTANIST / PATIENT' : 'UNKNOWN'}`;
   guide.title = 'Enter: submit. Ctrl+Right: HRTOK. Ctrl+Left: KOSMOS.';

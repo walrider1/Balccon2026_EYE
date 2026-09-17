@@ -44,12 +44,12 @@ test('known evidence is gated and duplicate request is idempotent', async () => 
   assert.deepEqual(await api.reply(payload(1)), await api.reply(payload(1)));
 });
 
-test('help remains stage appropriate and never gives literal recovery codes', async () => {
+test('help refers to controls at every stage without puzzle hints', async () => {
   const api = createCentralService({ env: {} });
-  for (const [access, expected] of [[0, 'medical'], [1, 'Communications'], [2, 'Cortex'], [3, 'navigation']]) {
+  for (const [access, expected] of [[0, 'help index'], [1, 'help index'], [2, 'help index'], [3, 'help index']]) {
     const reply = await api.reply(payload(access + 1, { text: 'help', state: { access, rootRecovered: access === 3 } }));
     assert.match(reply.message, new RegExp(expected, 'i'));
-    assert.doesNotMatch(reply.message, /MR-07-0412|F-184-2317|CORTEX-9D3/);
+    assert.doesNotMatch(reply.message, /MR-\d{2}-\d{4}|F-\d{3}-\d{4}|CORTEX-|chamber|override|root recover/i);
   }
 });
 
@@ -66,7 +66,7 @@ test('Serbian input receives English replies and preserves relationship', async 
   const reply = await api.reply(payload(1, { text: 'Hvala, razumem.' }));
   assert.match(reply.message, /We agree on that much/); assert.ok(reply.trust_delta > 0);
   const help = await api.reply(payload(2, { text: 'Šta dalje?' }));
-  assert.match(help.message, /medical/i);
+  assert.match(help.message, /help index/i);
 });
 
 test('provider uses schema, trusted instructions, bounded memory and no full secret lore', async () => {

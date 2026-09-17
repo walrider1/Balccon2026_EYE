@@ -6,14 +6,15 @@ test('help highlights phase-specific usages in the full list without solved comm
  const ctx=vm.createContext({window:{}});
  vm.runInContext(fs.readFileSync('terminal-sketch/commands.js','utf8'),ctx);
  const commands=vm.runInContext('createCommands()',ctx);
+ assert.equal(commands.some(c=>c.name==='hint'),false);
  const registry={commands:new Map(commands.map(c=>[c.name,c]))};
  const help=commands.find(c=>c.name==='help');
  for(const [medical,comms,cortex,root,expected] of [
-  [false,false,false,false,['hint','ls','cd','cat','auth','run']],
-  [true,false,false,false,['hint','ls','cd','cat','auth']],
-  [true,true,false,false,['hint','run','auth']],
-  [true,true,true,false,['hint','root']],
-  [true,true,true,true,['hint','cat','run']]
+  [false,false,false,false,['ls','cd','cat','auth','run']],
+  [true,false,false,false,['ls','cd','cat','auth','run']],
+  [true,true,false,false,['run','auth']],
+  [true,true,true,false,['root']],
+  [true,true,true,true,['cat','run']]
  ]){
   const rows=[];
   help.run({registry,game:{rootShares:{medical,comms,cortex},rootRecovered:root},print:(...args)=>rows.push(args)});
