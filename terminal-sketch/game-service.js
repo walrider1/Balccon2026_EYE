@@ -120,7 +120,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
   function objective(g) {
     if (g.ending) return { phase: 3, text: 'SESSION COMPLETE' };
     if (!g.rootShares.medical) return { phase: 1, text: 'Recover medical access. Read /medical/doctor_note.txt and /medical/recovery_service.txt.' };
-    if (!g.rootShares.comms) return { phase: 2, text: 'Restore the blocked link using the relay application in /comms.' };
+    if (!g.rootShares.comms) return { phase: 2, text: 'Read the Communications evidence, authorize its controller, then stabilize the carrier.' };
     if (!g.cortexCodeIssued) return { phase: 3, text: 'Stop sedation. Locate the independent response test in Medical.' };
     if (!g.rootShares.cortex) return { phase: 3, text: `Submit your verified response: auth cortex ${g.cortexCode}` };
     if (!g.rootRecovered) return { phase: 3, text: 'All three recovery shares are ready. Enter: root recover' };
@@ -156,7 +156,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
   function cortexSignal(c, delay = 0) {
     c.token = crypto.randomBytes(12).toString('hex');
     c.target = ['a', 's', 'k', 'l'][crypto.randomInt(4)];
-    c.issuedAt = now() + delay; c.expiresAt = c.issuedAt + 1550;
+    c.issuedAt = now() + delay; c.expiresAt = c.issuedAt + Math.max(650, 1700 - c.index * 50);
   }
   function publicChallenge(c) { return { token: c.token, target: c.target, index: c.index, hits: c.hits, misses: c.misses, deadline: c.deadline, issuedAt: c.issuedAt, expiresAt: c.expiresAt }; }
   function validatePlan(s, nodes) {
@@ -190,23 +190,32 @@ function createGameService({ now = Date.now, storage = null } = {}) {
     if (g.missionResolved && !['ending', 'hint', 'planner-commit'].includes(kind)) throw new GameError(409, 'EARTH TRANSFER ALREADY COMMITTED. Await the final report.');
     let result = { ok: true };
     if (kind === 'comms-start') {
-      if (g.access < 1 || g.rootShares.comms) throw new GameError(403, 'MEDICAL ACCESS REQUIRED; COMMUNICATIONS MUST STILL BE LOCKED');
-      s.link = { token: crypto.randomBytes(12).toString('hex'), targets: Array.from({length:3},()=>crypto.randomInt(4)) };
-      result.challenge = s.link;
+      if (!s.commsCredential || g.access < 1 || g.rootShares.comms) throw new GameError(403, 'AUTH COMMS REQUIRED BEFORE LINK CALIBRATION');
+      s.link = { token: crypto.randomBytes(12).toString('hex'), target: crypto.randomInt(25,76), stableSince: null };
+      result.challenge = {token:s.link.token};
     } else if (kind === 'comms-submit') {
-      if (!s.link || input.token !== s.link.token || g.access < 1 || g.rootShares.comms) throw new GameError(409, 'STALE LINK CHALLENGE');
-      if (!Array.isArray(input.routes) || input.routes.length !== 3 || input.routes.some((v,i)=>v!==s.link.targets[i])) throw new GameError(400, 'SIGNAL BLOCKED. Match every relay to its destination.');
-      result = g.authorize('comms', 'F-184-2317');
-      s.link = null; g.sedationEndsAt = now() + 5*60*1000;
-      event(s,'comms-auth');event(s,'sedation-started');
+      if (!s.link || input.token !== s.link.token || !s.commsCredential || g.rootShares.comms) throw new GameError(409, 'STALE LINK CHALLENGE');
+      if (!Number.isFinite(input.frequency) || input.frequency<0 || input.frequency>100) throw new GameError(400,'INVALID FREQUENCY');
+      const quality=Math.max(0,100-Math.abs(input.frequency-s.link.target)*4);
+      if(s.link.lastSample && now()-s.link.lastSample>1500)s.link.stableSince=null;
+      s.link.lastSample=now();
+      if(quality>=88) { if(s.link.stableSince===null)s.link.stableSince=now(); } else s.link.stableSince=null;
+      const held=s.link.stableSince===null?0:now()-s.link.stableSince;
+      result={ok:true,quality,held,complete:false};
+      if(held>=6000){
+        result={...g.authorize('comms','F-184-2317'),complete:true,quality,held};
+        s.link=null;g.sedationEndsAt=now()+300000;event(s,'comms-auth');event(s,'sedation-started');
+      }
     } else if (kind === 'authorize') {
       if (typeof input.domain !== 'string' || typeof input.code !== 'string' || input.code.length > 80) throw new GameError(400, 'INVALID AUTHORIZATION');
       s.attempts = s.attempts.filter(time => now() - time < 10000);
       if (s.attempts.length >= 8) throw new GameError(429, 'AUTHORIZATION RATE LIMITED. Wait a few seconds.');
       s.attempts.push(now());
-      result = g.authorize(input.domain, input.code);
+      if(input.domain.toLowerCase()==='comms' && g.access>=1 && !g.rootShares.comms && input.code.toUpperCase()==='F-184-2317') {
+        s.commsCredential=true;result={ok:true,linkRequired:true,message:'CREDENTIAL ACCEPTED // Establish a stable carrier to release Communications access.'};
+      } else result = g.authorize(input.domain, input.code);
       if (result.ok && input.domain.toLowerCase() === 'medical') event(s, 'medical-auth');
-      if (result.ok && input.domain.toLowerCase() === 'comms') { g.sedationEndsAt = now() + 5 * 60 * 1000; event(s, 'comms-auth'); event(s, 'sedation-started'); }
+      if (result.ok && !result.linkRequired && input.domain.toLowerCase() === 'comms') { g.sedationEndsAt = now() + 5 * 60 * 1000; event(s, 'comms-auth'); event(s, 'sedation-started'); }
     } else if (kind === 'root') {
       result = g.recoverRoot(); if (result.ok) event(s, 'root-recover');
     } else if (kind === 'cortex-start') {

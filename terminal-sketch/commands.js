@@ -15,7 +15,7 @@ function createCommands() {
         const phase = !game.rootShares.medical
           ? {goal: 'ACCESS 0 -> 1 // Read the medical records and restore medical access.', commands: ['ls','cd','cat','auth']}
           : !game.rootShares.comms
-          ? {goal: 'ACCESS 1 -> 2 // Repair the blocked relay to restore communications access.', commands: ['ls','cd','cat','run']}
+          ? {goal: 'ACCESS 1 -> 2 // Repair the blocked relay to restore communications access.', commands: ['ls','cd','cat','auth']}
           : !game.rootShares.cortex
           ? {goal: 'ACCESS 2 -> 3 // Complete the response challenge and verify its result to stop sedation.', commands: ['run','auth']}
           : !game.rootRecovered
@@ -77,7 +77,7 @@ function createCommands() {
           print(`ls: '${path}': access level ${game.requiredAccess(path)} required`, 'error');
           return;
         }
-        const entries = (fs.list(path) || []).filter(({name}) => (showHidden || !name.startsWith('.')) && (name === '.bonus' || game.canAccessPath(`${path}/${name}`)));
+        const entries = (fs.list(path) || []).filter(({name}) => (showHidden || (!name.startsWith('.') && name !== 'forensic_fragment.txt')) && (name === '.bonus' || game.canAccessPath(`${path}/${name}`)));
         print(entries.length ? entries.map(({ name, type }) => type === 'dir' ? `${name}/` : name).join('    ') : '[empty]');
       }
     },
@@ -163,6 +163,7 @@ function createCommands() {
         }
         const result = await game.authorize(args[0] || '', args.slice(1).join(' '));
         print(result.message, result.ok ? 'system' : 'error');
+        if (result.linkRequired) { await window.openRelayPatch(game, print); return; }
         if (result.ok && args[0]?.toLowerCase() === 'comms') {
           game.startSedation(() => window.endKosmosGame('sedation'));
           startSedationDisplay();
@@ -189,6 +190,7 @@ function createCommands() {
           print(`run: ${arg}: not an executable app`, 'error');
           return;
         }
+        if (path === '/home/operator/medical/neural_link.app') return window.openNeuralLink(print);
         if (path === '/home/operator/comms/relay_patch.app') return window.openRelayPatch(game, print);
         if (path === '/home/operator/medical/cortex_echo.app') {
           return startCortexEcho();

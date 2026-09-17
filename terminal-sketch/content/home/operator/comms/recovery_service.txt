@@ -1,5 +1,8 @@
-COMMUNICATIONS // BLOCKED RELAY
+COMMUNICATIONS // RESTORE THE UPLINK
 
-Central disabled the emergency link. The relay_patch.app maintenance tool can reconnect it without a command credential.
-Match each relay to its marked destination. All three connections must agree before the controller will release Communications access.
-The flight countdown continues during maintenance.
+The controller needs the unsent packet number and its block time from evidence.txt.
+Credential: F-<packet>-<HHMM>. Remove the colon from the time.
+Use the comms authorization domain. Command reference: auth help.
+
+Once accepted, the carrier tuner opens automatically. Adjust its frequency until the signal is at least 88%, then keep it stable for six seconds. Only a stable link releases Access 2.
+If you leave the tuner, relay_patch.app can reopen it after authorization.

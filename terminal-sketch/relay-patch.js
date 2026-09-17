@@ -1,49 +1,35 @@
 window.openRelayPatch = async (game, print) => {
-  if (document.querySelector('.relay-modal')) return;
-  let response;
-  try { response = await game.action('comms-start'); } catch(e) { print(e.message,'error'); return; }
-  const challenge = response.challenge;
-  const routes = challenge.targets.map(v => (v+1)%4);
-  const symbols = ['A','B','C','D'];
-  const panel = document.createElement('section');
-  panel.className = 'relay-modal'; panel.setAttribute('role','dialog'); panel.setAttribute('aria-modal','true');
-  panel.setAttribute('aria-label','Communications relay patch');
-  const title = document.createElement('h2'); title.textContent='RELAY PATCH // RESTORE THE BLOCKED LINK';
-  const instructions = document.createElement('p'); instructions.textContent='Change each relay to match its destination, then verify the link. Tab moves between controls; Enter or Space operates them. Mission time continues.';
-  panel.append(title,instructions);
-  const buttons=[];
-  for(let i=0;i<3;i++) {
-    const button=document.createElement('button');
-    const render=()=>button.textContent=`RELAY ${i+1}: ${symbols[routes[i]]} -> DESTINATION ${symbols[challenge.targets[i]]}`;
-    button.onclick=()=>{routes[i]=(routes[i]+1)%4;render();};render();panel.append(button);buttons.push(button);
-  }
-  const status=document.createElement('p');status.setAttribute('role','status');
-  const verify=document.createElement('button');verify.textContent='VERIFY LINK';
-  const close=document.createElement('button');close.textContent='RETURN TO TERMINAL';
-  const previous=document.activeElement;
-  let busy=false;
-  const dismiss=()=>{clearInterval(watch);panel.remove();previous?.focus();};
-  close.onclick=dismiss;
-  verify.onclick=async()=>{
-    if(busy)return;busy=true;verify.disabled=true;
-    try {
-      const result=await game.action('comms-submit',{token:challenge.token,routes});
-      dismiss();print(result.message);startSedationDisplay();updateNextStep();
-      print('RED ALERT // A sleep order has started. Search Medical for the independent patient-safety response test.','progression-help');
-    } catch(e) {status.textContent=e.message;}
-    finally {busy=false;verify.disabled=false;}
-  };
-  panel.append(status,verify,close);
-  panel.addEventListener('keydown',event=>{
-    event.stopPropagation();
-    if(event.key==='Escape'){event.preventDefault();dismiss();}
-    if(event.key==='Tab'){
-      const controls=[...buttons,verify,close].filter(b=>!b.disabled);
-      const index=controls.indexOf(document.activeElement);
-      event.preventDefault();controls[(index+(event.shiftKey?-1:1)+controls.length)%controls.length].focus();
-    }
-  });
-  document.body.append(panel);buttons[0].focus();
-  const tag=game.sessionTag;
-  const watch=setInterval(()=>{if(game.ending||game.sessionTag!==tag)dismiss();},250);
+ if(document.querySelector('.relay-modal'))return;
+ let result;try{result=await game.action('comms-start');}catch(e){print(e.message,'error');return;}
+ const panel=document.createElement('section');panel.className='relay-modal';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','Signal calibration');
+ const title=document.createElement('h2');title.textContent='UPLINK // ACQUIRE A STABLE SIGNAL';
+ const instructions=document.createElement('p');instructions.textContent='Tune the carrier with Left/Right or drag the slider. Follow the signal strength. Keep it above 88% for six seconds to establish the link. Mission time continues.';
+ const slider=document.createElement('input');slider.type='range';slider.min=0;slider.max=100;slider.value=0;slider.setAttribute('aria-label','Carrier frequency');
+ const bars=document.createElement('progress');bars.max=100;bars.value=0;
+ const status=document.createElement('p');status.textContent='SEARCHING...';
+ const close=document.createElement('button');close.textContent='CANCEL';
+ panel.append(title,instructions,slider,bars,status,close);document.body.append(panel);slider.focus();
+ const tag=game.sessionTag;let stopped=false,busy=false;
+ const dismiss=()=>{stopped=true;clearInterval(timer);panel.remove();document.querySelector('#command-input').focus();};close.onclick=dismiss;
+ panel.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')dismiss();if(e.key==='Tab'){e.preventDefault();(document.activeElement===slider?close:slider).focus();}});
+ const timer=setInterval(async()=>{
+  if(game.ending||game.sessionTag!==tag){dismiss();return;}if(busy||stopped)return;busy=true;
+  try{const r=await game.action('comms-submit',{token:result.challenge.token,frequency:Number(slider.value)});
+   if(stopped)return;bars.value=r.quality;status.textContent=`SIGNAL ${r.quality}% // STABLE ${(r.held/1000).toFixed(1)} / 6.0s`;
+   if(r.complete){dismiss();print(r.message);startSedationDisplay();updateNextStep();}
+  }catch(e){status.textContent=e.message;}finally{busy=false;}
+ },500);
+};
+
+window.openNeuralLink = (print) => {
+ if(document.querySelector('.relay-modal'))return;
+ const panel=document.createElement('section');panel.className='relay-modal';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','Neural connection exercise');
+ const heading=document.createElement('h2');heading.textContent='NEURAL LINK // CONNECT THE PATH';
+ const info=document.createElement('p');info.textContent='Connect numbered cells in order, from 1 to 6. Click or use Tab and Enter. A wrong connection restarts the path. This recovery exercise is optional.';
+ panel.append(heading,info);let next=1;
+ for(const n of [3,1,5,2,6,4]){const b=document.createElement('button');b.textContent=String(n);b.onclick=()=>{if(n!==next){next=1;panel.querySelectorAll('button').forEach(x=>x.disabled=false);info.textContent='CONNECTION LOST // Begin again at 1.';return;}b.disabled=true;next++;info.textContent=`CONNECTED ${n}/6`;if(next===7){info.textContent='NEURAL PATH RESTORED. Your medical record contains the chamber and override date needed by the recovery controller.';}};panel.append(b);}
+ const close=document.createElement('button');close.textContent='RETURN';close.onclick=()=>{clearInterval(watch);panel.remove();document.querySelector('#command-input').focus();};panel.append(close);
+ panel.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')close.click();if(e.key==='Tab'){const controls=[...panel.querySelectorAll('button')].filter(b=>!b.disabled);const i=controls.indexOf(document.activeElement);e.preventDefault();controls[(i+(e.shiftKey?-1:1)+controls.length)%controls.length].focus();}});
+ document.body.append(panel);panel.querySelector('button').focus();
+ const tag=gameState.sessionTag;const watch=setInterval(()=>{if(gameState.ending||gameState.sessionTag!==tag)close.click();},250);
 };

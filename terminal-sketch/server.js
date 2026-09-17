@@ -81,6 +81,7 @@ async function buildContentIndex(directory = contentRoot, relativePath = '') {
   for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
     // Legacy URLs stay readable for saved sessions; the new introduction has two records.
     if (relativePath.replace(/\\/g, '/') === 'home/operator/medical' && ['patient_intake.txt','medbay_audit.txt','identity_limits.txt','patient_safety.txt'].includes(entry.name)) continue;
+    if (relativePath.replace(/\\/g, '/') === 'home/operator/comms' && ['crew_announcement.txt','lock_audit.txt','raw_uplink_ledger.txt'].includes(entry.name)) continue;
     const absolutePath = path.join(directory, entry.name);
     const nextRelativePath = path.join(relativePath, entry.name);
 

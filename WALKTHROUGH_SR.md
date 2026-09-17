@@ -118,3 +118,10 @@ Oko prati ponovni ulazak u terminal i reset partije; običan refresh ne resetuje
 
 ## Communications minigra
 Posle Medical autorizacije: `run /comms/relay_patch.app`. Klikom ili Tab/Enter promeni oznaku svakog releja da odgovara odredištu, pa VERIFY LINK. Uspeh daje Access 2 i pokreće sedaciju. Stari auth comms kod ostaje kompatibilan za ranije testove i prolaze; novi tok igre koristi releje.
+
+
+## Novi tok Communications (17. septembar)
+Pročitaj tri glavna zapisa: crew_log.txt, evidence.txt i recovery_service.txt.
+`auth comms F-184-2317` sada samo potvrđuje dokaz i automatski otvara podešavanje signala. Pristup ostaje na nivou 1 dok jačina signala ne ostane najmanje 88% tokom šest sekundi. Podesi klizač prema indikatoru. Tek stabilna veza daje Access 2 i pokreće sedaciju. Posle zatvaranja prozora možeš nastaviti sa `run /comms/relay_patch.app`.
+Medical dodatak: `run /medical/neural_link.app` pokreće opcionu vežbu spajanja čvorova 1–6. Ne menja dozvole.
+Cortex prozor za odgovor se postepeno smanjuje sa 1,7 s na 0,75 s; neuspešan pokušaj može da se ponovi dok sedacija ne istekne.

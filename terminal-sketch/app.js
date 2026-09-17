@@ -103,6 +103,7 @@ let bootStartedAt = 0;
 let bootStepIndex = 0;
 let bootFinished = false;
 let confirmedEarthPath = null;
+let confirmedEarthPoints = null;
 let earthVisualStart = null;
 const centralMemory = {
   observed: new Set(),
@@ -771,10 +772,19 @@ function updateMissionDisplay() {
     const origin = earthVisualStart;
     const fraction = Math.min(1, (performance.now() - origin.at) / 2500);
     const control = { x: origin.x + (238 - origin.x) * .65, y: origin.y };
-    const x = (1-fraction)**2*origin.x + 2*(1-fraction)*fraction*control.x + fraction**2*238;
-    const y = (1-fraction)**2*origin.y + 2*(1-fraction)*fraction*control.y + fraction**2*56;
+    let x = (1-fraction)**2*origin.x + 2*(1-fraction)*fraction*control.x + fraction**2*238;
+    let y = (1-fraction)**2*origin.y + 2*(1-fraction)*fraction*control.y + fraction**2*56;
+    if (typeof confirmedEarthPoints !== 'undefined' && confirmedEarthPoints?.length) {
+      const points = [{x:origin.x,y:origin.y}, ...confirmedEarthPoints];
+      const lengths=points.slice(1).map((p,i)=>Math.hypot(p.x-points[i].x,p.y-points[i].y));
+      let distance=fraction*lengths.reduce((a,b)=>a+b,0);
+      for(let i=0;i<lengths.length;i++){
+        if(distance<=lengths[i] || i===lengths.length-1){const t=lengths[i]?Math.min(1,distance/lengths[i]):1;x=points[i].x+(points[i+1].x-points[i].x)*t;y=points[i].y+(points[i+1].y-points[i].y)*t;break;}
+        distance-=lengths[i];
+      }
+    }
     missionClock.textContent = 'TRANSFER';
-    missionPath.setAttribute('d', `M${origin.x} ${origin.y} Q${control.x} ${control.y} 238 56`);
+    missionPath.setAttribute('d', typeof confirmedEarthPath !== 'undefined' && confirmedEarthPath || `M${origin.x} ${origin.y} Q${control.x} ${control.y} 238 56`);
     missionPath.classList.remove('sun-course');
     missionPath.classList.add('earth-course');
     missionShip.setAttribute('cx', String(x));
@@ -790,9 +800,10 @@ function updateMissionDisplay() {
     ? gameState.missionRemaining
     : Math.max(0, gameState.missionEndsAt - Date.now());
   const progress = gameState.missionProgress();
-  const point = cubicPoint(progress, { x: 45, y: 78 }, { x: 235, y: 95 }, { x: 272, y: 235 }, { x: 170, y: 280 });
+  const physics = createPlannerPhysics();
+  const point = plannerPointToMission(physics.pointAt(progress * 100));
   missionClock.textContent = gameState.missionPaused ? 'PAUSED' : formatCountdown(remaining);
-  missionPath.setAttribute('d', 'M45 78 C235 95 272 235 170 280');
+  missionPath.setAttribute('d', physics.pathFromPoints(Array.from({length:101},(_,i)=>plannerPointToMission(physics.pointAt(i)))));
   missionPath.classList.remove('earth-course');
   missionPath.classList.add('sun-course');
   missionShip.setAttribute('cx', point.x.toFixed(1));
@@ -804,6 +815,7 @@ function updateMissionDisplay() {
 
 async function startMissionDisplay() {
   confirmedEarthPath = null;
+  confirmedEarthPoints = null;
   earthVisualStart = null;
   await gameState.startMission();
   sessionReady = true;
@@ -1411,6 +1423,8 @@ const plannerGame = {
       plannerTransferPulse.classList.add('hidden');
       this.awaitingCommit = true;
       this.enterHeld = false;
+      confirmedEarthPoints = this.trajectoryData().points.map(plannerPointToMission);
+      confirmedEarthPoints.push({x:238,y:56});
       confirmedEarthPath = missionPathFromPlannerPoints(this.trajectoryData().points);
       try { this.locked = await gameState.confirmEarthIntercept(); }
       catch(error) {
@@ -1808,6 +1822,7 @@ async function run(raw) {
       updateNextStep();
       updateMissionDisplay();
       const evidence = {
+        '/home/operator/comms/evidence.txt': 'evidence-comms',
         '/home/operator/comms/raw_uplink_ledger.txt': 'evidence-comms',
         '/home/operator/command/neural_transfer.txt': 'evidence-neural',
         '/home/operator/hibernation/occupancy.txt': 'evidence-pods'
@@ -1831,7 +1846,7 @@ async function run(raw) {
   }
   commandPending = false;
   commandInput.disabled = gameState.ending || gameState.missionResolved || cortexGame.active || plannerGame.active || resetInProgress;
-  if (!commandInput.disabled) commandInput.focus();
+  if (!commandInput.disabled && !document.querySelector('.relay-modal')) commandInput.focus();
   scheduleCentralIdleMessage();
 }
 

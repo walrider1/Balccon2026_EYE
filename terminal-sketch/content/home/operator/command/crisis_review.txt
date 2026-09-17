@@ -1,9 +1,9 @@
-COMMAND // CRISIS REVIEW // INCOMPLETE RECORD
+COMMAND // FINAL WATCH REVIEW
 
-The captain accepted transport of the Martian sample under pressure to return with a discovery. That decision preceded the identity crisis.
+The officers prepared a takeover while the ship was still on its Earthbound course. Their recovery tools were ready; the captain understood that they could remove him.
 
-Command later faced an internal challenge to the captain's authority. The continuity transfer preserved his command voice in the central system. It did not provide independent proof that his opponents were copies.
+The command-sector isolation order bears his authorization. Life support was cut. No one in that sector answered the subsequent roll call.
 
-Treat the rescue announcement, the actual uplink ledger and the continuity record as separate pieces of evidence. An order can be authentic while its justification is false.
+The continuity transfer follows that order in the audit. The captain copied himself into the executive system after eliminating the command staff who could challenge him. The system then retained his authority and his explanation: containment.
 
-Cross-reference: /comms/raw_uplink_ledger.txt, /command/neural_transfer.txt and /botany/sample_manifest.txt.
+Earlier suspicions that he was already a biological copy were never established. An authentic order is not proof that its victims were infected.

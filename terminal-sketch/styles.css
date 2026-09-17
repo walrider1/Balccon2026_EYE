@@ -310,3 +310,5 @@ input { color:#e8dfc8; caret-color:#d8a24d; }
 .central-text { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; }
 .relay-modal { position: fixed; inset: 12% 18%; z-index: 120; background: #07141c; color: #cee5ed; border: 2px solid #78b5c8; padding: 24px; overflow: auto; font-family: monospace; }
 .relay-modal button { font: inherit; padding: 12px; margin: 8px; color: #fff; background: #234351; border: 2px solid #86b9c8; }
+
+.relay-modal input[type=range], .relay-modal progress { display:block; width:100%; margin:24px 0; height:32px; accent-color:#69e6da; }

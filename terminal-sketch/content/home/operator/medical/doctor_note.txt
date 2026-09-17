@@ -8,3 +8,5 @@ Memory loss is expected. The injury alone cannot establish what happened before 
 CHAMBER: 07
 LAST MANUAL OVERRIDE: 04/12
 Use these two values with the format in recovery_service.txt.
+
+An optional neural_link.app exercise can help orient you before recovering access.
