@@ -157,7 +157,7 @@ const server = http.createServer(async (request, response) => {
       if (requestUrl.searchParams.get('display') === '1' && games.has(displaySessionId)) id = displaySessionId;
       const s = games.has(id) ? games.snapshot(id) : null;
       send(response, 200, JSON.stringify(s ? { sessionTag: s.sessionTag + ':' + displayEpoch, started: s.started,
-        endingKind: s.endingKind, rootRecovered: s.rootRecovered, sedationEndsAt: s.sedationEndsAt,
+        aiOffline:s.aiOffline, shutdownActive:s.shutdownActive, endingKind: s.endingKind, rootRecovered: s.rootRecovered, sedationEndsAt: s.sedationEndsAt,
         readCount: s.readFiles.length, ai: eyeReplies.get(id) || null } : { started: false }), 'application/json');
       return;
     }
@@ -225,6 +225,7 @@ const server = http.createServer(async (request, response) => {
         const payload = await readJsonBody(request);
         if (!payload || typeof payload !== 'object') throw new Error('invalid_request');
         const state = games.narrative(id);
+        if(state.aiOffline){send(response,200,JSON.stringify({message:'',skipped:true}),'application/json');return;}
         if (payload.kind === 'event' && !games.authorizeEvent(id, payload.eventKey)) {
           send(response, 200, JSON.stringify({ message: '', skipped: true }), 'application/json'); return;
         }

@@ -473,6 +473,7 @@ function normalizeCentralText(text) {
 }
 
 function centralSay(text, cls = 'central-ai') {
+  if(gameState.aiOffline)return;
   centralStatus.textContent = 'TRANSMITTING';
   const message = normalizeCentralText(text);
   centralLine(captainName, message, cls);
@@ -585,7 +586,7 @@ async function requestCentralReply(payload) {
 
 async function handleCentralMessage(rawMessage) {
   const message = rawMessage.trim();
-  if (!message || centralMessagePending || gameState.ending || resetInProgress) return;
+  if (!message || gameState.aiOffline || centralMessagePending || gameState.ending || resetInProgress) return;
   if (message.length > 1200) { centralStatus.textContent = 'MESSAGE TOO LONG'; return; }
   centralMessagePending = true;
   centralInput.disabled = true;
@@ -601,7 +602,7 @@ async function handleCentralMessage(rawMessage) {
     if (!gameState.ending && !resetInProgress) centralSay('The channel broke for a moment. Send that again.', 'central-ai');
   } finally {
     centralMessagePending = false;
-    centralInput.disabled = gameState.ending || resetInProgress;
+    centralInput.disabled = gameState.aiOffline || gameState.ending || resetInProgress;
     if (!centralInput.disabled && activeChannel === 'central' && document.activeElement === document.body) centralInput.focus();
   }
 }
@@ -939,6 +940,8 @@ function showFailureScreen(reason) {
 function showCompletionScreen(kind) {
   window.clearTimeout(idleResetTimer);
   const copy = {
+    earth_no_ai: {label:'KOSMOS // MANUAL COMMAND',title:'A SILENT HOMECOMING',body:'EARTH INTERCEPT CONFIRMED. HRTOK OFFLINE.',quote:'You chose who would come home. You still cannot know what they are.'},
+    sun_no_ai: {label:'KOSMOS // MANUAL COMMAND',title:'YOUR OWN QUARANTINE',body:'SOLAR COURSE CHOSEN. HRTOK OFFLINE.',quote:'This time, the decision was yours alone.'},
     earth: {
       label: 'KOSMOS // NAVIGATION SYSTEM',
       title: 'RETURN VECTOR',
@@ -1399,7 +1402,7 @@ const plannerGame = {
       plannerStatus.textContent = 'TRANSFER BURN EXECUTING...';
     } else if (this.locked) {
       plannerStatus.textContent = 'EARTH TRANSFER COMMITTED. PRESS ESC TO RETURN TO THE CONSOLE.';
-    } else if (trajectory.captured) plannerStatus.textContent = 'EARTH CAPTURE AVAILABLE. HOLD ENTER FOR 2 SECONDS TO COMMIT.';
+    } else if (trajectory.captured) plannerStatus.textContent = 'EARTH CAPTURE AVAILABLE. HOLD ENTER FOR 2 SECONDS, THEN CONFIRM DESTINATION.';
     else plannerStatus.textContent = 'Place a burn node, then adjust its strength and direction toward the Earth capture ring.';
   },
 
@@ -1426,7 +1429,11 @@ const plannerGame = {
       confirmedEarthPoints = this.trajectoryData().points.map(plannerPointToMission);
       confirmedEarthPoints.push({x:238,y:56});
       confirmedEarthPath = missionPathFromPlannerPoints(this.trajectoryData().points);
-      try { this.locked = await gameState.confirmEarthIntercept(); }
+      try {
+        const confirmed=await window.missionDialog('CONFIRM EARTH COURSE',gameState.aiOffline?'HRTOK is offline. Return to Earth under your command? Passenger identities remain unverified.':'Return to Earth with HRTOK still online? Passenger identities remain unverified. This commits the final course.',true);
+        if(!confirmed){this.committing=false;this.awaitingCommit=false;this.render();return;}
+        this.locked = await gameState.confirmEarthIntercept();
+      }
       catch(error) {
         this.committing=false; this.awaitingCommit=false;
         this.render(); plannerStatus.textContent=error.message + ' // Checking ship state; retry if capture is not confirmed.';
@@ -1751,6 +1758,8 @@ async function endGame(kind) {
   if (endingDisplayed) return;
   try {
     if (!gameState.ending) await gameState.action('ending', {kind});
+    if(kind==='earth'&&gameState.endingKind==='earth_no_ai')kind='earth_no_ai';
+    if(kind==='sun'&&gameState.endingKind==='sun_no_ai')kind='sun_no_ai';
     if (kind !== gameState.endingKind) return;
   } catch(error) { print(error.message, 'error'); return; }
   if (endingDisplayed) return;
@@ -1774,6 +1783,8 @@ async function endGame(kind) {
   }
 
   const endings = {
+    earth_no_ai: 'ROUTE ACCEPTED: EARTH / HRTOK OFFLINE\n\nThe captain no longer watches the return. You bring the sealed passengers home without his voice, or his certainty. Their identities remain unknown.\n\nENDING: A SILENT HOMECOMING',
+    sun_no_ai: 'ROUTE MAINTAINED: SUN / HRTOK OFFLINE\n\nYou silenced the captain, then chose his destination yourself. No voice remains to share the responsibility.\n\nENDING: YOUR OWN QUARANTINE',
     earth: 'ROUTE ACCEPTED: EARTH\n\nThe ship turns away from the Sun. Somewhere below, two hundred sealed pods keep breathing. You do not know what you are bringing home.\n\nENDING: RETURN VECTOR',
     sun: 'ROUTE MAINTAINED: SUN\n\nYou leave HRTOK in control of the final burn. He may be right. He may simply be too frightened to choose anything else.\n\nENDING: QUARANTINE',
     shutdown: 'HRTOK EXECUTIVE LAYER: OFFLINE\n\nThe captain is gone for a second time. The ship is finally silent, and every remaining choice is yours.\n\nENDING: SILENT BRIDGE',
@@ -1846,7 +1857,7 @@ async function run(raw) {
   }
   commandPending = false;
   commandInput.disabled = gameState.ending || gameState.missionResolved || cortexGame.active || plannerGame.active || resetInProgress;
-  if (!commandInput.disabled && !document.querySelector('.relay-modal')) commandInput.focus();
+  if (!commandInput.disabled && !document.querySelector('.relay-modal, .shutdown-panel, .mission-dialog')) commandInput.focus();
   scheduleCentralIdleMessage();
 }
 
@@ -1880,6 +1891,7 @@ window.setInterval(async () => {
   statePollPending = true;
   try {
     await gameState.refresh();
+    if(gameState.aiOffline){centralInput.disabled=true;centralStatus.textContent='OFFLINE';window.clearTimeout(centralIdleTimer);}
     updateNextStep();
     if (!sessionReady && !game.classList.contains('hidden')) { await startMissionDisplay(); commandInput.disabled=gameState.ending; }
     if (connectionLost) { connectionLost=false; print('SHIP CONNECTION RESTORED.'); }

@@ -18,10 +18,10 @@ test('Cortex checks signal freshness, real score and grants random attestation',
 test('Cortex fails on missed threshold and can retry',()=>{const f=fixture();comms(f);let r=f.act('cortex-start');for(let i=0;i<6;i++){f.advance(1800);r=f.act('cortex-answer',{token:r.challenge.token,key:''});}assert.equal(r.done,true);assert.equal(r.success,false);assert.equal(r.state.cortexCode,null);assert.ok(f.act('cortex-start').challenge);});
 test('deadlines survive restart, expired session cannot authorize, reset is gated',()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'eye-test-'));try{const storage=path.join(dir,'sessions.json'),f=fixture(storage);comms(f);f.advance(300001);const restored=createGameService({now:f.now,storage});assert.equal(restored.snapshot(f.id).endingKind,'sedation');assert.throws(()=>restored.action(f.id,{action:'authorize',domain:'cortex',code:'CORTEX-9D3'}),/ACTIVE/);assert.throws(()=>restored.action(f.id,{action:'reset'}),/NOT YET/);f.advance(60001);assert.equal(restored.action(f.id,{action:'reset'}).state.access,0);}finally{fs.rmSync(dir,{recursive:true});}});
 test('mission restart does not reset deadline; voluntary endings require evidence',()=>{const f=fixture();const original=f.service.snapshot(f.id).missionEndsAt;f.advance(10000);f.act('start');assert.equal(f.service.snapshot(f.id).missionEndsAt,original);root(f);assert.throws(()=>f.act('ending',{kind:'earth'}),/NOT VERIFIED/);assert.throws(()=>f.act('ending',{kind:'transfer'}),/NOT DISCOVERED/);f.service.recordRead(f.id,'/home/operator/command/neural_transfer.txt');f.act('ending',{kind:'transfer'});assert.equal(f.service.snapshot(f.id).endingKind,'transfer');});
-test('planner validates actual physics, hold time, budget, and pause/resume',()=>{const f=fixture();root(f);let r=f.act('planner-start');const origin=r.origin;f.advance(20000);assert.equal(f.service.snapshot(f.id).missionPaused,true);assert.throws(()=>f.act('planner-commit'),/INCOMPLETE/);assert.throws(()=>f.act('planner-arm',{nodes:[{position:origin+10,deltaV:601,angle:0}]}),/INVALID/);const physics=createPlannerPhysics();physics.originPosition=origin;let solution;for(let p=origin+2;p<90&&!solution;p+=4)for(let v=40;v<=600&&!solution;v+=40)for(let angle=-180;angle<180;angle+=10){const nodes=[{position:p,deltaV:v,angle}];physics.nodes=nodes;if(physics.validTransfer()){solution=nodes;break;}}assert.ok(solution,'a real capture exists');f.act('planner-arm',{nodes:solution});assert.throws(()=>f.act('planner-commit'),/INCOMPLETE/);f.advance(2200);assert.equal(f.act('planner-commit').state.course,'earth');f.act('ending',{kind:'earth'});assert.equal(f.service.snapshot(f.id).endingKind,'earth');});
+test('planner validates actual physics, hold time, budget, and pause/resume',()=>{const f=fixture();root(f);let r=f.act('planner-start');const origin=r.origin;f.advance(20000);assert.equal(f.service.snapshot(f.id).missionPaused,true);assert.throws(()=>f.act('planner-commit',{confirmed:true}),/INCOMPLETE/);assert.throws(()=>f.act('planner-arm',{nodes:[{position:origin+10,deltaV:601,angle:0}]}),/INVALID/);const physics=createPlannerPhysics();physics.originPosition=origin;let solution;for(let p=origin+2;p<90&&!solution;p+=4)for(let v=40;v<=600&&!solution;v+=40)for(let angle=-180;angle<180;angle+=10){const nodes=[{position:p,deltaV:v,angle}];physics.nodes=nodes;if(physics.validTransfer()){solution=nodes;break;}}assert.ok(solution,'a real capture exists');f.act('planner-arm',{nodes:solution});assert.throws(()=>f.act('planner-commit',{confirmed:true}),/INCOMPLETE/);f.advance(2200);assert.equal(f.act('planner-commit',{confirmed:true}).state.course,'earth');f.act('ending',{kind:'earth'});assert.equal(f.service.snapshot(f.id).endingKind,'earth');});
 test('CTF time, evidence and retry are checked independently of root',()=>{const f=fixture();assert.throws(()=>f.act('ctf-start'),/LEVEL 2/);comms(f);f.act('ctf-start');assert.throws(()=>f.act('flag',{flag:'EYE{SIGNAL_WITNESS_CONTINUITY}'}),/REJECTED/);for(const folder of ['comms','engineering','command'])f.service.recordRead(f.id,`/home/operator/${folder}/forensic_fragment.txt`);f.advance(120000);assert.throws(()=>f.act('flag',{flag:'EYE{SIGNAL_WITNESS_CONTINUITY}'}),/CLOSED/);f.act('ctf-start');assert.equal(f.act('flag',{flag:'EYE{SIGNAL_WITNESS_CONTINUITY}'}).state.ctf.completed,true);assert.equal(f.service.snapshot(f.id).rootRecovered,false);});
 test('hint endpoint is removed and authorization attempts are limited',()=>{const f=fixture();assert.throws(()=>f.act('hint'),/UNKNOWN ACTION/);for(let i=0;i<8;i++)f.act('authorize',{domain:'medical',code:'bad'});assert.throws(()=>f.act('authorize',{domain:'medical',code:'bad'}),/RATE LIMITED/);});
-for(const kind of ['sun','shutdown','transfer']) test(`${kind} ending is final, idempotent and resets to a clean session`,()=>{
+for(const kind of ['sun','transfer']) test(`${kind} ending is final, idempotent and resets to a clean session`,()=>{
  const f=fixture();root(f);if(kind==='transfer') f.service.recordRead(f.id,'/home/operator/command/neural_transfer.txt');
  const end=f.act('ending',{kind}).state;assert.equal(end.endingKind,kind);assert.equal(f.act('ending',{kind}).state.resetAt,end.resetAt);
  assert.throws(()=>f.act('hint'),/ACTIVE/);f.advance(60001);const reset=f.act('reset');assert.equal(reset.state.started,false);assert.equal(reset.state.access,0);assert.equal(reset.state.cortexCode,null);assert.deepEqual(reset.state.readFiles,[]);assert.notEqual(reset.state.sessionTag,end.sessionTag);
@@ -46,7 +46,7 @@ test('a full session pool still allows replacement for the next player',()=>{
 test('Earth commit finishes after a lost reply and cannot switch outcome',()=>{
  const f=fixture();root(f);const origin=f.act('planner-start').origin;const p=createPlannerPhysics();p.originPosition=origin;let nodes;
  for(let v=40;v<=600&&!nodes;v+=40)for(let angle=-180;angle<180;angle+=10){p.nodes=[{position:origin+2,deltaV:v,angle}];if(p.validTransfer()){nodes=p.nodes;break;}}
- assert.ok(nodes);f.act('planner-arm',{nodes});f.advance(2100);f.act('planner-commit');assert.equal(f.act('planner-commit').state.missionResolved,true);assert.throws(()=>f.act('ending',{kind:'sun'}),/IRREVERSIBLE/);f.advance(3001);assert.equal(f.service.snapshot(f.id).endingKind,'earth');
+ assert.ok(nodes);f.act('planner-arm',{nodes});f.advance(2100);f.act('planner-commit',{confirmed:true});assert.equal(f.act('planner-commit',{confirmed:true}).state.missionResolved,true);assert.throws(()=>f.act('ending',{kind:'sun'}),/IRREVERSIBLE/);f.advance(3001);assert.equal(f.service.snapshot(f.id).endingKind,'earth');
 });
 test('expired mission keeps its actual deadline across an offline interval',()=>{
  const f=fixture();const deadline=f.service.snapshot(f.id).missionEndsAt;f.advance(1000000);const ended=f.service.snapshot(f.id);assert.equal(ended.endingKind,'mission');assert.equal(ended.resetAt,deadline+60000);assert.equal(f.act('reset').state.access,0);
@@ -124,4 +124,37 @@ test('session clues survive reload, differ after reset and old credentials fail'
  assert.equal(restored.action(next,{action:'authorize',domain:'medical',code}).ok,false);
  assert.ok(!JSON.stringify(restored.snapshot(next)).includes('credentials'));
  } finally { fs.rmSync(dir,{recursive:true}); }
+});
+
+function shutDown(f) {
+ let c=f.act('shutdown-start').challenge;
+ for(let i=0;i<4;i++){f.act('shutdown-arm',{token:c.token,key:c.key});f.advance(4100);const r=f.act('shutdown-step',{token:c.token});if(r.complete)return r;c=r.challenge;}
+}
+test('shutdown requires ROOT, holds and four links; abort leaves HRTOK online',()=>{
+ const f=fixture();assert.throws(()=>f.act('shutdown-start'),/ROOT/);root(f);
+ assert.throws(()=>f.act('ending',{kind:'shutdown'}),/UNKNOWN ENDING/);
+ let c=f.act('shutdown-start').challenge;assert.throws(()=>f.act('shutdown-step',{token:c.token}),/INCOMPLETE/);
+ f.act('shutdown-arm',{token:c.token,key:c.key});f.advance(2000);assert.throws(()=>f.act('shutdown-step',{token:c.token}),/INCOMPLETE/);
+ f.act('shutdown-release');f.advance(5000);assert.throws(()=>f.act('shutdown-step',{token:c.token}),/INCOMPLETE/);
+ f.act('shutdown-cancel');assert.equal(f.service.snapshot(f.id).aiOffline,false);
+ assert.throws(()=>f.act('shutdown-step',{token:c.token}),/INCOMPLETE/);
+ const result=shutDown(f);assert.equal(result.state.aiOffline,true);assert.equal(result.state.ending,false);
+ assert.equal(f.service.narrative(f.id).aiOffline,true);
+ assert.throws(()=>f.act('shutdown-start'),/OFFLINE/);
+ assert.equal(f.act('ending',{kind:'sun'}).state.endingKind,'sun_no_ai');
+});
+test('shutdown preserves navigation and the separate Earth ending, and reset restores HRTOK',()=>{
+ const f=fixture();root(f);shutDown(f);const origin=f.act('planner-start').origin;
+ const physics=createPlannerPhysics();physics.originPosition=origin;let nodes;
+ for(let p=origin+2;p<90&&!nodes;p+=4)for(let v=40;v<=600&&!nodes;v+=40)for(let a=-180;a<180;a+=10){physics.nodes=[{position:p,deltaV:v,angle:a}];if(physics.validTransfer()){nodes=physics.nodes;break;}}
+ assert.ok(nodes);f.act('planner-arm',{nodes});f.advance(2200);
+ assert.throws(()=>f.act('planner-commit'),/CONFIRMATION/);
+ f.act('planner-commit',{confirmed:true});f.advance(3001);assert.equal(f.service.snapshot(f.id).endingKind,'earth_no_ai');
+ const reset=f.service.operatorReset(f.id);assert.equal(reset.state.aiOffline,false);
+});
+
+test('timeout after disconnect is still failure rather than voluntary solar quarantine',()=>{
+ const f=fixture();root(f);shutDown(f);f.advance(900001);
+ assert.equal(f.service.snapshot(f.id).endingKind,'mission');
+ assert.equal(f.service.snapshot(f.id).aiOffline,true);
 });

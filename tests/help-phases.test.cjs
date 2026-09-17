@@ -14,7 +14,7 @@ test('help highlights phase-specific usages in the full list without solved comm
   [true,false,false,false,['ls','cd','cat','auth','run']],
   [true,true,false,false,['run','auth']],
   [true,true,true,false,['root']],
-  [true,true,true,true,['cat','run']]
+  [true,true,true,true,['cat','run','central','course']]
  ]){
   const rows=[];
   help.run({registry,game:{rootShares:{medical,comms,cortex},rootRecovered:root},print:(...args)=>rows.push(args)});

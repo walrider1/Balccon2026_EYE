@@ -5,6 +5,8 @@
       const old = this.previous;
       this.previous = state;
       if (!state || !state.started) { this.lastReply = 0; return { clip: 'Sleep_standby', loop: true }; }
+      if(state.aiOffline)return {clip:'Death',loop:false,hold:true};
+      if(state.shutdownActive)return {clip:'Panic',loop:true};
       if (!old || old.sessionTag !== state.sessionTag) {
         this.lastReply = 0;
         if (!state.endingKind) return { clip: 'Awakening', loop: false };

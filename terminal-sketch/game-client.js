@@ -80,7 +80,7 @@ class RemoteKosmosGame {
  startMission() { return this.action('start'); }
  pauseMission() { return this.action('planner-start'); }
  resumeMission() { return this.action('planner-exit'); }
- async confirmEarthIntercept() { await this.action('planner-commit'); return this.missionResolved; }
+ async confirmEarthIntercept() { await this.action('planner-commit',{confirmed:true}); return this.missionResolved; }
  issueCortexCode() { return this.cortexCode; }
 }
 if (typeof module !== 'undefined' && module.exports) module.exports={RemoteKosmosGame};

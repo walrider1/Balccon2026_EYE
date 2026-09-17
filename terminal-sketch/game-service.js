@@ -101,6 +101,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
   }
   function finish(s, kind, endedAt = now()) {
     if (s.endingKind) return;
+    if(s.aiOffline && ['earth','sun'].includes(kind))kind += '_no_ai';
     s.game.finish(); s.endingKind = kind; s.endedAt = endedAt; s.cortex = null; s.planner = null;
     s.revision++;
     archive(s, kind, endedAt);
@@ -126,7 +127,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
       cortexCode: g.cortexCodeIssued ? g.cortexCode : null, serverNow: now(), started: s.started,
       endingKind: s.endingKind, resetAt: s.endedAt === null ? null : s.endedAt + 60000,
       sessionTag: crypto.createHash('sha256').update(id).digest('hex').slice(0, 16),
-      revision: s.revision, objective: s.medicalCredential&&!g.rootShares.medical ? {phase:1,text:"Medical credential accepted. Complete /medical/neural_link.app to restore access."} : objective(g), readFiles: [...s.readFiles], ctf: s.ctf ? { endsAt: s.ctf.endsAt, completed: s.ctf.completed, expired: !s.ctf.completed && now() >= s.ctf.endsAt } : null };
+      aiOffline:Boolean(s.aiOffline), shutdownActive:Boolean(s.shutdown), revision: s.revision, objective: s.medicalCredential&&!g.rootShares.medical ? {phase:1,text:"Medical credential accepted. Complete /medical/neural_link.app to restore access."} : objective(g), readFiles: [...s.readFiles], ctf: s.ctf ? { endsAt: s.ctf.endsAt, completed: s.ctf.completed, expired: !s.ctf.completed && now() >= s.ctf.endsAt } : null };
   }
   function objective(g) {
     if (g.ending) return { phase: 3, text: 'SESSION COMPLETE' };
@@ -151,7 +152,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
   }
   function narrative(id) {
     const s = get(id), g = s.game;
-    return { replayVariant: replay(s.replayVariant).id, access: g.access, rootRecovered: g.rootRecovered, sedationActive: Boolean(g.sedationEndsAt) && !g.ending,
+    return { aiOffline:Boolean(s.aiOffline), replayVariant: replay(s.replayVariant).id, access: g.access, rootRecovered: g.rootRecovered, sedationActive: Boolean(g.sedationEndsAt) && !g.ending,
       course: g.course, readFiles: s.readFiles, cortexPassed: g.cortexCodeIssued };
   }
   function authorizeEvent(id, key) {
@@ -200,7 +201,23 @@ function createGameService({ now = Date.now, storage = null } = {}) {
     ensureActive(s); s.lastActivity = now();
     if (g.missionResolved && !['ending', 'planner-commit'].includes(kind)) throw new GameError(409, 'EARTH TRANSFER ALREADY COMMITTED. Await the final report.');
     let result = { ok: true };
-    if(kind==='medical-start') {
+    if(kind==='shutdown-start') {
+      if(!g.rootRecovered||s.aiOffline)throw new GameError(403,'ROOT REQUIRED / EXECUTIVE ALREADY OFFLINE');
+      if(!s.shutdown)s.shutdown={index:0,token:crypto.randomBytes(12).toString('hex'),key:['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'][crypto.randomInt(4)],armedAt:null};
+      result.challenge={index:s.shutdown.index,token:s.shutdown.token,key:s.shutdown.key};
+    } else if(kind==='shutdown-arm') {
+      const c=s.shutdown;if(!c||input.token!==c.token||input.key!==c.key)throw new GameError(409,'INVALID ISOLATION CONTROL');
+      if(c.armedAt===null)c.armedAt=now();
+    } else if(kind==='shutdown-step') {
+      const c=s.shutdown;if(!c||input.token!==c.token||c.armedAt===null||now()-c.armedAt<4000)throw new GameError(409,'ISOLATION HOLD INCOMPLETE');
+      c.index++;
+      if(c.index===4){s.aiOffline=true;s.shutdown=null;result.complete=true;result.message='HRTOK OFFLINE // Navigation remains under your control.';}
+      else{c.token=crypto.randomBytes(12).toString('hex');c.key=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'][crypto.randomInt(4)];c.armedAt=null;result.challenge={index:c.index,token:c.token,key:c.key};}
+    } else if(kind==='shutdown-release') {
+      if(s.shutdown)s.shutdown.armedAt=null;
+    } else if(kind==='shutdown-cancel') {
+      s.shutdown=null;
+    } else if(kind==='medical-start') {
       if(!s.medicalCredential||g.rootShares.medical)throw new GameError(403,'AUTHORIZE MEDICAL BEFORE NEURAL LINK');
       if(!s.neural)s.neural={token:crypto.randomBytes(12).toString('hex'),target:[crypto.randomInt(3,6),crypto.randomInt(2,7),crypto.randomInt(3,6)]};
       result.challenge={token:s.neural.token,target:[...s.neural.target]};
@@ -275,14 +292,16 @@ function createGameService({ now = Date.now, storage = null } = {}) {
       const nodes = validatePlan(s, input.nodes); s.planner.nodes = nodes; s.planner.armedAt = now();
     } else if (kind === 'planner-commit') {
       if (g.missionResolved) return { ok: true, state: snapshot(id) };
+      if(input.confirmed!==true)throw new GameError(409,'EARTH DESTINATION CONFIRMATION REQUIRED');
       if (!s.planner || s.planner.armedAt === null || now() - s.planner.armedAt < 2000) throw new GameError(409, 'BURN HOLD INCOMPLETE');
       validatePlan(s, s.planner.nodes);
       g.confirmEarthIntercept(); event(s, 'earth-transfer'); s.planner = null; s.earthEndingAt = now() + 3000;
     } else if (kind === 'ending') {
       if (!g.rootRecovered) throw new GameError(403, 'ROOT AUTHORITY REQUIRED');
-      if (!['earth', 'sun', 'shutdown', 'transfer'].includes(input.kind)) throw new GameError(400, 'UNKNOWN ENDING');
+      if (!['earth', 'sun', 'transfer'].includes(input.kind)) throw new GameError(400, 'UNKNOWN ENDING');
       if (g.missionResolved && input.kind !== 'earth') throw new GameError(409, 'EARTH TRANSFER IS IRREVERSIBLE');
       if (input.kind === 'earth' && !g.missionResolved) throw new GameError(403, 'EARTH TRANSFER NOT VERIFIED');
+      if(input.kind==='transfer'&&s.aiOffline)throw new GameError(403,'CONTINUITY CHANNEL OFFLINE');
       if (input.kind === 'transfer' && !g.neuralTransferDiscovered) throw new GameError(403, 'NEURAL CHANNEL NOT DISCOVERED');
       finish(s, input.kind);
     } else if (kind === 'ctf-start') {

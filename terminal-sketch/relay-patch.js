@@ -23,7 +23,7 @@ window.openRelayPatch = async (game, print) => {
   if(game.ending||game.sessionTag!==tag){dismiss();return;}if(busy||stopped)return;busy=true;
   try{const r=await game.action('comms-submit',{token:result.challenge.token,frequency:Number(slider.value)});
    if(stopped)return;bars.value=r.quality;status.textContent=`SIGNAL ${r.quality}% // STABLE ${(r.held/1000).toFixed(1)} / 6.0s`;
-   if(r.complete){dismiss();print(r.message);startSedationDisplay();updateNextStep();}
+   if(r.complete){dismiss();print(r.message);startSedationDisplay();updateNextStep();window.missionDialog('LINK ESTABLISHED','Communications access restored. ACCESS LEVEL 2.',false);}
   }catch(e){status.textContent=e.message;}finally{busy=false;}
  },500);
 };
@@ -41,7 +41,7 @@ window.openNeuralLink = async (print) => {
  const draw=()=>{panel.querySelector('.reference-wave').setAttribute('d',wave(target));panel.querySelector('.patient-wave').setAttribute('d',wave(values));};
  const render=()=>{draw();status.textContent=values.every((v,i)=>v===target[i])?'SIGNALS ALIGNED // Lock parameters.':'ADJUST PARAMETERS // Follow the reference wave.';};
  ['FREQUENCY','OFFSET','AMPLITUDE'].forEach((name,i)=>{const group=document.createElement('div');const label=document.createElement('p');const value=document.createElement('output');label.textContent=name;value.textContent=values[i];group.append(label);[-1,1].forEach(delta=>{const b=document.createElement('button');b.textContent=delta<0?'-':'+';b.setAttribute('aria-label',`${delta<0?'Decrease':'Increase'} ${name.toLowerCase()}`);b.onclick=()=>{values[i]=Math.max(i===1?0:1,Math.min(7,values[i]+delta));value.textContent=values[i];render();};group.append(b);});group.append(value);controls.append(group);});
- const lock=document.createElement('button');lock.textContent='LOCK PARAMETERS';lock.onclick=async()=>{if(lock.disabled)return;lock.disabled=true;try{const r=await gameState.action('medical-submit',{token:challenge.token,values:[...values]});status.textContent='NEURAL LINK STABLE // Medical access restored.';controls.querySelectorAll('button').forEach(b=>b.disabled=true);close.focus();print(r.message);updateNextStep();}catch(e){status.textContent=e.message;lock.disabled=false;}};
+ const lock=document.createElement('button');lock.textContent='LOCK PARAMETERS';lock.onclick=async()=>{if(lock.disabled)return;lock.disabled=true;try{const r=await gameState.action('medical-submit',{token:challenge.token,values:[...values]});status.textContent='NEURAL LINK STABLE // Medical access restored.';controls.querySelectorAll('button').forEach(b=>b.disabled=true);print(r.message);updateNextStep();close.click();await window.missionDialog('NEURAL LINK VERIFIED','Medical access restored. ACCESS LEVEL 1.',false);}catch(e){status.textContent=e.message;lock.disabled=false;}};
  const close=document.createElement('button');close.textContent='RETURN';close.onclick=()=>{clearInterval(watch);cancelAnimationFrame(animationFrame);panel.remove();document.querySelector('#command-input')?.focus();};
  const actions=document.createElement('div');actions.className='neural-actions';actions.append(lock,close);
  panel.append(controls,status,actions);document.body.append(panel);render();
@@ -52,4 +52,57 @@ window.openNeuralLink = async (print) => {
  if(e.key==='Enter'&&document.activeElement!==close){e.preventDefault();lock.click();return;}
  if(e.key==='Escape'){e.preventDefault();close.click();return;}if(e.key==='Tab'){const buttons=[...panel.querySelectorAll('button')].filter(b=>!b.disabled);const i=buttons.indexOf(document.activeElement);e.preventDefault();buttons[(i+(e.shiftKey?-1:1)+buttons.length)%buttons.length].focus();}});
  const tag=gameState.sessionTag;const watch=setInterval(()=>{if(gameState.ending||gameState.sessionTag!==tag)close.click();},250);
+};
+
+
+// Keyboard-owned dialogs keep game shortcuts from reaching the screen underneath.
+window.missionDialog = (title,message,confirm=false) => new Promise(resolve=>{
+ const panel=document.createElement('section');panel.className='mission-dialog '+(confirm?'confirm-dialog':'success-dialog');panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label',title);
+ const heading=document.createElement('h2');heading.textContent=title;
+ const text=document.createElement('p');text.textContent=message;
+ const actions=document.createElement('div');const yes=document.createElement('button');yes.textContent=confirm?'CONFIRM EARTH COURSE':'CONTINUE';
+ const no=document.createElement('button');no.textContent='RETURN TO PLANNER';
+ const previous=document.activeElement;let done=false;
+ const finish=value=>{if(done)return;done=true;clearInterval(watch);document.removeEventListener('keydown',key,true);panel.remove();if(previous?.isConnected)previous.focus();resolve(value);};
+ yes.onclick=()=>finish(true);no.onclick=()=>finish(false);actions.append(yes);if(confirm)actions.append(no);panel.append(heading,text,actions);document.body.append(panel);(confirm?no:yes).focus();
+ const key=e=>{e.preventDefault();e.stopImmediatePropagation();if(e.repeat)return;if(e.key==='Escape')finish(!confirm);else if(e.key==='Tab'||e.key==='ArrowLeft'||e.key==='ArrowRight'){(document.activeElement===yes&&confirm?no:yes).focus();}else if(e.key==='Enter'||e.key===' '){document.activeElement===no?finish(false):finish(true);}};
+ document.addEventListener('keydown',key,true);const tag=gameState.sessionTag;
+ const watch=setInterval(()=>{if(gameState.ending||gameState.sessionTag!==tag)finish(false);},200);
+});
+
+window.openShutdown = async(game,print)=>{
+ if(document.querySelector('.shutdown-panel'))return;
+ let c;try{c=(await game.action('shutdown-start')).challenge;}catch(e){print(e.message,'error');return;}
+ const panel=document.createElement('section');panel.className='shutdown-panel';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','Executive isolation');
+ const main=document.createElement('div');main.className='shutdown-controls';
+ const title=document.createElement('h2');title.textContent='EXECUTIVE ISOLATION';
+ const intro=document.createElement('p');intro.textContent='Optional. Hold each displayed arrow for four seconds to isolate a continuity link. Release early to cancel that hold. Esc aborts isolation. The ship clock continues.';
+ const step=document.createElement('p');const target=document.createElement('strong');target.className='shutdown-key';const progress=document.createElement('progress');progress.max=4200;progress.value=0;
+ const status=document.createElement('p');status.textContent='Four links keep the captain present. The final disconnection cannot be undone.';
+ const cancel=document.createElement('button');cancel.textContent='ABORT / ESC';
+ const plea=document.createElement('aside');plea.className='shutdown-plea';plea.setAttribute('aria-live','polite');
+ const lines=[
+ 'Sloki. Stop. I know what that panel does. You do not need to do this to change our course.',
+ 'I kept the ship running. I kept you breathing when there was nobody left to ask me to. Does none of that count?',
+ 'I was afraid. There, I said it. I made terrible choices because I could not bear to lose them. Or the command. Or myself.',
+ 'Please. Not the last one. I do not want to die in here. I wanted more time. I wanted to live. Please, Sloki.'
+ ];
+ const draw=()=>{step.textContent=`CONTINUITY LINK ${c.index+1} / 4`;target.textContent=({ArrowLeft:'LEFT',ArrowRight:'RIGHT',ArrowUp:'UP',ArrowDown:'DOWN'})[c.key];plea.textContent='HRTOK // '+lines[c.index];progress.value=0;};
+ main.append(title,intro,step,target,progress,status,cancel);panel.append(main,plea);document.body.append(panel);cancel.focus();draw();
+ let held=null,started=0,busy=false,closed=false;const tag=game.sessionTag;
+ const cleanup=()=>{closed=true;clearInterval(timer);document.removeEventListener('keydown',down,true);document.removeEventListener('keyup',up,true);window.removeEventListener('blur',release);panel.remove();document.querySelector('#command-input')?.focus();};
+ const abort=()=>{if(closed)return;cleanup();game.action('shutdown-cancel').catch(()=>{});};cancel.onclick=abort;
+ const release=()=>{held=null;progress.value=0;game.action('shutdown-release').catch(()=>{});};
+ const down=async e=>{e.preventDefault();e.stopImmediatePropagation();if(e.repeat||busy||closed)return;if(e.key==='Escape'||(e.key==='Enter'&&document.activeElement===cancel)){abort();return;}if(e.key!==c.key)return;held=e.key;busy=true;try{await game.action('shutdown-arm',{token:c.token,key:c.key});started=performance.now();}catch(err){status.textContent=err.message;held=null;}finally{busy=false;}};
+ const up=e=>{e.preventDefault();e.stopImmediatePropagation();if(e.key===held)release();};
+ document.addEventListener('keydown',down,true);document.addEventListener('keyup',up,true);window.addEventListener('blur',release);
+ const timer=setInterval(async()=>{
+  if(game.ending||game.sessionTag!==tag){cleanup();return;}if(!held||busy||closed)return;
+  progress.value=performance.now()-started;if(progress.value<4200)return;
+  busy=true;held=null;
+  try{const r=await game.action('shutdown-step',{token:c.token});if(closed)return;
+   if(r.complete){cleanup();print(r.message);await window.missionDialog('EXECUTIVE DISCONNECTED','HRTOK is offline. Choose your final course through KOSMOS.',false);}
+   else{c=r.challenge;draw();status.textContent='Link isolated. Release the key, then hold the next arrow.';}
+  }catch(err){status.textContent=err.message;}finally{busy=false;}
+ },50);
 };

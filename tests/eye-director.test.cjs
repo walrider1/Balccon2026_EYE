@@ -39,3 +39,11 @@ test('all endings override AI expressions and death never loops', () => {
     if(clip==='Death') assert.equal(result.loop,false);
   }
 });
+
+
+test('eye panics during isolation and stays dead after disconnection',()=>{
+ const d=new EyeDirector();
+ assert.equal(d.update({started:true,sessionTag:'shutdown-test',shutdownActive:true}).clip,'Panic');
+ const dead=d.update({started:true,sessionTag:'shutdown-test',aiOffline:true});assert.equal(dead.clip,'Death');assert.equal(dead.hold,true);
+ assert.equal(d.update({started:true,sessionTag:'shutdown-test',aiOffline:true,endingKind:'earth_no_ai'}).clip,'Death');
+});

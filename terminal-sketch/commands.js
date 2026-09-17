@@ -20,7 +20,7 @@ function createCommands() {
           ? {goal: 'ACCESS 2 -> 3 // Complete the response challenge and verify its result to stop sedation.', commands: ['run','auth']}
           : !game.rootRecovered
           ? {goal: 'ACCESS 2 -> 3 // Combine the recovered authorizations to regain control.', commands: ['root']}
-          : {goal: 'ACCESS 3 // Review navigation and plan the return to Earth.', commands: ['cat','run']};
+          : {goal: 'ACCESS 3 // Review navigation and plan the return to Earth.', commands: ['cat','run','central','course']};
         print('RELEVANT NOW // ' + phase.goal, 'progression-help');
         print('ALL COMMANDS');
         const relevant = new Set(phase.commands);
@@ -213,9 +213,8 @@ function createCommands() {
     },
     {
       name: 'course',
-      usage: 'course',
-      description: 'legacy navigation controller',
-      showInHelp: false,
+      usage: 'course sun confirm',
+      description: 'choose solar quarantine instead of returning to Earth',
       run: ({ game, print, args, endGame }) => {
         if (isTerminated({ game, print })) return;
         if (!game.rootRecovered) {
@@ -229,15 +228,14 @@ function createCommands() {
     {
       name: 'central',
       usage: 'central shutdown',
-      description: 'shut down CENTRAL executive control',
-      showInHelp: false,
+      description: 'ROOT: optional HRTOK isolation before the final course',
       run: ({ game, print, arg, endGame }) => {
         if (isTerminated({ game, print })) return;
         if (!game.rootRecovered) {
           print('ACCESS DENIED — ROOT AUTHORIZATION REQUIRED', 'error');
           return;
         }
-        if (arg.toLowerCase() === 'shutdown') return endGame('shutdown');
+        if (arg.toLowerCase() === 'shutdown') return window.openShutdown(game,print);
         else print('usage: central shutdown', 'error');
       }
     },
