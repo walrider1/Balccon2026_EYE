@@ -73,7 +73,7 @@ function createCommands() {
         }
         const entries = (fs.list(path) || []).filter(({name}) => (showHidden || (!name.startsWith('.') && name !== 'forensic_fragment.txt')) && (name === '.bonus' || game.canAccessPath(`${path}/${name}`)));
         print(entries.length ? entries.map(({ name, type }) => {
-          if (name === 'neural_link.app') return `${name} [${game.rootShares.medical ? 'COMPLETED // ACCESS 1 VERIFIED' : 'AUTO AFTER MEDICAL AUTH // RESUME IF INTERRUPTED'}]`;
+          if (name === 'neural_link.app' && game.rootShares.medical) return `${name} [COMPLETED]`;
           return type === 'dir' ? `${name}/` : name;
         }).join('    ') : '[empty]');
       }
