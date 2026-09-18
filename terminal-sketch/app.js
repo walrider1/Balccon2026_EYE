@@ -1113,6 +1113,7 @@ async function loadFilesystem() {
     fs = new VirtualFileSystem(await response.json());
     mountStatus.textContent = 'SHIP ARCHIVE: READY';
     mountStatus.classList.add('mounted');
+    updateBootSession();
     if (gameState.started && !gameState.ending) armIdleReset(Math.max(0, gameState.idleResetAt - Date.now()));
     else if (gameState.ending) idleResetTimer = window.setTimeout(resetToStartScreen, Math.max(0, gameState.resetAt - Date.now()));
   } catch {
@@ -1892,8 +1893,51 @@ async function run(raw) {
   scheduleCentralIdleMessage();
 }
 
+
+function updateBootSession() {
+  if (bootScreen.classList.contains('hidden')) return;
+  const label = document.getElementById('boot-session-status');
+  const button = document.getElementById('new-session');
+  button.disabled = !fs || resetInProgress || bootInput.disabled;
+  if (!fs) return;
+  if (gameState.ending) {
+    label.textContent = 'PREVIOUS SESSION FINISHED // F2: start a new game now';
+  } else if (gameState.started) {
+    const remaining = gameState.missionPaused ? gameState.missionRemaining : Math.max(0, gameState.missionEndsAt - Date.now());
+    label.textContent = 'EXISTING SESSION // ' + formatCountdown(remaining) + ' remaining // start system: resume';
+  } else {
+    label.textContent = 'NEW SESSION // Full mission timer starts when you begin';
+  }
+}
+
+async function startFreshSession() {
+  if (bootScreen.classList.contains('hidden') || bootInput.disabled || resetInProgress || !fs) return;
+  resetInProgress = true;
+  window.clearTimeout(idleResetTimer);
+  window.clearTimeout(failureResetTimer);
+  updateBootSession();
+  try {
+    await gameState.action('reset', { newSession: true });
+    resetInProgress = false;
+    updateBootSession();
+    bootInput.value = 'start system';
+    startGame();
+  } catch {
+    resetInProgress = false;
+    updateBootSession();
+    document.getElementById('boot-session-status').textContent = 'CONNECTION FAILED // Press F2 to retry. Previous session was not discarded locally.';
+  }
+}
+document.getElementById('new-session').addEventListener('click', startFreshSession);
+document.addEventListener('keydown', event => {
+  if (event.key === 'F2' && !bootScreen.classList.contains('hidden')) {
+    event.preventDefault();
+    if (!event.repeat) startFreshSession();
+  }
+});
+
 function startGame() {
-  if (bootInput.disabled) return;
+  if (bootInput.disabled || resetInProgress) return;
   if (!fs) {
     bootInput.value = '';
     bootInput.placeholder = 'START THE LOCAL SERVER FIRST';
@@ -1918,6 +1962,7 @@ loadFilesystem();
 let statePollPending = false;
 let connectionLost = false;
 window.setInterval(async () => {
+  updateBootSession();
   if ((!gameState.started && game.classList.contains('hidden')) || resetInProgress || statePollPending || cortexGame.active) return;
   statePollPending = true;
   try {

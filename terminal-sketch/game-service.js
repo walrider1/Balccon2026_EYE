@@ -189,7 +189,7 @@ function createGameService({ now = Date.now, storage = null } = {}) {
     const kind = input.action;
     if (kind === 'reset') {
       const eligible = s.endedAt !== null ? now() >= s.endedAt + 60000 : now() - s.lastActivity >= 3 * 60 * 1000;
-      if (!eligible) throw new GameError(403, 'RESET IS NOT YET AVAILABLE');
+      if (!eligible && input.newSession !== true) throw new GameError(403, 'RESET IS NOT YET AVAILABLE');
       const next = create(id); return { newId: next, state: snapshot(next) };
     }
     if (kind === 'activity') { s.lastActivity = now(); persist(); return { state: snapshot(id) }; }

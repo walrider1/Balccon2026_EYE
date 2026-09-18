@@ -230,3 +230,28 @@ test('refresh preserves the session and inactivity deadline; reset unlocks at th
  assert.throws(()=>f.act('reset'),/NOT YET/);f.advance(1);
  const reset=f.act('reset');assert.notEqual(reset.state.sessionTag,initial.sessionTag);assert.equal(reset.state.started,false);assert.equal(reset.state.access,0);
 });
+
+
+test('explicit new-player reset bypasses waiting and replaces progress with a fresh timer',()=>{
+ const f=fixture();medical(f);f.advance(45000);
+ const old=f.service.snapshot(f.id);
+ assert.throws(()=>f.act('reset'),/NOT YET/);
+ const fresh=f.act('reset',{newSession:true});
+ assert.notEqual(fresh.state.sessionTag,old.sessionTag);
+ assert.equal(f.service.has(f.id),false);
+ assert.equal(fresh.state.started,false);
+ assert.equal(fresh.state.access,0);
+ assert.deepEqual(fresh.state.readFiles,[]);
+ f.advance(10000);
+ const started=f.service.action(fresh.newId,{action:'start'}).state;
+ assert.equal(started.missionEndsAt,f.now()+started.missionDuration);
+});
+
+test('new player can immediately replace a completed session without its cooldown',()=>{
+ const f=fixture();f.advance(f.service.snapshot(f.id).missionDuration+1);
+ assert.equal(f.service.snapshot(f.id).ending,true);
+ assert.throws(()=>f.act('reset'),/NOT YET/);
+ const next=f.act('reset',{newSession:true});
+ assert.equal(next.state.ending,false);
+ assert.equal(next.state.started,false);
+});

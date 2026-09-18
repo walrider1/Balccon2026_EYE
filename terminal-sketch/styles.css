@@ -403,3 +403,10 @@ input { color:#e8dfc8; caret-color:#d8a24d; }
 .crt-readable .interaction-guide { font-size:.55rem; padding:.2rem .35rem; color:#ff8585; background:#000; }
 .crt-readable .interaction-guide > div { gap:0 .5rem; }
 .crt-readable .interaction-guide strong { color:inherit; }
+
+.boot-session-status { color:#ff8585; border-left:3px solid #ff8585; padding:8px 12px; line-height:1.5; }
+.new-session { margin-top:18px; padding:10px 14px; font:inherit; color:#ff8585; border:1px solid #ad6464; background:#160f14; cursor:pointer; }
+.new-session:focus-visible { outline:2px solid #ff8585; outline-offset:4px; }
+.new-session:disabled { opacity:.5; cursor:default; }
+.boot-session-note { color:#9cb5bf; font-size:.75rem; line-height:1.5; }
+.crt-readable .boot-session-status,.crt-readable .new-session,.crt-readable .boot-session-note { font-size:.65rem; margin:.35rem 0; padding:.25rem; }
