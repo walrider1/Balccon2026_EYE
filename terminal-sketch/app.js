@@ -1114,6 +1114,7 @@ async function loadFilesystem() {
     mountStatus.textContent = 'SHIP ARCHIVE: READY';
     mountStatus.classList.add('mounted');
     updateBootSession();
+    restoreKeyboardFocus();
     if (gameState.started && !gameState.ending) armIdleReset(Math.max(0, gameState.idleResetAt - Date.now()));
     else if (gameState.ending) idleResetTimer = window.setTimeout(resetToStartScreen, Math.max(0, gameState.resetAt - Date.now()));
   } catch {
@@ -1194,7 +1195,7 @@ function finishBoot() {
     game.classList.remove('hidden');
     updatePrompt();
     commandInput.focus();
-    startMissionDisplay().then(() => { if (!gameState.ending) { commandInput.disabled = false; commandInput.focus(); } }).catch(error => print(error.message, 'error'));
+    startMissionDisplay().then(() => { if (!gameState.ending) { commandInput.disabled = false; setActiveChannel('command'); requestAnimationFrame(restoreKeyboardFocus); } }).catch(error => print(error.message, 'error'));
     commandInput.disabled = true;
     armIdleReset();
     sfx.loop('ambientShip', .3);
@@ -1893,6 +1894,27 @@ async function run(raw) {
   scheduleCentralIdleMessage();
 }
 
+
+// Restore only a missing input focus; never steal it from a dialog or another channel.
+function restoreKeyboardFocus() {
+  if (document.hidden || resetInProgress) return;
+  const focused = document.activeElement;
+  if (focused && focused !== document.body && focused !== document.documentElement &&
+      !focused.disabled && focused.getClientRects().length) return;
+  if (!bootScreen.classList.contains('hidden')) {
+    if (!bootInput.disabled) bootInput.focus({ preventScroll: true });
+    return;
+  }
+  if (game.classList.contains('hidden') || gameState.ending ||
+      document.querySelector('[role="dialog"]:not(.hidden), .relay-modal, .shutdown-panel, .mission-dialog')) return;
+  const input = activeChannel === 'central' ? centralInput : commandInput;
+  if (!input.disabled) input.focus({ preventScroll: true });
+}
+window.addEventListener('focus', () => requestAnimationFrame(restoreKeyboardFocus));
+window.addEventListener('pageshow', () => requestAnimationFrame(restoreKeyboardFocus));
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) requestAnimationFrame(restoreKeyboardFocus);
+});
 
 function updateBootSession() {
   if (bootScreen.classList.contains('hidden')) return;
