@@ -392,3 +392,14 @@ input { color:#e8dfc8; caret-color:#d8a24d; }
 /* Wave controls have dedicated keyboard bindings; only action buttons retain a focus indicator. */
 .neural-modal .wave-controls button:focus,.neural-modal .wave-controls button:focus-visible { outline:none; box-shadow:none; }
 #boot-form[hidden] { display:none; }
+
+
+/* Persistent keyboard reference, outside both channels' scrollback. */
+.game { grid-template-rows:minmax(0,1fr) auto; }
+.interaction-guide { grid-column:1 / -1; padding:8px 14px; border-top:1px solid #739aa8; background:#0b1b25; color:#d5e9ed; font-size:clamp(12px,.85vw,15px); line-height:1.5; }
+.interaction-guide > div { display:flex; flex-wrap:wrap; gap:2px 22px; }
+.interaction-guide strong { color:#ff8585; }
+.crt-readable .game { grid-template-rows:auto minmax(0,1fr) auto; }
+.crt-readable .interaction-guide { font-size:.55rem; padding:.2rem .35rem; color:#fff; background:#000; }
+.crt-readable .interaction-guide > div { gap:0 .5rem; }
+.crt-readable .interaction-guide strong { color:#fff; }

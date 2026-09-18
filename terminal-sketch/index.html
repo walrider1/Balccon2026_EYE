@@ -22,6 +22,7 @@
           </div>
           <div class="boot-rule"></div>
           <p id="mount-status" class="mount-status">LOADING ARCHIVE...</p>
+          <p class="boot-command">Type <strong>start system</strong> and press <strong>Enter</strong> to begin.</p>
           <form id="boot-form"><span class="boot-prompt">KOSMOS:&gt;</span><input id="boot-input" aria-label="Start system" placeholder="start system" autocomplete="off" autofocus spellcheck="false" /></form>
           <div class="boot-card-footer"><span>© 1987 YUGOSLAV SPACE AGENCY</span></div>
         </div>
@@ -91,6 +92,10 @@
           </form>
         </section>
       </aside>
+      <footer class="interaction-guide" aria-label="Keyboard controls">
+        <div><strong>Ctrl + Right: talk to HRTOK (AI)</strong><strong>Ctrl + Left: KOSMOS terminal</strong><span>Type your message or command, then Enter</span></div>
+        <div><span>help: all commands</span><span>ls: list files</span><span>cd &lt;folder&gt;: enter folder</span><span>cat &lt;file&gt;: read</span><span>PageUp / PageDown: scroll</span><span>Up / Down: command history</span></div>
+      </footer>
     </main>
     <section id="media-overlay" class="media-overlay hidden" role="dialog" aria-modal="true" aria-label="Archive media viewer">
       <header class="media-header"><span id="media-title">ARCHIVE VIEWER</span><span>ESC / CTRL+C / <b>back</b> TO RETURN</span></header>
